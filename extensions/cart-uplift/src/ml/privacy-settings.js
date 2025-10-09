@@ -186,7 +186,6 @@ export class PrivacySettingsManager {
           <ul>
             <li>Advanced behavior pattern analysis</li>
             <li>Predictive recommendations</li>
-            <li>Smart bundle suggestions</li>
             <li>Cross-customer similarity analysis</li>
             <li>Seasonal preference learning</li>
           </ul>
@@ -219,12 +218,6 @@ export class PrivacySettingsManager {
         <div class="cu-feature-item">
           <strong>Predictive Suggestions</strong>
           <p>Anticipate what you might like next</p>
-          <span class="cu-feature-levels">AI-Powered only</span>
-        </div>
-        
-        <div class="cu-feature-item">
-          <strong>Smart Bundles</strong>
-          <p>AI-created product combinations</p>
           <span class="cu-feature-levels">AI-Powered only</span>
         </div>
         

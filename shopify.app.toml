@@ -1,16 +1,16 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "06d17c445a3713f419add1e31894bcc3"
-name = "cart-uplift-app"
-application_url = "https://cartuplift.vercel.app"
+client_id = "ba2c932cf6717c8fb6207fcc8111fe70"
+name = "CartUplift"
+application_url = "https://cartuplift.vercel.app/"
 embedded = true
-handle = "cart-uplift-app-7"
+handle = "cartupliftai"
 
 [build]
 automatically_update_urls_on_dev = false
 
 [webhooks]
-api_version = "2025-07"
+api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
@@ -22,14 +22,12 @@ api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_discounts,read_orders,read_products"
+scopes = "read_customers,read_discounts,read_orders,write_orders,write_products,read_script_tags,write_script_tags,read_themes,write_themes"
+optional_scopes = [ ]
+use_legacy_install_flow = false
 
 [auth]
-redirect_urls = [
-  "https://cartuplift.vercel.app/auth/callback",
-  "https://cartuplift.vercel.app/auth/shopify/callback",
-  "https://cartuplift.vercel.app/api/auth/callback"
-]
+redirect_urls = [ ]
 
 [app_proxy]
 url = "https://cartuplift.vercel.app/apps/proxy"

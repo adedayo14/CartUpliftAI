@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useCallback } from "react";
+// CartUplift Home Page - Updated Oct 2025
 import {
   Page,
   Card,
@@ -52,12 +53,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const setupSteps = [
     { key: 'analytics', label: 'Analytics enabled', completed: !!settings?.enableAnalytics },
     { key: 'recommendations', label: 'Recommendations configured', completed: !!settings?.enableRecommendations },
-    { key: 'incentives', label: 'Incentives configured', completed: (
-      (!!settings?.enableFreeShipping && Number(settings?.freeShippingThreshold) > 0) ||
-      (!!(settings as any)?.enableGiftGating && (() => { try { return (JSON.parse((settings as any)?.giftThresholds || '[]') || []).length > 0; } catch { return false; } })()) ||
-      (settings as any)?.progressBarMode === 'combined'
-    ) },
-    { key: 'styling', label: 'Styling customized', completed: (settings?.backgroundColor !== '#ffffff') || (settings?.buttonColor !== '#000000') || (settings?.textColor !== '#1A1A1A') },
+    { key: 'freeshipping', label: 'Free shipping setup', completed: (!!settings?.enableFreeShipping && Number(settings?.freeShippingThreshold) > 0) },
+    { key: 'gifts', label: 'Gift rewards configured', completed: (!!(settings as any)?.enableGiftGating && (() => { try { return (JSON.parse((settings as any)?.giftThresholds || '[]') || []).length > 0; } catch { return false; } })()) },
   ];
 
   const completedSteps = setupSteps.filter(step => step.completed).length;
@@ -84,17 +81,20 @@ export default function Index() {
 
   return (
     <Page fullWidth>
-      <TitleBar title="Cart Uplift - Smart Upsells & Cart Optimization" />
+      <TitleBar title="CartUplift - Home" />
       <BlockStack gap="500">
         {/* Hero Section */}
         <Card>
           <BlockStack gap="500">
             <BlockStack gap="300">
               <Text as="h1" variant="headingXl">
-                Welcome to Cart Uplift 🚀
+                Cart Uplift
+              </Text>
+              <Text variant="headingMd" as="p">
+                Increase average order value with AI recommendations and cart incentives
               </Text>
               <Text variant="bodyLg" as="p">
-                Boost your store's revenue with intelligent cart optimization and upselling features:
+                Boost AOV with smart product recommendations, progress bars, and gift-with-purchase rewards in your cart.
               </Text>
               <style dangerouslySetInnerHTML={{
                 __html: `
@@ -148,44 +148,44 @@ export default function Index() {
                       <span className="feature-checkmark">✓</span>
                       <Text variant="bodyMd" as="span">AI-powered product recommendations</Text>
                     </div>
-                    <Button size="micro" variant="primary" onClick={() => handleNavigate("/app/settings")}>Configure ML</Button>
+                    <Button size="micro" variant="primary" onClick={() => handleNavigate("/app/settings")}>Configure</Button>
                   </div>
                   <div className="feature-item">
                     <div className="feature-content">
                       <span className="feature-checkmark">✓</span>
-                      <Text variant="bodyMd" as="span">Dynamic free shipping incentives</Text>
+                      <Text variant="bodyMd" as="span">Free shipping progress bars</Text>
                     </div>
-                    <Button size="micro" onClick={() => handleNavigate("/app/settings")}>Setup Threshold</Button>
+                    <Button size="micro" onClick={() => handleNavigate("/app/settings")}>Setup</Button>
                   </div>
                 </div>
                 <div className="feature-column">
                   <div className="feature-item">
                     <div className="feature-content">
                       <span className="feature-checkmark">✓</span>
-                      <Text variant="bodyMd" as="span">Automated cross-sell suggestions</Text>
+                      <Text variant="bodyMd" as="span">Gift-with-purchase rewards</Text>
                     </div>
-                    <Button size="micro" onClick={() => handleNavigate("/app/manage")}>Manage Products</Button>
+                    <Button size="micro" onClick={() => handleNavigate("/app/settings")}>Configure</Button>
                   </div>
                   <div className="feature-item">
                     <div className="feature-content">
                       <span className="feature-checkmark">✓</span>
-                      <Text variant="bodyMd" as="span">Cart progress & abandonment tracking</Text>
+                      <Text variant="bodyMd" as="span">Privacy-first personalization</Text>
                     </div>
-                    <Button size="micro" onClick={() => handleNavigate("/app/dashboard")}>View Analytics</Button>
+                    <Button size="micro" onClick={() => handleNavigate("/app/settings")}>Manage</Button>
                   </div>
                 </div>
                 <div className="feature-column">
                   <div className="feature-item">
                     <div className="feature-content">
                       <span className="feature-checkmark">✓</span>
-                      <Text variant="bodyMd" as="span">Conversion rate optimization</Text>
+                      <Text variant="bodyMd" as="span">Performance analytics</Text>
                     </div>
-                    <Button size="micro" variant="primary" onClick={() => handleNavigate("/app/ab-testing")}>A/B Test</Button>
+                    <Button size="micro" variant="primary" onClick={() => handleNavigate("/app/dashboard")}>View</Button>
                   </div>
                   <div className="feature-item">
                     <div className="feature-content">
                       <span className="feature-checkmark">✓</span>
-                      <Text variant="bodyMd" as="span">Customizable layouts & styling</Text>
+                      <Text variant="bodyMd" as="span">Customizable design</Text>
                     </div>
                     <Button size="micro" onClick={() => handleNavigate("/app/settings")}>Customize</Button>
                   </div>
@@ -357,7 +357,7 @@ export default function Index() {
                       <strong>2.</strong> Click "App embeds" in the left sidebar
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>3.</strong> Find "Cart Uplift" and toggle it ON
+                      <strong>3.</strong> Find "CartUplift" and toggle it ON
                     </Text>
                     <Text variant="bodyMd" as="p">
                       <strong>4.</strong> Configure your settings in the Settings tab
@@ -367,7 +367,7 @@ export default function Index() {
                     </Text>
                   </BlockStack>
                   <Text variant="bodyMd" as="p" tone="success">
-                    ✅ The app embed must be enabled first before Cart Uplift will work on your store.
+                    ✅ The app embed must be enabled first before CartUplift will work on your store.
                   </Text>
                 </BlockStack>
               </div>
@@ -389,27 +389,27 @@ export default function Index() {
                     📊 Dashboard
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Monitor your Cart Uplift performance in real-time:
+                    Monitor your CartUplift performance in real-time:
                   </Text>
                   <BlockStack gap="300">
                     <Text variant="bodyMd" as="p">
-                      <strong>Revenue Impact:</strong> Track additional revenue generated by Cart Uplift
+                      <strong>Revenue Impact:</strong> Track additional revenue from recommendations
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>Conversion Metrics:</strong> Monitor cart abandonment reduction and upsell success
+                      <strong>Conversion Metrics:</strong> Monitor upsell success and AOV increases
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>Product Performance:</strong> See which recommendations drive the most sales
+                      <strong>Product Performance:</strong> See which recommendations convert best
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>Customer Insights:</strong> Understand shopping behavior and preferences
+                      <strong>Customer Insights:</strong> Understand shopping patterns and preferences
                     </Text>
                   </BlockStack>
                   
                   <div className="spacing-gap"></div>
                   
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    💡 <strong>Tip:</strong> Use dashboard insights to optimize your cart settings and maximize ROI.
+                    💡 <strong>Tip:</strong> Use insights to optimize settings and maximize ROI. Personalization increases relevance and conversion.
                   </Text>
                 </BlockStack>
               </div>

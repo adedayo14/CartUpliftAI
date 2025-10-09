@@ -117,7 +117,6 @@ export class BehaviorTracker {
           "• Advanced behavior analysis (scroll patterns, click timing)",
           "• Predictive recommendations based on similar customers",
           "• Real-time learning from your shopping patterns",
-          "• Intelligent bundle suggestions tailored to you",
           "• Seasonal and trend-based recommendations",
           "• Cross-device shopping history sync"
         ],

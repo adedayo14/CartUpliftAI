@@ -5,7 +5,6 @@
 import { BehaviorTracker } from './behavior-tracker.js';
 import { CustomerProfiler } from './customer-profiler.js';
 import { CollaborativeFilteringEngine } from './collaborative-filtering.js';
-import { BundleDiscoveryEngine } from './bundle-discovery.js';
 import { PrivacySettingsManager } from './privacy-settings.js';
 
 export class MLRecommendationEngine {
@@ -14,7 +13,6 @@ export class MLRecommendationEngine {
     this.behaviorTracker = null;
     this.customerProfiler = null;
     this.collaborativeEngine = null;
-    this.bundleEngine = null;
     
     this.initialized = false;
     this.userId = null;
@@ -87,12 +85,10 @@ export class MLRecommendationEngine {
     // Initialize other components
     this.customerProfiler = new CustomerProfiler(privacyLevel, this.getUserId());
     this.collaborativeEngine = new CollaborativeFilteringEngine(privacyLevel);
-    this.bundleEngine = new BundleDiscoveryEngine(privacyLevel);
     
     // Initialize engines
     await Promise.all([
-      this.collaborativeEngine.initialize(),
-      this.bundleEngine.initialize()
+      this.collaborativeEngine.initialize()
     ]);
   }
 
@@ -451,23 +447,6 @@ export class MLRecommendationEngine {
   }
 
   /**
-   * Get smart bundles
-   */
-  async getSmartBundles(cartItems, options = {}) {
-    if (!this.initialized) {
-      await this.init();
-    }
-
-    const customerProfile = await this.getCustomerProfile();
-    
-    return await this.bundleEngine.generateSmartBundles(
-      cartItems, 
-      customerProfile, 
-      options
-    );
-  }
-
-  /**
    * Track user interactions for learning
    */
   trackInteraction(type, data) {
@@ -506,11 +485,6 @@ export class MLRecommendationEngine {
       strategy: data.strategy,
       context: data.context
     });
-
-    // Track bundle performance if applicable
-    if (data.bundle_id) {
-      this.bundleEngine?.trackBundlePerformance(data.bundle_id, action, data);
-    }
   }
 
   /**
@@ -543,8 +517,7 @@ export class MLRecommendationEngine {
       personalized_recommendations: this.privacyManager.hasFeature('personalized_recommendations'),
       behavior_tracking: this.privacyManager.hasFeature('behavior_tracking'),
       collaborative_filtering: this.privacyManager.hasFeature('collaborative_filtering'),
-      advanced_profiling: this.privacyManager.hasFeature('advanced_profiling'),
-      smart_bundles: this.privacyManager.getConsentLevel() !== 'basic'
+      advanced_profiling: this.privacyManager.hasFeature('advanced_profiling')
     };
   }
 

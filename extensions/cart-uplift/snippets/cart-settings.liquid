@@ -28,19 +28,6 @@
         // Trigger cart initialization if the drawer script is already loaded
         if (window.CartUpliftDrawer && !window.cartUpliftDrawer) {
           window.cartUpliftDrawer = new window.CartUpliftDrawer(settings);
-          
-          // Initialize bundle renderer if bundles are enabled
-          if (settings.enableSmartBundles && !window.cartUpliftBundleRenderer) {
-            const script = document.createElement('script');
-            const assetUrl = (window.CartUpliftAssets && window.CartUpliftAssets.bundleRenderer) || '/apps/cart-uplift/assets/bundle-renderer.js';
-            script.src = assetUrl;
-            script.onload = function() {
-              if (window.BundleRenderer) {
-                window.cartUpliftBundleRenderer = new window.BundleRenderer(settings);
-              }
-            };
-            document.head.appendChild(script);
-          }
         }
         
         // Dispatch event to notify other scripts

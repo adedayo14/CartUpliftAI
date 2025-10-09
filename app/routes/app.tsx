@@ -16,7 +16,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
 
   // Hard-code the API key to avoid hydration mismatch
-  const apiKey = "06d17c445a3713f419add1e31894bcc3";
+  const apiKey = "ba2c932cf6717c8fb6207fcc8111fe70";
   const search = new URL(request.url).search; // keep host/shop/embedded on nav links
   
   return { apiKey, search };
@@ -26,7 +26,7 @@ export default function App() {
   const { apiKey, search } = useLoaderData<typeof loader>();
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey || "06d17c445a3713f419add1e31894bcc3"}>
+    <AppProvider isEmbeddedApp apiKey={apiKey || "ba2c932cf6717c8fb6207fcc8111fe70"}>
       <AppBridgeInitializer apiKey={apiKey} />
       <SessionStatus />
       <NavMenu>
@@ -35,8 +35,6 @@ export default function App() {
         </a>
         <a href={`/app/dashboard${search}`}>Dashboard</a>
         <a href={`/app/settings${search}`}>Settings</a>
-        <a href={`/app/manage${search}`}>Bundles</a>
-        <a href={`/app/ab-testing${search}`}>A/B Testing</a>
       </NavMenu>
       <Outlet />
     </AppProvider>

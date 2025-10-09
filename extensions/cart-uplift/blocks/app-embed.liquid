@@ -88,12 +88,8 @@
           // Express Checkout (always enabled)
           enableExpressCheckout: true,
 
-          // Recommendations positioning
-          recommendationsScrollWithCart: {{ block.settings.recommendations_scroll_with_cart | json }},
-          
           // Text styling
           enableProductTitleCaps: {{ block.settings.enable_product_title_caps | json }},
-          enableRecommendationTitleCaps: {{ block.settings.enable_recommendation_title_caps | json }},
 
           // Cart styling
           cartBackgroundColor: {{ block.settings.cart_background_color | json }},
@@ -107,51 +103,10 @@
           moneyFormat: {{ shop.money_format | json }},
           moneyWithCurrencyFormat: {{ shop.money_with_currency_format | json }},
           
-          // Product Recommendations
-          // Use both keys for compatibility – cart-uplift.js expects recommendationLayout (singular)
-          recommendationsLayout: {{ block.settings.recommendations_layout | json }},
-          recommendationLayout: {{ block.settings.recommendations_layout | json }},
-          // Mark source so API refresh won't override theme editor selection
-          recommendationLayoutSource: 'theme',
-          recommendationsTitle: {{ block.settings.recommendations_title | json }},
-          recommendationsBackgroundColor: {{ block.settings.recommendations_background_color | json }},
-          maxRecommendations: {{ block.settings.recommendations_max_count | json }},
-          manualRecommendationProducts: {{ block.settings.manual_recommendation_products | map: 'id' | join: ',' | json }},
-          manualRecommendationProductsData: [
-            {%- for product in block.settings.manual_recommendation_products -%}
-              {
-                id: {{ product.id | json }},
-                handle: {{ product.handle | json }},
-                title: {{ product.title | json }},
-                price: {{ product.price | json }},
-                compareAtPrice: {{ product.compare_at_price | json }},
-                available: {{ product.available | json }},
-                featuredImage: {% if product.featured_image %}{{ product.featured_image | json }}{% else %}null{% endif %},
-                url: {{ product.url | json }},
-                vendor: {{ product.vendor | json }},
-                type: {{ product.type | json }}
-              }{%- unless forloop.last -%},{%- endunless -%}
-            {%- endfor -%}
-          ],
-          enableManualRecommendations: {% if block.settings.manual_recommendation_products.size > 0 %}true{% else %}false{% endif %}
+          // Product recommendations: controlled by ML/app only (no theme editor overrides)
         });
 
-        // DEBUG: Log manual product settings
-        console.log('🎯 CartUplift Manual Products Debug:');
-        console.log('  - enableManualRecommendations:', window.CartUpliftSettings.enableManualRecommendations);
-        console.log('  - manualRecommendationProducts:', window.CartUpliftSettings.manualRecommendationProducts);
-        console.log('  - manualRecommendationProductsData:', window.CartUpliftSettings.manualRecommendationProductsData);
-        console.log('  - Product count:', window.CartUpliftSettings.manualRecommendationProductsData.length);
-
-        (function enforceMaxRecommendationsRange(){
-          var maxRec = parseInt(window.CartUpliftSettings.maxRecommendations, 10);
-          if (!isFinite(maxRec) || maxRec < 1) {
-            maxRec = 3;
-          } else if (maxRec > 6) {
-            maxRec = 6;
-          }
-          window.CartUpliftSettings.maxRecommendations = maxRec;
-        })();
+        // Theme no longer controls manual recommendations or layout; ML/app settings apply
 
         // Notify any listeners immediately that settings have (re)loaded
         try { document.dispatchEvent(new CustomEvent('cartuplift:settings:updated')); } catch (_) {}
@@ -256,13 +211,6 @@
               variantId: __giftVariantId,
               variantTitle: __giftVariantTitle,
               price: __giftVariantPrice
-            };
-            window.CartUpliftSettings.enableGiftGating = true;
-            window.CartUpliftSettings.giftThresholds = JSON.stringify([threshold]);
-          }
-        } catch (_) {}
-      } catch (e) {
-        console.warn('CartUplift pre-settings failed', e);
       }
     })();
   </script>
@@ -383,7 +331,6 @@
 
   {%- comment -%} Cache-busted version to ensure fresh schema loads {%- endcomment -%}
   <script src="{{ 'cart-uplift.js' | asset_url }}?v=theme-editor-autoopen-2025-09-25" defer></script>
-  <script src="{{ 'bundle-renderer.js' | asset_url }}?v=theme-editor-autoopen-2025-09-25" defer></script>
 
   <script>
     // Post-load configuration and resilience
@@ -484,7 +431,7 @@
 
 {% schema %}
 {
-  "name": "Cart Uplift - Smart Cart",
+  "name": "CartUplift",
   "target": "body",
   "settings": [
     {
@@ -618,74 +565,7 @@
     },
     {
       "type": "header",
-      "content": "Product recommendations"
-    },
-    {
-      "type": "text",
-      "id": "recommendations_title",
-      "label": "Heading", 
-      "default": "YOU MIGHT ALSO LIKE"
-    },
-    {
-      "type": "select",
-      "id": "recommendations_layout",
-      "label": "Layout style",
-      "options": [
-        {
-          "value": "carousel",
-          "label": "Carousel"
-        },
-        {
-          "value": "list",
-          "label": "List"
-        },
-        {
-          "value": "grid",
-          "label": "Grid"
-        }
-      ],
-      "default": "carousel"
-    },
-    {
-      "type": "range",
-      "id": "recommendations_max_count",
-      "label": "Products to load",
-      "min": 1,
-      "max": 6,
-      "step": 1,
-      "default": 3,
-      "info": "Tip: 3 works best. Carousel/List show up to this number; Grid shows 3 on desktop, 2 on mobile, rotating extras."
-    },
-    {
-      "type": "product_list",
-      "id": "manual_recommendation_products",
-      "label": "Manual product recommendations",
-      "info": "Selected products only (AI recs off). Ideal for excess stock",
-      "limit": 12
-    },
-    {
-      "type": "color",
-      "id": "recommendations_background_color",
-      "label": "Background color",
-      "default": "#F3F3F3" 
-    },
-    {
-      "type": "checkbox",
-      "id": "recommendations_scroll_with_cart",
-      "label": "Let recommendations scroll with cart",
-      "info": "When off, recommendations stay pinned above the cart items.",
-      "default": false
-    },
-    {
-      "type": "header",
       "content": "Text customization"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_recommendation_title_caps",
-      "label": "Uppercase recommendation title",
-      "info": "Makes recommendation section title all uppercase",
-      "default": true
     },
     {
       "type": "text",
