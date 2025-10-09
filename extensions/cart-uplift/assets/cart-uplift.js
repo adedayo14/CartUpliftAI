@@ -3,10 +3,10 @@
 
   // Version sentinel & live verification (cache-bust expectation)
   (function(){
-    const v = 'grid-2025-09-10-3';
+    const v = 'grid-2025-10-09-1';
     if (window.CART_UPLIFT_ASSET_VERSION !== v) {
       window.CART_UPLIFT_ASSET_VERSION = v;
-      console.log('[CartUplift] Loaded asset version ' + v + ' – expecting NEW grid (no .cartuplift-grid-overlay elements).');
+      console.log('[CartUplift] Loaded asset version ' + v + ' – latest initialization fallback build active.');
     }
     // Runtime self-heal: remove legacy overlay nodes if stale HTML rendered by cached markup
     function selfHealGrid(){
