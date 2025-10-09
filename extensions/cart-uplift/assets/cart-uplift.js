@@ -6339,9 +6339,24 @@
   // Expose globally
   window.CartUpliftDrawer = CartUpliftDrawer;
   
-  // Auto-initialize if settings exist
+  // Auto-initialize when DOM is ready
+  function initDrawer() {
+    if (!window.cartUpliftDrawer && window.CartUpliftSettings) {
+      console.log('[CartUplift] Auto-initializing drawer with settings');
+      window.cartUpliftDrawer = new CartUpliftDrawer(window.CartUpliftSettings);
+    }
+  }
+
+  // Try immediate init if settings already loaded
   if (window.CartUpliftSettings) {
-    window.cartUpliftDrawer = new CartUpliftDrawer(window.CartUpliftSettings);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initDrawer);
+    } else {
+      initDrawer();
+    }
+  } else {
+    // Wait for settings to load
+    document.addEventListener('DOMContentLoaded', initDrawer);
   }
 
 })();
