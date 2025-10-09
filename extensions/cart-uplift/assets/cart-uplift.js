@@ -6343,20 +6343,46 @@
   function initDrawer() {
     if (!window.cartUpliftDrawer && window.CartUpliftSettings) {
       console.log('[CartUplift] Auto-initializing drawer with settings');
-      window.cartUpliftDrawer = new CartUpliftDrawer(window.CartUpliftSettings);
+      try {
+        window.cartUpliftDrawer = new CartUpliftDrawer(window.CartUpliftSettings);
+        console.log('[CartUplift] ✅ Drawer initialized successfully');
+      } catch (err) {
+        console.error('[CartUplift] ❌ Drawer initialization failed:', err);
+      }
+    } else if (!window.CartUpliftSettings) {
+      console.warn('[CartUplift] ⚠️ Settings not available, drawer not initialized');
+    } else if (window.cartUpliftDrawer) {
+      console.log('[CartUplift] ℹ️ Drawer already initialized, skipping');
     }
   }
 
-  // Try immediate init if settings already loaded
-  if (window.CartUpliftSettings) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initDrawer);
-    } else {
+  // Try multiple initialization strategies
+  function tryInit() {
+    if (window.CartUpliftSettings && !window.cartUpliftDrawer) {
       initDrawer();
     }
-  } else {
-    // Wait for settings to load
-    document.addEventListener('DOMContentLoaded', initDrawer);
   }
+
+  // Strategy 1: Immediate init if settings already exist
+  tryInit();
+
+  // Strategy 2: Wait for DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInit);
+  } else {
+    // DOM already loaded, try again
+    setTimeout(tryInit, 0);
+  }
+
+  // Strategy 3: Listen for settings update event
+  document.addEventListener('cartuplift:settings:updated', tryInit);
+
+  // Strategy 4: Fallback timer (last resort)
+  setTimeout(function() {
+    if (!window.cartUpliftDrawer && window.CartUpliftSettings) {
+      console.log('[CartUplift] Fallback initialization triggered');
+      tryInit();
+    }
+  }, 1000);
 
 })();
