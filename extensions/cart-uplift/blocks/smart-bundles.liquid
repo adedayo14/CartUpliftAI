@@ -1,0 +1,365 @@
+{% comment %}
+  Smart Bundles Block - Displays ML-powered product bundles
+  Version 6.0 - Modern style with optional plus separators
+{% endcomment %}
+
+{% assign cu_version = '6.0' %}
+
+{% if block.settings.enable_smart_bundles %}
+  {% comment %} Calculate manual products count {% endcomment %}
+  {% capture smart_bundles_container_id %}smart-bundles-container-{{ product.id }}-{{ block.id }}{% endcapture %}
+
+  {{ 'smart-bundles.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'smart-bundles-block.js' | asset_url }}" defer></script>
+  
+  {% comment %} Safely derive product image URL to avoid Liquid errors in JSON {% endcomment %}
+  {% if product.featured_image %}
+    {% assign cu_product_image_url = product.featured_image | image_url: width: 400 %}
+  {% else %}
+    {% assign cu_product_image_url = '' %}
+  {% endif %}
+
+  {% comment %} Build manual handles CSV for client fetching {% endcomment %}
+  {% capture manual_handles %}
+    {% for p in block.settings.manual_bundle_products %}
+      {% if p and p.handle %}{{ p.handle }}{% if forloop.last == false %},{% endif %}{% endif %}
+    {% endfor %}
+  {% endcapture %}
+
+  {% comment %} Serialize config JSON for the external initializer {% endcomment %}
+  {% capture data_config %}{
+    "version": {{ cu_version | json }},
+    "productId": {{ product.id | json }},
+    "containerId": {{ smart_bundles_container_id | json }},
+    "shopCurrency": {{ shop.currency | json }},
+    "locale": {{ request.locale | default: shop.locale | json }},
+    "currentProduct": {
+      "id": {{ product.id | json }},
+      "title": {{ product.title | json }},
+      "price": {{ product.price | json }},
+      "comparePrice": {{ product.compare_at_price | json }},
+  "image": {{ cu_product_image_url | json }},
+      "handle": {{ product.handle | json }},
+      "variants": {{ product.variants | json }}
+    },
+    "themeSettings": {
+      "bundleTitle": {{ block.settings.bundle_title | default: 'Complete your setup' | json }},
+      "bundleSubtitle": {{ block.settings.bundle_subtitle | json }},
+      "bundleLayout": {{ block.settings.bundle_layout | default: 'horizontal' | json }},
+      "showPlusSeparator": {{ block.settings.show_plus_separator | default: true | json }},
+      "confidenceThreshold": {{ block.settings.confidence_threshold | default: 'medium' | json }},
+      "minBundleProducts": {{ block.settings.min_bundle_products | default: 2 | json }},
+      "maxBundleProducts": {{ block.settings.max_bundle_products | default: 4 | json }},
+      "fallbackBehavior": {{ block.settings.fallback_behavior | default: 'manual' | json }},
+      "showIndividualPrices": {{ block.settings.show_individual_prices | default: true | json }},
+      "autoApplyDiscounts": {{ block.settings.auto_apply_discounts | default: true | json }},
+      "savingsFormat": {{ block.settings.savings_format | default: 'both' | json }},
+      "ctaButtonText": {{ block.settings.cta_button_text | default: 'Add Bundle & Save' | json }},
+  "singleRow": {{ block.settings.single_row | default: false | json }},
+  "allowRemoveItems": {{ block.settings.allow_remove_items | default: false | json }},
+  "discountCode": {{ block.settings.discount_code | json }},
+  "savingsLabel": {% if block.settings.savings_label %}{{ block.settings.savings_label | json }}{% else %}"You save {amount}"{% endif %},
+      "loadingMessage": {{ block.settings.loading_message | default: 'Loading recommendations...' | json }},
+      "emptyMessage": {{ block.settings.empty_message | default: 'No recommendations available at this time' | json }}
+    },
+    "design": {
+      "colors": {
+        "cardBackground": {{ block.settings.card_background | default: '#ffffff' | json }},
+        "textColor": {{ block.settings.text_color | default: '#1a1a1a' | json }},
+        "buttonBackground": {{ block.settings.button_background | default: '#000000' | json }},
+        "buttonTextColor": {{ block.settings.button_text_color | default: '#ffffff' | json }}
+      },
+      "layout": {
+        "borderRadius": {{ block.settings.border_radius | default: 16 | json }},
+        "cardPadding": {{ block.settings.card_padding | default: 30 | json }}
+      }
+    }
+  }{% endcapture %}
+
+  <div id="{{ smart_bundles_container_id }}"
+    class="cart-uplift-smart-bundles smart-bundles-container cu-no-wrap loading"
+       data-config='{{ data_config | strip_newlines }}'
+       data-manual-handles="{{ manual_handles | strip }}">
+    <div class="smart-bundles-loader">
+      <span>{{ block.settings.loading_message | default: 'Loading recommendations...' }}</span>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      try {
+        var container = document.getElementById({{ smart_bundles_container_id | json }});
+        if (!container) return;
+        var cfg = container.dataset.config ? JSON.parse(container.dataset.config) : null;
+        if (!cfg) return;
+        window.CartUpliftSmartBundleQueue = window.CartUpliftSmartBundleQueue || [];
+        window.CartUpliftSmartBundleQueue.push(cfg);
+      } catch (e) {
+        console.warn('[SmartBundles] Bootstrap error:', e);
+      }
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Smart Bundles",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Bundle Display"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_smart_bundles",
+      "label": "Enable Smart Bundles",
+      "default": true,
+      "info": "Show AI-powered product bundles on this product page"
+    },
+    {
+      "type": "text",
+      "id": "bundle_title",
+      "label": "Bundle Title",
+      "default": "Complete your setup",
+      "info": "Title shown above the bundle recommendations"
+    },
+    {
+      "type": "text",
+      "id": "bundle_subtitle",
+      "label": "Bundle Subtitle",
+      "info": "Optional subtitle shown below the title"
+    },
+    {
+      "type": "select",
+      "id": "bundle_layout",
+      "label": "Layout Style",
+      "options": [
+        {
+          "value": "horizontal",
+          "label": "Horizontal (side by side)"
+        },
+        {
+          "value": "vertical",
+          "label": "Vertical (stacked)"
+        }
+      ],
+      "default": "horizontal",
+      "info": "How bundle products are displayed"
+    },
+    {
+      "type": "checkbox",
+      "id": "single_row",
+      "label": "Keep products in a single row (scrollable)",
+      "default": false,
+      "info": "Prevent wrapping to multiple rows; enables horizontal scroll if needed"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_plus_separator",
+      "label": "Show Plus Separators",
+      "default": true,
+      "info": "Show + symbols between items to indicate bundle"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_individual_prices",
+      "label": "Show Individual Prices",
+      "default": true,
+      "info": "Display original price for each product in bundle"
+    },
+    {
+      "type": "checkbox",
+      "id": "allow_remove_items",
+      "label": "Allow customers to remove bundle items",
+      "default": false,
+      "info": "Show a checkbox per item so customers can exclude items (Amazon style)"
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_apply_discounts",
+      "label": "Auto-Apply Bundle Discounts",
+      "default": true,
+      "info": "Automatically apply discounts when adding bundle to cart"
+    },
+    {
+      "type": "select",
+      "id": "savings_format",
+      "label": "Savings Display",
+      "options": [
+        { "value": "percentage", "label": "Percentage only (15% off)" },
+        { "value": "amount", "label": "Dollar amount only (Save $20)" },
+        { "value": "both", "label": "Both (Save $20 / 15% off)" }
+      ],
+      "default": "both",
+      "info": "How to display savings to customers"
+    },
+    {
+      "type": "header",
+      "content": "AI Recommendations"
+    },
+    {
+      "type": "select",
+      "id": "confidence_threshold",
+      "label": "Recommendation Strictness",
+      "options": [
+        {
+          "value": "low",
+          "label": "Flexible – show more bundle ideas"
+        },
+        {
+          "value": "medium",
+          "label": "Balanced – recommended"
+        },
+        {
+          "value": "high",
+          "label": "Selective – only stronger matches"
+        },
+        {
+          "value": "very_high",
+          "label": "Ultra selective – best matches only"
+        }
+      ],
+      "default": "medium",
+      "info": "Choose how picky the AI should be. Stricter levels show fewer bundles but with higher relevance."
+    },
+    {
+      "type": "range",
+      "id": "min_bundle_products",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "label": "Minimum Products in Bundle",
+      "default": 2,
+      "info": "Minimum number of products to show in a bundle"
+    },
+    {
+      "type": "range",
+      "id": "max_bundle_products",
+      "min": 3,
+      "max": 8,
+      "step": 1,
+      "label": "Maximum Products in Bundle",
+      "default": 4,
+      "info": "Maximum number of products to show in a bundle"
+    },
+    {
+      "type": "product_list",
+      "id": "manual_bundle_products",
+      "label": "Manual Fallback Bundle",
+      "limit": 8,
+      "info": "These products show when AI has no recommendations"
+    },
+    {
+      "type": "select",
+      "id": "fallback_behavior",
+      "label": "When No AI Bundles Found",
+      "options": [
+        {
+          "value": "manual",
+          "label": "Show manual products above"
+        },
+        {
+          "value": "hide",
+          "label": "Hide this block completely"
+        },
+        {
+          "value": "empty",
+          "label": "Show empty state message"
+        }
+      ],
+      "default": "manual",
+      "info": "What to do when AI can't find good bundles"
+    },
+    {
+      "type": "header",
+      "content": "Text & Copy"
+    },
+    {
+      "type": "text",
+      "id": "cta_button_text",
+      "label": "Add to Cart Button Text",
+      "default": "Add Bundle & Save",
+      "info": "Text shown on the main bundle button"
+    },
+    {
+      "type": "text",
+      "id": "discount_code",
+      "label": "Discount code to apply",
+      "info": "Optional discount code to apply when adding the bundle"
+    },
+    {
+      "type": "text",
+      "id": "savings_label",
+      "label": "Savings Label Template",
+      "default": "You save {amount}",
+      "info": "Use {amount} as placeholder for discount value"
+    },
+    {
+      "type": "text",
+      "id": "loading_message",
+      "label": "Loading Message",
+      "default": "Loading recommendations...",
+      "info": "Message shown while fetching bundles"
+    },
+    {
+      "type": "text",
+      "id": "empty_message",
+      "label": "No Bundles Message",
+      "default": "No recommendations available at this time",
+      "info": "Message when no bundles can be shown"
+    },
+    {
+      "type": "header",
+      "content": "Visual Styling"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Card Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Button Background Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Corner Radius",
+      "default": 16,
+      "info": "Roundness of cards and buttons"
+    },
+    {
+      "type": "range",
+      "id": "card_padding",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Card Padding",
+  "default": 30,
+      "info": "Space inside bundle cards"
+    },
+    { "type": "header", "content": "End of Settings" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,376 @@
+// Single Prisma schema - Production PostgreSQL
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+}
+
+model Settings {
+  id                      String   @id @default(cuid())
+  shop                    String   @unique
+  
+  // Core Features
+  enableApp               Boolean  @default(true)
+  showOnlyOnCartPage      Boolean  @default(false)
+  autoOpenCart            Boolean  @default(true)
+  enableFreeShipping      Boolean  @default(false)
+  freeShippingThreshold   Float    @default(0)
+  
+  // Advanced Features
+  enableRecommendations   Boolean  @default(false)
+  enableAddons            Boolean  @default(false)
+  enableDiscountCode      Boolean  @default(true)
+  enableNotes             Boolean  @default(false)
+  enableExpressCheckout   Boolean  @default(true)
+  enableAnalytics         Boolean  @default(false)
+  // Dev-only fields for title case options
+  enableRecommendationTitleCaps Boolean @default(false)
+  // Dev-only toggle in dev schema; safe to keep for prod alignment
+  
+  // Cart Behavior & Position
+  cartIcon                String   @default("cart")
+  
+  // Messages & Text
+  freeShippingText        String   @default("You're {amount} away from free shipping!")
+  freeShippingAchievedText String  @default("🎉 Congratulations! You've unlocked free shipping!")
+  recommendationsTitle    String   @default("You might also like")
+  actionText              String   @default("Add discount code")
+  addButtonText           String   @default("Add")
+  checkoutButtonText      String   @default("CHECKOUT")
+  applyButtonText         String   @default("Apply")
+  // Optional link texts (present in dev schema)
+  discountLinkText        String   @default("+ Got a promotion code?")
+  notesLinkText           String   @default("+ Add order notes")
+  
+  // Appearance
+  backgroundColor         String   @default("#ffffff")
+  textColor               String   @default("#1A1A1A")
+  buttonColor             String   @default("#000000")
+  buttonTextColor         String   @default("#ffffff")
+  recommendationsBackgroundColor String @default("#ecebe3")
+  shippingBarBackgroundColor String @default("#f0f0f0")
+  shippingBarColor        String   @default("#121212")
+  
+  // Recommendation Settings
+  recommendationLayout    String   @default("horizontal")
+  maxRecommendations      Int      @default(6)
+  maxRecommendationProducts Int    @default(4)
+  complementDetectionMode String   @default("automatic")
+  manualRecommendationProducts String @default("")
+  
+  // Progress Bar System
+  progressBarMode         String   @default("free-shipping") // "free-shipping", "gift-gating", "combined"
+  enableGiftGating        Boolean  @default(false)
+  giftProgressStyle       String   @default("single-next") // "stacked", "single-multi", "single-next"
+  giftThresholds          String   @default("[]") // JSON array of gift thresholds
+
+  // Legacy and UI fields used in dev schema (safe as additive columns)
+  giftNoticeText          String   @default("Free gift added: {{product}} (worth {{amount}})")
+  giftPriceText           String   @default("FREE")
+
+  // ML/Privacy Settings (required for AI Personalization section)
+  mlPersonalizationMode   String   @default("basic")
+  enableMLRecommendations Boolean  @default(false)
+  mlPrivacyLevel          String   @default("basic")
+  enableAdvancedPersonalization Boolean @default(false)
+  enableBehaviorTracking  Boolean  @default(false)
+  mlDataRetentionDays     String   @default("30")
+  hideRecommendationsAfterThreshold Boolean @default(false)
+  enableThresholdBasedSuggestions Boolean @default(false)
+  thresholdSuggestionMode String   @default("smart")
+  enableManualRecommendations Boolean @default(false)
+
+  // Smart Bundle Settings
+  enableSmartBundles      Boolean  @default(false)
+  bundlesOnProductPages   Boolean  @default(true)
+  bundlesInCartDrawer     Boolean  @default(false)
+  bundlesOnCollectionPages Boolean @default(false)
+  bundlesOnCartPage       Boolean  @default(false)
+  bundlesOnCheckoutPage   Boolean  @default(false)
+  defaultBundleDiscount   String   @default("15")
+  bundleTitleTemplate     String   @default("Complete your setup")
+  bundleDiscountPrefix    String   @default("BUNDLE")
+  bundleConfidenceThreshold String @default("medium")
+  bundleSavingsFormat     String   @default("both")
+  showIndividualPricesInBundle Boolean @default(true)
+  autoApplyBundleDiscounts Boolean @default(true)
+
+  // Theme App Embed Status
+  themeEmbedEnabled       Boolean  @default(false)
+  themeEmbedLastSeen      DateTime?
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// Bundle Management System
+model Bundle {
+  id              String   @id @default(cuid())
+  shop            String
+  name            String
+  description     String?
+  type            String   // "manual", "category", "ai_suggested" 
+  status          String   @default("draft") // "draft", "active", "paused"
+  
+  // Discount Configuration
+  discountType    String   @default("percentage") // "percentage", "fixed"
+  discountValue   Float    @default(0)
+  
+  // Bundle Rules
+  categoryIds     String?  // JSON array of category IDs for category bundles
+  productIds      String   // JSON array of product IDs
+  minProducts     Int      @default(2) // Minimum products required for bundle
+  maxProducts     Int?     // Maximum products allowed (null = unlimited)
+  
+  // AI Bundle Settings
+  aiAutoApprove   Boolean  @default(false) // Auto-show AI bundles or require approval
+  aiDiscountMax   Float?   // Maximum discount AI can apply
+  
+  // Performance Tracking
+  totalViews      Int      @default(0)
+  totalAddToCart  Int      @default(0) 
+  totalPurchases  Int      @default(0)
+  totalRevenue    Float    @default(0)
+  
+  // Bundle Configuration
+  displayTitle    String?  // Custom title for storefront
+  displayRules    String?  // JSON: display conditions, triggers, etc.
+  
+  // NEW FIELDS - Product-specific assignment & display styles
+  assignedProducts String?  // JSON array: ["gid://shopify/Product/123", "456"] - where to show bundle
+  bundleStyle     String   @default("grid") // "grid" | "fbt" | "tier" - display style
+  
+  // Category selection (Choose X from Y)
+  selectMinQty    Int?     // Minimum items to select (e.g., "Choose 5")
+  selectMaxQty    Int?     // Maximum items to select (e.g., "from 20")
+  
+  // Quantity tier pricing (Buy more, save more)
+  tierConfig      String?  // JSON: [{qty: 1, discount: 0}, {qty: 2, discount: 10}, {qty: 5, discount: 20}]
+  
+  // FBT (Frequently Bought Together) settings
+  allowDeselect   Boolean  @default(true)  // Can users uncheck items in FBT view?
+  mainProductId   String?  // The anchor/current product in FBT bundle
+  
+  // Display control
+  hideIfNoML      Boolean  @default(false) // Hide bundle if ML doesn't find recommendations
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  bundles         BundleProduct[]
+  
+  @@index([shop])
+  @@index([shop, status])
+}
+
+model BundleProduct {
+  id         String   @id @default(cuid())
+  bundleId   String
+  productId  String   // Shopify product ID
+  variantId  String?  // Specific variant ID (optional)
+  position   Int      @default(0) // Order in bundle
+  required   Boolean  @default(false) // Required vs optional product
+  
+  // Product metadata (cached for performance)
+  productTitle  String?
+  productHandle String?
+  productPrice  Float?
+  
+  // NEW FIELDS - Enhanced bundle product control
+  isRemovable   Boolean  @default(true)  // Can user uncheck/remove in FBT/grid view?
+  isAnchor      Boolean  @default(false) // Main/current product in bundle (always included)
+  tierPricing   String?  // JSON: Product-specific tier overrides (optional)
+  
+  createdAt  DateTime @default(now())
+  
+  // Relations  
+  bundle     Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  
+  @@index([bundleId])
+  @@index([productId])
+}
+
+// Customer Bundle Interactions
+model CustomerBundle {
+  id           String   @id @default(cuid())
+  shop         String
+  customerId   String?  // Shopify customer ID (null for anonymous)
+  bundleId     String
+  sessionId    String?  // For anonymous tracking
+  
+  action       String   // "view", "add_to_cart", "purchase"
+  cartValue    Float?   // Cart value when action occurred
+  discountApplied Float? // Actual discount applied
+  
+  createdAt    DateTime @default(now())
+  
+  @@index([shop])
+  @@index([bundleId])
+  @@index([customerId])
+}
+
+// A/B Testing Models (keep in sync with development schema)
+enum ExperimentStatus {
+  running
+  completed
+  paused
+}
+
+enum ExperimentType {
+  discount
+  bundle
+  shipping
+  upsell
+}
+
+enum AttributionWindow {
+  session @map("session")
+  hours24 @map("24h")
+  days7 @map("7d")
+}
+
+enum EventType {
+  assignment
+  exposure
+  conversion
+}
+
+model Experiment {
+  id              Int                @id @default(autoincrement())
+  shopId          String             @map("shop_id")
+  name            String
+  type            ExperimentType     @default(discount)
+  status          ExperimentStatus   @default(running)
+  startDate       DateTime?          @map("start_date")
+  endDate         DateTime?          @map("end_date")
+  activeVariantId Int?               @map("active_variant_id")
+  attribution     AttributionWindow  @default(session)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  variants Variant[]
+  events   Event[]
+
+  @@map("ab_experiments")
+}
+
+model Variant {
+  id           Int       @id @default(autoincrement())
+  experimentId Int       @map("experiment_id")
+  name         String
+  isControl    Boolean   @default(false) @map("is_control")
+  value        Decimal   @default(0.0) @map("value")
+  valueFormat  String    @default("percent") @map("value_format") // "percent" | "currency" | "number"
+  trafficPct   Decimal   @default(50.0) @map("traffic_pct")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  experiment Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  events     Event[]
+
+  @@map("ab_variants")
+}
+
+model Event {
+  id           Int       @id @default(autoincrement())
+  type         EventType
+  experimentId Int       @map("experiment_id")
+  variantId    Int?      @map("variant_id")
+  unitId       String    @map("unit_id")
+  amount       Decimal?  @map("amount")
+  currency     String?   @map("currency")
+  occurredAt   DateTime  @default(now()) @map("occurred_at")
+  metadata     Json?
+
+  experiment Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  variant    Variant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([experimentId, variantId, occurredAt(sort: Desc)])
+  @@index([type, occurredAt(sort: Desc)])
+  @@map("ab_events")
+}
+
+// Analytics Events for Dashboard (separate from AB testing)
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  shop        String
+  eventType   String   // cart_view | cart_abandon | purchase | bundle_impression | bundle_click | bundle_conversion
+  sessionId   String?  // Anonymous session tracking
+  customerId  String?  // Shopify customer ID if logged in
+  
+  // Order/Revenue tracking
+  orderId     String?  // Shopify order ID
+  orderValue  Decimal? // Total order value
+  currency    String?  @default("USD")
+  
+  // Bundle tracking
+  bundleId    String?  // Reference to Bundle.id
+  productIds  String?  // JSON array of product IDs in cart/bundle
+  
+  // Page context
+  pageUrl     String?
+  referrer    String?
+  userAgent   String?
+  
+  // Timestamps
+  timestamp   DateTime @default(now())
+  
+  // Additional metadata
+  metadata    Json?    // Flexible field for extra data
+  
+  @@index([shop, timestamp(sort: Desc)])
+  @@index([shop, eventType, timestamp(sort: Desc)])
+  @@index([bundleId, timestamp(sort: Desc)])
+  @@index([sessionId, timestamp(sort: Desc)])
+  @@map("analytics_events")
+}
+
+// Recommendation tracking for ML/cart suggestions
+model TrackingEvent {
+  id            String   @id @default(cuid())
+  shop          String
+  event         String   // "impression" | "click" | "add_to_cart" | "purchase"
+  productId     String
+  productTitle  String?
+  sessionId     String?
+  customerId    String?
+  
+  // Revenue tracking
+  revenueCents  Int?     // Revenue in cents to avoid decimal issues
+  currency      String?  @default("USD")
+  orderId       String?
+  
+  // Context
+  source        String?  // "cart_drawer" | "product_page" | "bundle" | "ml_recommendation"
+  position      Int?     // Position in recommendation list
+  metadata      Json?    // Additional context
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([shop, createdAt(sort: Desc)])
+  @@index([shop, event, createdAt(sort: Desc)])
+  @@index([productId, createdAt(sort: Desc)])
+  @@index([sessionId, createdAt(sort: Desc)])
+  @@map("tracking_events")
+}
