@@ -171,6 +171,12 @@ export default function Index() {
           gap: 20px;
         }
 
+        .grid-3 {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
         .pricing-card {
           padding: 40px;
           border-radius: 16px;
@@ -443,10 +449,10 @@ export default function Index() {
               </Text>
             </div>
 
-            <div className="grid-2">
+            <div className="grid-3">
               {/* Growth Plan */}
               <div className="pricing-card featured">
-                <div className="pricing-badge">MOST POPULAR</div>
+                <div className="pricing-badge">RECOMMENDED</div>
                 <BlockStack gap="300">
                   <div>
                     <Text as="h3" variant="headingLg" fontWeight="bold">
@@ -457,11 +463,15 @@ export default function Index() {
                       <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                     </div>
                     <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                      Up to 1,000 orders per month
+                      Up to 500 orders per month
                     </Text>
                   </div>
 
                   <div className="pricing-features">
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">14-day free trial included</Text>
+                    </div>
                     <div className="pricing-feature-item">
                       <span className="pricing-checkmark">✓</span>
                       <Text as="p" variant="bodyMd">AI-powered personalized recommendations</Text>
@@ -492,9 +502,11 @@ export default function Index() {
                     </div>
                   </div>
 
-                  <Button size="large" variant="primary" fullWidth>
-                    Start Free Trial
-                  </Button>
+                  <div className="pricing-button-wrapper">
+                    <Button size="large" variant="primary" fullWidth>
+                      Start Free Trial
+                    </Button>
+                  </div>
                 </BlockStack>
               </div>
 
@@ -517,6 +529,10 @@ export default function Index() {
                   <div className="pricing-features">
                     <div className="pricing-feature-item">
                       <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">14-day free trial included</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
                       <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Growth, plus:</Text>
                     </div>
                     <div className="pricing-feature-item">
@@ -537,16 +553,24 @@ export default function Index() {
                     </div>
                   </div>
 
-                  <Button size="large" fullWidth>
-                    Upgrade to Pro
-                  </Button>
+                  <div className="pricing-button-wrapper">
+                    <Button size="large" fullWidth>
+                      Upgrade to Pro
+                    </Button>
+                  </div>
                 </BlockStack>
               </div>
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '16px' }}>
               <Text as="p" variant="bodyMd" tone="subdued">
-                💡 All plans include 14-day free trial • Cancel anytime • No credit card required
+                💡 Average ROI: 123x • Most merchants make back their investment in the first week
+              </Text>
+              <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                ✓ No setup fees • No hidden charges • No per-order fees • Cancel anytime
+              </Text>
+              <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                🔒 You control your data • Choose what the AI uses • Privacy-first approach
               </Text>
             </div>
           </BlockStack>
