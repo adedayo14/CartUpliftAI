@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
+import { checkOrderLimit, incrementOrderCount } from "../services/orderCounter.server";
 // Note: This endpoint is called from the storefront (unauthenticated). Do not require admin auth.
 
 interface CartEvent {
@@ -30,6 +31,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const productId = formData.get("productId") as string | null;
     const productTitle = formData.get("productTitle") as string | null;
     const revenue = formData.get("revenue") ? parseFloat(formData.get("revenue") as string) : null;
+
+    // Check order limits before processing checkout events
+    if (eventType === "checkout_initiated" && shopFromBody) {
+      const limitCheck = await checkOrderLimit(shopFromBody);
+      
+      if (!limitCheck.allowed) {
+        return json({ 
+          success: false,
+          error: "ORDER_LIMIT_REACHED",
+          message: "You've reached your plan's order limit. Please upgrade to continue.",
+          remaining: limitCheck.remaining,
+          plan: limitCheck.plan
+        }, { 
+          status: 403,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          }
+        });
+      }
+
+      // Increment order count for checkout events
+      await incrementOrderCount(shopFromBody);
+    }
 
     const cartEvent: CartEvent = {
       eventType,

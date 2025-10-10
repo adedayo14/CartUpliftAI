@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useFetcher } from "@remix-run/react";
+import { useState, useEffect } from "react";
 import {
   Page,
   Button,
@@ -8,6 +9,7 @@ import {
   InlineStack,
   Text,
   Badge,
+  Banner,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -52,11 +54,58 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Index() {
   const { shop, currentThemeId, hasSettings } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
+  const [subscribing, setSubscribing] = useState<string | null>(null);
 
   const shopHandle = (shop || '').replace('.myshopify.com', '');
   const themeEditorUrl = currentThemeId
     ? `https://admin.shopify.com/store/${shopHandle}/themes/${currentThemeId}/editor?context=apps`
     : `https://admin.shopify.com/store/${shopHandle}/themes/current/editor?context=apps`;
+
+  // Handle subscription flow
+  const handleSubscribe = async (plan: string) => {
+    setSubscribing(plan);
+    
+    const formData = new FormData();
+    formData.append("plan", plan);
+    
+    fetcher.submit(formData, {
+      method: "post",
+      action: "/api/billing/subscribe",
+    });
+  };
+
+  // Handle subscription response
+  useEffect(() => {
+    if (fetcher.data) {
+      const data = fetcher.data as { success?: boolean; confirmationUrl?: string; error?: string };
+      
+      if (data.success && data.confirmationUrl) {
+        // Redirect to Shopify billing confirmation
+        window.top!.location.href = data.confirmationUrl;
+      } else if (data.error) {
+        console.error("Subscription error:", data.error);
+        setSubscribing(null);
+      }
+    }
+  }, [fetcher.data]);
+
+  // Check for billing status in URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const billingStatus = url.searchParams.get("billing");
+    
+    if (billingStatus === "success") {
+      shopify.toast.show("Subscription activated successfully! 🎉");
+      // Clean up URL
+      url.searchParams.delete("billing");
+      window.history.replaceState({}, '', url.toString());
+    } else if (billingStatus === "error") {
+      shopify.toast.show("Failed to activate subscription. Please try again.", { isError: true });
+      url.searchParams.delete("billing");
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
 
   return (
     <>
@@ -506,7 +555,12 @@ export default function Index() {
                 </div>
 
                 <div className="pricing-button-wrapper">
-                  <Button size="large" fullWidth>
+                  <Button 
+                    size="large" 
+                    fullWidth
+                    onClick={() => handleSubscribe('starter')}
+                    loading={subscribing === 'starter'}
+                  >
                     Start Free Trial
                   </Button>
                 </div>
@@ -552,7 +606,13 @@ export default function Index() {
                 </div>
 
                 <div className="pricing-button-wrapper">
-                  <Button size="large" variant="primary" fullWidth>
+                  <Button 
+                    size="large" 
+                    variant="primary" 
+                    fullWidth
+                    onClick={() => handleSubscribe('growth')}
+                    loading={subscribing === 'growth'}
+                  >
                     Upgrade to Growth
                   </Button>
                 </div>
@@ -601,7 +661,12 @@ export default function Index() {
                 </div>
 
                 <div className="pricing-button-wrapper">
-                  <Button size="large" fullWidth>
+                  <Button 
+                    size="large" 
+                    fullWidth
+                    onClick={() => handleSubscribe('pro')}
+                    loading={subscribing === 'pro'}
+                  >
                     Upgrade to Pro
                   </Button>
                 </div>
