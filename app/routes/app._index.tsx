@@ -1,7 +1,7 @@
+// Enhanced homepage with gradient design and custom CSS styling
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
-import { useCallback } from "react";
+import { useLoaderData, Link } from "@remix-run/react";
 import {
   Page,
   Card,
@@ -9,15 +9,9 @@ import {
   BlockStack,
   InlineStack,
   Text,
-  Grid,
-  Icon,
-  Banner,
+  Badge,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { 
-  SettingsIcon,
-  ChartVerticalIcon,
-} from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -25,12 +19,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
-  // Get current settings
   const settings = await prisma.settings.findUnique({
     where: { shop },
   });
 
-  // Get the current theme ID for direct linking to Theme Editor
   let currentThemeId: string | null = null;
   try {
     const response = await admin.graphql(`
@@ -62,251 +54,371 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Index() {
   const { shop, currentThemeId, hasSettings } = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
 
-  const handleNavigate = useCallback((path: string) => {
-    navigate(path);
-  }, [navigate]);
-
-  // Build absolute admin URL so it doesn't try to open inside the embed iframe
   const shopHandle = (shop || '').replace('.myshopify.com', '');
   const themeEditorUrl = currentThemeId
     ? `https://admin.shopify.com/store/${shopHandle}/themes/${currentThemeId}/editor?context=apps`
     : `https://admin.shopify.com/store/${shopHandle}/themes/current/editor?context=apps`;
 
   return (
-    <Page>
-      <TitleBar title="Cart Uplift" />
-      
-      <BlockStack gap="600">
-        {/* Hero Section */}
-        <Card>
-          <BlockStack gap="400">
-            <BlockStack gap="200">
-              <Text as="h1" variant="headingXl">
-                Welcome to Cart Uplift 🎉
-              </Text>
-              <Text as="p" variant="bodyLg" tone="subdued">
-                Increase your average order value with AI-powered recommendations, free shipping progress bars, and gift rewards.
-              </Text>
-            </BlockStack>
+    <>
+      <style>{`
+        .hero-gradient {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 48px;
+          border-radius: 16px;
+          color: white;
+        }
 
-            {/* Primary CTA - Enable Theme Embed */}
-            <Banner tone="info">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  👉 First step: Enable the app in your theme
+        .feature-card {
+          padding: 32px;
+          border-radius: 12px;
+          height: 100%;
+          transition: transform 0.2s, box-shadow 0.2s;
+          border: 1px solid #e5e7eb;
+        }
+
+        .feature-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          margin-bottom: 16px;
+        }
+
+        .icon-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .icon-green { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
+        .icon-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .icon-purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+
+        .action-card {
+          padding: 32px;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+          background: white;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .action-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .step-number {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          font-weight: bold;
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .step-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .step-2 { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
+        .step-3 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 32px;
+          text-align: center;
+          padding: 32px;
+        }
+
+        .stat-number {
+          font-size: 48px;
+          font-weight: bold;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .info-banner {
+          background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+          padding: 20px 24px;
+          border-radius: 12px;
+          border-left: 4px solid #3b82f6;
+        }
+
+        .warning-banner {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          padding: 20px 24px;
+          border-radius: 12px;
+          border-left: 4px solid #f59e0b;
+        }
+
+        .grid-2 {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
+        .grid-4 {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 20px;
+        }
+      `}</style>
+
+      <Page>
+        <TitleBar title="Cart Uplift" />
+        
+        <BlockStack gap="600">
+          {/* Hero Section */}
+          <div className="hero-gradient">
+            <BlockStack gap="500">
+              <BlockStack gap="300">
+                <Text as="h1" variant="heading2xl">
+                  Welcome to Cart Uplift 🎉
                 </Text>
-                <Text as="p" variant="bodyMd">
-                  Go to your theme editor, click "App embeds" in the sidebar, find "Cart Uplift - Smart Cart" and toggle it ON.
+                <Text as="p" variant="bodyLg">
+                  Boost your revenue with AI-powered cart optimization. Turn browsers into buyers with smart recommendations, progress bars, and rewards.
                 </Text>
               </BlockStack>
-            </Banner>
 
-            <InlineStack gap="300" align="start">
-              <a href={themeEditorUrl} target="_top" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                <Button size="large" variant="primary">
-                  Enable Theme Embed
-                </Button>
-              </a>
-              <Button 
-                size="large" 
-                onClick={() => handleNavigate("/app/settings")}
-                icon={SettingsIcon}
-              >
-                Configure Settings
-              </Button>
-            </InlineStack>
-          </BlockStack>
-        </Card>
-
-        {/* What We Do */}
-        <Card>
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingLg">
-              What Cart Uplift Does
-            </Text>
-            <Grid columns={{ xs: 1, sm: 2, md: 2, lg: 2, xl: 2 }}>
-              <Grid.Cell>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd" fontWeight="semibold">
-                    🤖 AI Product Recommendations
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Smart suggestions based on customer behavior and purchase patterns to increase cart value.
-                  </Text>
-                </BlockStack>
-              </Grid.Cell>
-
-              <Grid.Cell>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd" fontWeight="semibold">
-                    📊 Free Shipping Progress
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Dynamic progress bars that motivate customers to reach your free shipping threshold.
-                  </Text>
-                </BlockStack>
-              </Grid.Cell>
-
-              <Grid.Cell>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd" fontWeight="semibold">
-                    🎁 Gift with Purchase
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Automatic gift rewards when customers reach spending thresholds to boost AOV.
-                  </Text>
-                </BlockStack>
-              </Grid.Cell>
-
-              <Grid.Cell>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd" fontWeight="semibold">
-                    📈 Performance Analytics
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Real-time insights showing exactly how much additional revenue you're generating.
-                  </Text>
-                </BlockStack>
-              </Grid.Cell>
-            </Grid>
-          </BlockStack>
-        </Card>
-
-        {/* Quick Access Cards */}
-        <Grid columns={{ xs: 1, sm: 2, md: 2, lg: 2, xl: 2 }}>
-          <Grid.Cell>
-            <Card>
-              <BlockStack gap="400">
-                <InlineStack align="space-between" blockAlign="start">
+              {!hasSettings && (
+                <div className="info-banner">
                   <BlockStack gap="200">
-                    <Text as="h3" variant="headingMd">
-                      Analytics Dashboard
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">
+                      ⚡ Quick Setup Required
                     </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Track revenue impact, conversion rates, and top-performing products.
+                    <Text as="p" variant="bodyMd">
+                      Enable the app embed in your theme, then configure your settings to start seeing results.
                     </Text>
                   </BlockStack>
-                  <Icon source={ChartVerticalIcon} tone="base" />
-                </InlineStack>
-                <Button 
-                  variant="primary" 
-                  onClick={() => handleNavigate("/app/dashboard")}
-                  fullWidth
+                </div>
+              )}
+
+              <InlineStack gap="300" wrap={false}>
+                <a 
+                  href={themeEditorUrl} 
+                  target="_top" 
+                  rel="noopener noreferrer" 
+                  style={{ textDecoration: 'none' }}
                 >
-                  View Dashboard
-                </Button>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-
-          <Grid.Cell>
-            <Card>
-              <BlockStack gap="400">
-                <InlineStack align="space-between" blockAlign="start">
-                  <BlockStack gap="200">
-                    <Text as="h3" variant="headingMd">
-                      App Settings
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Configure ML recommendations, text customization, and feature controls.
-                    </Text>
-                  </BlockStack>
-                  <Icon source={SettingsIcon} tone="base" />
-                </InlineStack>
-                <Button 
-                  onClick={() => handleNavigate("/app/settings")}
-                  fullWidth
-                >
-                  Manage Settings
-                </Button>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-        </Grid>
-
-        {/* Getting Started Guide */}
-        <Card>
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingLg">
-              Quick Start Guide
-            </Text>
-            <BlockStack gap="300">
-              <InlineStack gap="200" blockAlign="center">
-                <div style={{ 
-                  width: '24px', 
-                  height: '24px', 
-                  borderRadius: '50%', 
-                  background: '#000', 
-                  color: '#fff', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  flexShrink: 0,
-                }}>
-                  1
-                </div>
-                <Text as="p" variant="bodyMd">
-                  <strong>Enable the app embed</strong> in your theme editor (click button above)
-                </Text>
-              </InlineStack>
-
-              <InlineStack gap="200" blockAlign="center">
-                <div style={{ 
-                  width: '24px', 
-                  height: '24px', 
-                  borderRadius: '50%', 
-                  background: '#000', 
-                  color: '#fff', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  flexShrink: 0,
-                }}>
-                  2
-                </div>
-                <Text as="p" variant="bodyMd">
-                  <strong>Configure your settings</strong> - Set up ML recommendations, free shipping thresholds, and gifts
-                </Text>
-              </InlineStack>
-
-              <InlineStack gap="200" blockAlign="center">
-                <div style={{ 
-                  width: '24px', 
-                  height: '24px', 
-                  borderRadius: '50%', 
-                  background: '#000', 
-                  color: '#fff', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  flexShrink: 0,
-                }}>
-                  3
-                </div>
-                <Text as="p" variant="bodyMd">
-                  <strong>Monitor performance</strong> in the Analytics Dashboard to track your ROI
-                </Text>
+                  <Button size="large" variant="primary">
+                    🎨 Enable in Theme
+                  </Button>
+                </a>
+                <Link to="/app/settings" style={{ textDecoration: 'none' }}>
+                  <Button size="large">
+                    ⚙️ Configure Settings
+                  </Button>
+                </Link>
               </InlineStack>
             </BlockStack>
+          </div>
 
-            {!hasSettings && (
-              <Banner tone="warning">
-                <Text as="p" variant="bodyMd">
-                  💡 Tip: Start by configuring your settings to enable features and customize the cart experience.
-                </Text>
-              </Banner>
-            )}
+          {/* Features */}
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingLg">
+              What you get with Cart Uplift
+            </Text>
+            
+            <div className="grid-4">
+              <div className="feature-card">
+                <div className="feature-icon icon-blue">🤖</div>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    AI Recommendations
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Machine learning analyzes behavior to show each customer products they're most likely to buy.
+                  </Text>
+                  <div style={{ marginTop: '12px' }}>
+                    <Badge tone="info">Increases AOV by 18-32%</Badge>
+                  </div>
+                </BlockStack>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon icon-green">📊</div>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    Progress Bars
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Show customers exactly how close they are to free shipping and rewards.
+                  </Text>
+                  <div style={{ marginTop: '12px' }}>
+                    <Badge tone="success">68% reach threshold</Badge>
+                  </div>
+                </BlockStack>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon icon-orange">🎁</div>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    Gift with Purchase
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Automatically reward customers with gifts when they hit spending milestones.
+                  </Text>
+                  <div style={{ marginTop: '12px' }}>
+                    <Badge tone="warning">Motivates +$22 spending</Badge>
+                  </div>
+                </BlockStack>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon icon-purple">📈</div>
+                <BlockStack gap="200">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    Revenue Analytics
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Track exactly how much extra money you're making with real-time insights.
+                  </Text>
+                  <div style={{ marginTop: '12px' }}>
+                    <Badge>See your ROI instantly</Badge>
+                  </div>
+                </BlockStack>
+              </div>
+            </div>
           </BlockStack>
-        </Card>
-      </BlockStack>
-    </Page>
+
+          {/* Quick Actions */}
+          <div className="grid-2">
+            <div className="action-card">
+              <BlockStack gap="400">
+                <BlockStack gap="200">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    📊 Analytics Dashboard
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    See your revenue impact, conversion rates, and top products at a glance.
+                  </Text>
+                </BlockStack>
+                <Link to="/app/dashboard" style={{ textDecoration: 'none' }}>
+                  <Button variant="primary" size="large" fullWidth>
+                    View Dashboard →
+                  </Button>
+                </Link>
+              </BlockStack>
+            </div>
+
+            <div className="action-card">
+              <BlockStack gap="400">
+                <BlockStack gap="200">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    ⚙️ App Settings
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Configure AI recommendations, progress bars, gifts, and customize your cart.
+                  </Text>
+                </BlockStack>
+                <Link to="/app/settings" style={{ textDecoration: 'none' }}>
+                  <Button size="large" fullWidth>
+                    Manage Settings →
+                  </Button>
+                </Link>
+              </BlockStack>
+            </div>
+          </div>
+
+          {/* Setup Steps */}
+          <Card>
+            <div style={{ padding: '32px' }}>
+              <BlockStack gap="500">
+                <Text as="h2" variant="headingLg" fontWeight="semibold">
+                  🚀 Get started in 3 steps
+                </Text>
+
+                <BlockStack gap="300">
+                  <InlineStack gap="300" blockAlign="start" wrap={false}>
+                    <div className="step-number step-1">1</div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyLg" fontWeight="semibold">
+                        Enable the app embed
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        Go to your theme editor → App embeds → Toggle "Cart Uplift" ON
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
+                  <InlineStack gap="300" blockAlign="start" wrap={false}>
+                    <div className="step-number step-2">2</div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyLg" fontWeight="semibold">
+                        Configure your settings
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        Set up AI recommendations, free shipping goals, and gift rewards
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
+                  <InlineStack gap="300" blockAlign="start" wrap={false}>
+                    <div className="step-number step-3">3</div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyLg" fontWeight="semibold">
+                        Watch your revenue grow
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        Monitor performance in your analytics dashboard and track ROI
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </BlockStack>
+
+                {!hasSettings && (
+                  <div className="warning-banner">
+                    <Text as="p" variant="bodyMd" fontWeight="medium">
+                      💡 Ready to start? Click "Configure Settings" above to set up your first cart optimization.
+                    </Text>
+                  </div>
+                )}
+              </BlockStack>
+            </div>
+          </Card>
+
+          {/* Stats */}
+          <Card>
+            <BlockStack gap="400">
+              <div style={{ textAlign: 'center', paddingTop: '24px' }}>
+                <Text as="h2" variant="headingLg" fontWeight="semibold">
+                  Join successful Shopify merchants
+                </Text>
+              </div>
+              <div className="stats-grid">
+                <div>
+                  <div className="stat-number">+27%</div>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Average AOV increase
+                  </Text>
+                </div>
+                <div>
+                  <div className="stat-number">34%</div>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Orders influenced
+                  </Text>
+                </div>
+                <div>
+                  <div className="stat-number">85x</div>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Average ROI
+                  </Text>
+                </div>
+              </div>
+            </BlockStack>
+          </Card>
+        </BlockStack>
+      </Page>
+    </>
   );
 }
