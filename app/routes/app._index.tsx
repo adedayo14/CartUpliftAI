@@ -185,6 +185,7 @@ export default function Index() {
           transition: transform 0.2s, box-shadow 0.2s;
           display: flex;
           flex-direction: column;
+          height: 100%;
         }
 
         .pricing-card:hover {
@@ -222,6 +223,10 @@ export default function Index() {
         .pricing-features {
           flex: 1;
           margin: 24px 0;
+        }
+
+        .pricing-button-wrapper {
+          margin-top: auto;
         }
 
         .pricing-feature-item {
@@ -451,8 +456,7 @@ export default function Index() {
 
             <div className="grid-3">
               {/* Growth Plan */}
-              <div className="pricing-card featured">
-                <div className="pricing-badge">RECOMMENDED</div>
+              <div className="pricing-card">
                 <BlockStack gap="300">
                   <div>
                     <Text as="h3" variant="headingLg" fontWeight="bold">
@@ -498,31 +502,32 @@ export default function Index() {
                     </div>
                     <div className="pricing-feature-item">
                       <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Email support</Text>
+                      <Text as="p" variant="bodyMd">Email support (24-48hr)</Text>
                     </div>
                   </div>
 
                   <div className="pricing-button-wrapper">
-                    <Button size="large" variant="primary" fullWidth>
+                    <Button size="large" fullWidth>
                       Start Free Trial
                     </Button>
                   </div>
                 </BlockStack>
               </div>
 
-              {/* Pro Plan */}
-              <div className="pricing-card">
+              {/* Pro Plan - Featured */}
+              <div className="pricing-card featured">
+                <div className="pricing-badge">RECOMMENDED</div>
                 <BlockStack gap="300">
                   <div>
                     <Text as="h3" variant="headingLg" fontWeight="bold">
                       Pro
                     </Text>
                     <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span className="pricing-price">$99</span>
+                      <span className="pricing-price">$79</span>
                       <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                     </div>
                     <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                      Unlimited orders
+                      Up to 2,000 orders per month
                     </Text>
                   </div>
 
@@ -537,11 +542,11 @@ export default function Index() {
                     </div>
                     <div className="pricing-feature-item">
                       <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Unlimited orders (no monthly limit)</Text>
+                      <Text as="p" variant="bodyMd">Higher order capacity (2,000/month)</Text>
                     </div>
                     <div className="pricing-feature-item">
                       <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Priority email support (faster response)</Text>
+                      <Text as="p" variant="bodyMd">Priority email support (12-24hr)</Text>
                     </div>
                     <div className="pricing-feature-item">
                       <span className="pricing-checkmark">✓</span>
@@ -554,8 +559,59 @@ export default function Index() {
                   </div>
 
                   <div className="pricing-button-wrapper">
-                    <Button size="large" fullWidth>
+                    <Button size="large" variant="primary" fullWidth>
                       Upgrade to Pro
+                    </Button>
+                  </div>
+                </BlockStack>
+              </div>
+
+              {/* Enterprise Plan */}
+              <div className="pricing-card">
+                <BlockStack gap="300">
+                  <div>
+                    <Text as="h3" variant="headingLg" fontWeight="bold">
+                      Enterprise
+                    </Text>
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span className="pricing-price">$149</span>
+                      <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
+                    </div>
+                    <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                      Unlimited orders
+                    </Text>
+                  </div>
+
+                  <div className="pricing-features">
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">14-day free trial included</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Pro, plus:</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Unlimited orders (no limits)</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Priority support (4-12hr response)</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Dedicated onboarding assistance</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Custom feature requests priority</Text>
+                    </div>
+                  </div>
+
+                  <div className="pricing-button-wrapper">
+                    <Button size="large" fullWidth>
+                      Upgrade to Enterprise
                     </Button>
                   </div>
                 </BlockStack>
@@ -618,3 +674,4 @@ export default function Index() {
     </>
   );
 }
+
