@@ -62,7 +62,7 @@ export default function Index() {
     <>
       <style>{`
         .hero-gradient {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           padding: 56px;
           border-radius: 16px;
           color: white;
@@ -146,7 +146,7 @@ export default function Index() {
         }
 
         .info-banner {
-          background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
           padding: 20px 24px;
           border-radius: 12px;
           border-left: 4px solid #3b82f6;
@@ -160,10 +160,10 @@ export default function Index() {
         }
 
         .ai-highlight {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
           padding: 32px;
           border-radius: 12px;
-          border: 2px solid #f59e0b;
+          border: 2px solid #10b981;
           margin-bottom: 32px;
         }
 
