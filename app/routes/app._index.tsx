@@ -457,160 +457,155 @@ export default function Index() {
             <div className="grid-3">
               {/* Growth Plan */}
               <div className="pricing-card">
-                <BlockStack gap="300">
-                  <div>
-                    <Text as="h3" variant="headingLg" fontWeight="bold">
-                      Growth
-                    </Text>
-                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span className="pricing-price">$49</span>
-                      <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
-                    </div>
-                    <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                      Up to 500 orders per month
-                    </Text>
+                <div>
+                  <Text as="h3" variant="headingLg" fontWeight="bold">
+                    Growth
+                  </Text>
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <span className="pricing-price">$49</span>
+                    <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                   </div>
+                  <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                    Up to 500 orders per month
+                  </Text>
+                </div>
 
-                  <div className="pricing-features">
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">14-day free trial included</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">AI-powered personalized recommendations</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">ML engine that learns from customers</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Unlimited progress bars & gift tiers</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Cart goal incentives</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Full design customization</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Analytics dashboard</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Email support (24-48hr)</Text>
-                    </div>
+                <div className="pricing-features">
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">14-day free trial included</Text>
                   </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">AI-powered personalized recommendations</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">ML engine that learns from customers</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Unlimited progress bars & gift tiers</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Cart goal incentives</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Full design customization</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Analytics dashboard</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Email support (24-48hr)</Text>
+                  </div>
+                </div>
 
-                  <div className="pricing-button-wrapper">
-                    <Button size="large" fullWidth>
-                      Start Free Trial
-                    </Button>
-                  </div>
-                </BlockStack>
+                <div className="pricing-button-wrapper">
+                  <Button size="large" fullWidth>
+                    Start Free Trial
+                  </Button>
+                </div>
               </div>
 
               {/* Pro Plan - Featured */}
               <div className="pricing-card featured">
                 <div className="pricing-badge">RECOMMENDED</div>
-                <BlockStack gap="300">
-                  <div>
-                    <Text as="h3" variant="headingLg" fontWeight="bold">
-                      Pro
-                    </Text>
-                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span className="pricing-price">$79</span>
-                      <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
-                    </div>
-                    <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                      Up to 2,000 orders per month
-                    </Text>
+                <div>
+                  <Text as="h3" variant="headingLg" fontWeight="bold">
+                    Pro
+                  </Text>
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <span className="pricing-price">$79</span>
+                    <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                   </div>
+                  <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                    Up to 2,000 orders per month
+                  </Text>
+                </div>
 
-                  <div className="pricing-features">
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">14-day free trial included</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Growth, plus:</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Higher order capacity (2,000/month)</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Priority email support (12-24hr)</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Advanced analytics with data exports</Text>
-                    </div>
+                <div className="pricing-features">
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">14-day free trial included</Text>
                   </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Growth, plus:</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Higher order capacity (2,000/month)</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Priority email support (12-24hr)</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Advanced analytics with data exports</Text>
+                  </div>
+                </div>
 
-                  <div className="pricing-button-wrapper">
-                    <Button size="large" variant="primary" fullWidth>
-                      Upgrade to Pro
-                    </Button>
-                  </div>
-                </BlockStack>
+                <div className="pricing-button-wrapper">
+                  <Button size="large" variant="primary" fullWidth>
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              </div>
               </div>
 
               {/* Enterprise Plan */}
               <div className="pricing-card">
-                <BlockStack gap="300">
-                  <div>
-                    <Text as="h3" variant="headingLg" fontWeight="bold">
-                      Enterprise
-                    </Text>
-                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span className="pricing-price">$149</span>
-                      <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
-                    </div>
-                    <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                      Unlimited orders
-                    </Text>
+                <div>
+                  <Text as="h3" variant="headingLg" fontWeight="bold">
+                    Enterprise
+                  </Text>
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <span className="pricing-price">$149</span>
+                    <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                   </div>
+                  <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                    Unlimited orders
+                  </Text>
+                </div>
 
-                  <div className="pricing-features">
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">14-day free trial included</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Pro, plus:</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Unlimited orders (no limits)</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Priority support (4-12hr response)</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Dedicated onboarding assistance</Text>
-                    </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Custom feature requests priority</Text>
-                    </div>
+                <div className="pricing-features">
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">14-day free trial included</Text>
                   </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Pro, plus:</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Unlimited orders (no limits)</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Priority support (4-12hr response)</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Dedicated onboarding assistance</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Custom feature requests priority</Text>
+                  </div>
+                </div>
 
-                  <div className="pricing-button-wrapper">
-                    <Button size="large" fullWidth>
-                      Upgrade to Enterprise
-                    </Button>
-                  </div>
-                </BlockStack>
+                <div className="pricing-button-wrapper">
+                  <Button size="large" fullWidth>
+                    Upgrade to Enterprise
+                  </Button>
+                </div>
               </div>
             </div>
 
