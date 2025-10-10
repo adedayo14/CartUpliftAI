@@ -1,3 +1,4 @@
+// Homepage with improved card layout - badges pinned to bottom
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
@@ -72,9 +73,20 @@ export default function Index() {
           padding: 32px;
           border-radius: 12px;
           height: 100%;
+          display: flex;
+          flex-direction: column;
           transition: transform 0.2s, box-shadow 0.2s;
           border: 1px solid #e5e7eb;
           background: white;
+        }
+
+        .feature-card-content {
+          flex: 1;
+        }
+
+        .feature-card-badge {
+          margin-top: auto;
+          padding-top: 16px;
         }
 
         .feature-card:hover {
@@ -279,17 +291,19 @@ export default function Index() {
                     <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    AI Personalized Recommendations
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Machine learning analyzes each customer's cart and behavior to show products they're most likely to buy.
-                  </Text>
-                  <div style={{ marginTop: '12px' }}>
-                    <Badge tone="info">Increases AOV by 18-32%</Badge>
-                  </div>
-                </BlockStack>
+                <div className="feature-card-content">
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd" fontWeight="semibold">
+                      AI Personalized Recommendations
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Machine learning analyzes each customer's cart and behavior to show products they're most likely to buy.
+                    </Text>
+                  </BlockStack>
+                </div>
+                <div className="feature-card-badge">
+                  <Badge tone="info">Increases AOV by 18-32%</Badge>
+                </div>
               </div>
 
               <div className="feature-card">
@@ -298,17 +312,19 @@ export default function Index() {
                     <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    Progress Bars & Goals
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Show customers exactly how close they are to free shipping and rewards with visual progress tracking.
-                  </Text>
-                  <div style={{ marginTop: '12px' }}>
-                    <Badge tone="success">68% reach threshold</Badge>
-                  </div>
-                </BlockStack>
+                <div className="feature-card-content">
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd" fontWeight="semibold">
+                      Progress Bars & Goals
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Show customers exactly how close they are to free shipping and rewards with visual progress tracking.
+                    </Text>
+                  </BlockStack>
+                </div>
+                <div className="feature-card-badge">
+                  <Badge tone="success">68% reach threshold</Badge>
+                </div>
               </div>
 
               <div className="feature-card">
@@ -317,17 +333,19 @@ export default function Index() {
                     <path d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    Gift with Purchase
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Automatically reward customers with gifts when they hit spending milestones to motivate larger orders.
-                  </Text>
-                  <div style={{ marginTop: '12px' }}>
-                    <Badge tone="warning">Motivates +$22 spending</Badge>
-                  </div>
-                </BlockStack>
+                <div className="feature-card-content">
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd" fontWeight="semibold">
+                      Gift with Purchase
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Automatically reward customers with gifts when they hit spending milestones to motivate larger orders.
+                    </Text>
+                  </BlockStack>
+                </div>
+                <div className="feature-card-badge">
+                  <Badge tone="warning">Motivates +$22 spending</Badge>
+                </div>
               </div>
 
               <div className="feature-card">
@@ -337,17 +355,19 @@ export default function Index() {
                     <path d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    Revenue Analytics
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Track exactly how much extra money you're making with real-time performance insights and optimization tips.
-                  </Text>
-                  <div style={{ marginTop: '12px' }}>
-                    <Badge>See your ROI instantly</Badge>
-                  </div>
-                </BlockStack>
+                <div className="feature-card-content">
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd" fontWeight="semibold">
+                      Revenue Analytics
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Track exactly how much extra money you're making with real-time performance insights and optimization tips.
+                    </Text>
+                  </BlockStack>
+                </div>
+                <div className="feature-card-badge">
+                  <Badge tone="magic">See your ROI instantly</Badge>
+                </div>
               </div>
             </div>
           </BlockStack>
@@ -395,3 +415,4 @@ export default function Index() {
     </>
   );
 }
+
