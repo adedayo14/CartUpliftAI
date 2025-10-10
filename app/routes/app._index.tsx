@@ -1,4 +1,3 @@
-// Homepage with improved card layout - badges pinned to bottom
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
@@ -170,6 +169,67 @@ export default function Index() {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
           gap: 20px;
+        }
+
+        .pricing-card {
+          padding: 40px;
+          border-radius: 16px;
+          border: 2px solid #e5e7eb;
+          background: white;
+          transition: transform 0.2s, box-shadow 0.2s;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .pricing-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .pricing-card.featured {
+          border-color: #3b82f6;
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          position: relative;
+        }
+
+        .pricing-badge {
+          position: absolute;
+          top: -12px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+          color: white;
+          padding: 6px 16px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .pricing-price {
+          font-size: 48px;
+          font-weight: bold;
+          color: #1f2937;
+          line-height: 1;
+        }
+
+        .pricing-features {
+          flex: 1;
+          margin: 24px 0;
+        }
+
+        .pricing-feature-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .pricing-checkmark {
+          color: #10b981;
+          font-size: 20px;
+          flex-shrink: 0;
+          margin-top: 2px;
         }
 
         .grid-4 {
@@ -372,6 +432,125 @@ export default function Index() {
             </div>
           </BlockStack>
 
+          {/* Pricing Section */}
+          <BlockStack gap="400">
+            <div style={{ textAlign: 'center' }}>
+              <Text as="h2" variant="headingLg" fontWeight="semibold">
+                Choose Your Plan
+              </Text>
+              <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                Start with our 14-day free trial. Cancel anytime.
+              </Text>
+            </div>
+
+            <div className="grid-2">
+              {/* Growth Plan */}
+              <div className="pricing-card featured">
+                <div className="pricing-badge">MOST POPULAR</div>
+                <BlockStack gap="300">
+                  <div>
+                    <Text as="h3" variant="headingLg" fontWeight="bold">
+                      Growth
+                    </Text>
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span className="pricing-price">$49</span>
+                      <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
+                    </div>
+                    <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                      Up to 1,000 orders per month
+                    </Text>
+                  </div>
+
+                  <div className="pricing-features">
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">AI-powered personalized recommendations</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">ML engine that learns from customers</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Unlimited progress bars & gift tiers</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Cart goal incentives</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Full design customization</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Analytics dashboard</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Email support</Text>
+                    </div>
+                  </div>
+
+                  <Button size="large" variant="primary" fullWidth>
+                    Start Free Trial
+                  </Button>
+                </BlockStack>
+              </div>
+
+              {/* Pro Plan */}
+              <div className="pricing-card">
+                <BlockStack gap="300">
+                  <div>
+                    <Text as="h3" variant="headingLg" fontWeight="bold">
+                      Pro
+                    </Text>
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span className="pricing-price">$99</span>
+                      <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
+                    </div>
+                    <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
+                      Unlimited orders
+                    </Text>
+                  </div>
+
+                  <div className="pricing-features">
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Growth, plus:</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Unlimited orders (no monthly limit)</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Priority email support (faster response)</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Advanced analytics with data exports</Text>
+                    </div>
+                    <div className="pricing-feature-item">
+                      <span className="pricing-checkmark">✓</span>
+                      <Text as="p" variant="bodyMd">Custom integration support</Text>
+                    </div>
+                  </div>
+
+                  <Button size="large" fullWidth>
+                    Upgrade to Pro
+                  </Button>
+                </BlockStack>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <Text as="p" variant="bodyMd" tone="subdued">
+                💡 All plans include 14-day free trial • Cancel anytime • No credit card required
+              </Text>
+            </div>
+          </BlockStack>
+
           {/* Quick Actions */}
           <div className="grid-2">
             <div className="action-card">
@@ -415,4 +594,3 @@ export default function Index() {
     </>
   );
 }
-
