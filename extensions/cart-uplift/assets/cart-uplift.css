@@ -3407,3 +3407,6 @@ body.cartuplift-no-scroll {
   }
   
   .cartuplift-modal-price {
+    font-weight: 600;
+    color: inherit;
+  }
