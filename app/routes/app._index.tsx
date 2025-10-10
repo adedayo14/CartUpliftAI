@@ -1,10 +1,8 @@
-// Enhanced homepage with gradient design and custom CSS styling
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
 import {
   Page,
-  Card,
   Button,
   BlockStack,
   InlineStack,
@@ -65,7 +63,7 @@ export default function Index() {
       <style>{`
         .hero-gradient {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          padding: 48px;
+          padding: 56px;
           border-radius: 16px;
           color: white;
         }
@@ -76,6 +74,7 @@ export default function Index() {
           height: 100%;
           transition: transform 0.2s, box-shadow 0.2s;
           border: 1px solid #e5e7eb;
+          background: white;
         }
 
         .feature-card:hover {
@@ -160,9 +159,24 @@ export default function Index() {
           border-left: 4px solid #f59e0b;
         }
 
+        .ai-highlight {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          padding: 32px;
+          border-radius: 12px;
+          border: 2px solid #f59e0b;
+          margin-bottom: 32px;
+        }
+
+        .comparison-box {
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        }
+
         .grid-2 {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
           gap: 20px;
         }
 
@@ -171,9 +185,16 @@ export default function Index() {
           grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
           gap: 20px;
         }
+
+        .white-card {
+          background: white;
+          padding: 32px;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+        }
       `}</style>
 
-      <Page>
+      <Page fullWidth>
         <TitleBar title="Cart Uplift" />
         
         <BlockStack gap="600">
@@ -222,6 +243,53 @@ export default function Index() {
             </BlockStack>
           </div>
 
+          {/* AI Personalization Highlight */}
+          <div className="ai-highlight">
+            <BlockStack gap="400">
+              <InlineStack gap="300" blockAlign="start" wrap={false}>
+                <div style={{ fontSize: '48px' }}>🎯</div>
+                <BlockStack gap="300">
+                  <Text as="h2" variant="headingLg" fontWeight="bold">
+                    Why Personalized Recommendations Matter
+                  </Text>
+                  <Text as="p" variant="bodyLg">
+                    Our AI learns from each customer's behavior to show products they actually want, not random suggestions. This is the difference between a 5% conversion rate and a 40% conversion rate.
+                  </Text>
+                  
+                  <div className="grid-2" style={{ marginTop: '16px' }}>
+                    <div className="comparison-box">
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          ❌ Random Recommendations
+                        </Text>
+                        <Text as="p" variant="bodyMd" tone="subdued">
+                          Shows the same products to everyone. Low relevance = customers ignore them = wasted opportunity.
+                        </Text>
+                        <Text as="p" variant="bodyMd" tone="critical">
+                          5-10% click rate
+                        </Text>
+                      </BlockStack>
+                    </div>
+
+                    <div className="comparison-box" style={{ borderColor: '#10b981', borderWidth: '2px' }}>
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          ✅ AI Personalized (Cart Uplift)
+                        </Text>
+                        <Text as="p" variant="bodyMd" tone="subdued">
+                          Analyzes cart contents, behavior patterns, and purchase history to show products each customer wants.
+                        </Text>
+                        <Text as="p" variant="bodyMd" tone="success">
+                          35-42% click rate → More revenue
+                        </Text>
+                      </BlockStack>
+                    </div>
+                  </div>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </div>
+
           {/* Features */}
           <BlockStack gap="400">
             <Text as="h2" variant="headingLg">
@@ -233,10 +301,10 @@ export default function Index() {
                 <div className="feature-icon icon-blue">🤖</div>
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    AI Recommendations
+                    AI Personalized Recommendations
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    Machine learning analyzes behavior to show each customer products they're most likely to buy.
+                    Machine learning analyzes each customer's cart and behavior to show products they're most likely to buy. Not random — actually relevant.
                   </Text>
                   <div style={{ marginTop: '12px' }}>
                     <Badge tone="info">Increases AOV by 18-32%</Badge>
@@ -248,10 +316,10 @@ export default function Index() {
                 <div className="feature-icon icon-green">📊</div>
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    Progress Bars
+                    Progress Bars & Goals
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    Show customers exactly how close they are to free shipping and rewards.
+                    Show customers exactly how close they are to free shipping and rewards. Visual motivation that drives action.
                   </Text>
                   <div style={{ marginTop: '12px' }}>
                     <Badge tone="success">68% reach threshold</Badge>
@@ -266,7 +334,7 @@ export default function Index() {
                     Gift with Purchase
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    Automatically reward customers with gifts when they hit spending milestones.
+                    Automatically reward customers with gifts when they hit spending milestones. Creates urgency to add more.
                   </Text>
                   <div style={{ marginTop: '12px' }}>
                     <Badge tone="warning">Motivates +$22 spending</Badge>
@@ -281,7 +349,7 @@ export default function Index() {
                     Revenue Analytics
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    Track exactly how much extra money you're making with real-time insights.
+                    Track exactly how much extra money you're making. See which products work best and optimize your strategy.
                   </Text>
                   <div style={{ marginTop: '12px' }}>
                     <Badge>See your ROI instantly</Badge>
@@ -300,7 +368,7 @@ export default function Index() {
                     📊 Analytics Dashboard
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    See your revenue impact, conversion rates, and top products at a glance.
+                    See your revenue impact, conversion rates, and top products at a glance. Know what's working and what to optimize.
                   </Text>
                 </BlockStack>
                 <Link to="/app/dashboard" style={{ textDecoration: 'none' }}>
@@ -318,7 +386,7 @@ export default function Index() {
                     ⚙️ App Settings
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    Configure AI recommendations, progress bars, gifts, and customize your cart.
+                    Configure AI recommendations, progress bars, gifts, and customize the cart experience to match your brand.
                   </Text>
                 </BlockStack>
                 <Link to="/app/settings" style={{ textDecoration: 'none' }}>
@@ -331,66 +399,64 @@ export default function Index() {
           </div>
 
           {/* Setup Steps */}
-          <Card>
-            <div style={{ padding: '32px' }}>
-              <BlockStack gap="500">
-                <Text as="h2" variant="headingLg" fontWeight="semibold">
-                  🚀 Get started in 3 steps
-                </Text>
+          <div className="white-card">
+            <BlockStack gap="500">
+              <Text as="h2" variant="headingLg" fontWeight="semibold">
+                🚀 Get started in 3 steps
+              </Text>
 
-                <BlockStack gap="300">
-                  <InlineStack gap="300" blockAlign="start" wrap={false}>
-                    <div className="step-number step-1">1</div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyLg" fontWeight="semibold">
-                        Enable the app embed
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        Go to your theme editor → App embeds → Toggle "Cart Uplift" ON
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-
-                  <InlineStack gap="300" blockAlign="start" wrap={false}>
-                    <div className="step-number step-2">2</div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyLg" fontWeight="semibold">
-                        Configure your settings
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        Set up AI recommendations, free shipping goals, and gift rewards
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-
-                  <InlineStack gap="300" blockAlign="start" wrap={false}>
-                    <div className="step-number step-3">3</div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyLg" fontWeight="semibold">
-                        Watch your revenue grow
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        Monitor performance in your analytics dashboard and track ROI
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </BlockStack>
-
-                {!hasSettings && (
-                  <div className="warning-banner">
-                    <Text as="p" variant="bodyMd" fontWeight="medium">
-                      💡 Ready to start? Click "Configure Settings" above to set up your first cart optimization.
+              <BlockStack gap="300">
+                <InlineStack gap="300" blockAlign="start" wrap={false}>
+                  <div className="step-number step-1">1</div>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyLg" fontWeight="semibold">
+                      Enable the app embed
                     </Text>
-                  </div>
-                )}
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Go to your theme editor → App embeds → Toggle "Cart Uplift" ON
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+
+                <InlineStack gap="300" blockAlign="start" wrap={false}>
+                  <div className="step-number step-2">2</div>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyLg" fontWeight="semibold">
+                      Configure your settings
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Set up AI recommendations, free shipping goals, and gift rewards — takes 5 minutes
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+
+                <InlineStack gap="300" blockAlign="start" wrap={false}>
+                  <div className="step-number step-3">3</div>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyLg" fontWeight="semibold">
+                      Watch your revenue grow
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Monitor performance in your analytics dashboard. The AI gets smarter every day.
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
               </BlockStack>
-            </div>
-          </Card>
+
+              {!hasSettings && (
+                <div className="warning-banner">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    💡 Ready to start? Click "Configure Settings" above to set up your first cart optimization.
+                  </Text>
+                </div>
+              )}
+            </BlockStack>
+          </div>
 
           {/* Stats */}
-          <Card>
+          <div className="white-card">
             <BlockStack gap="400">
-              <div style={{ textAlign: 'center', paddingTop: '24px' }}>
+              <div style={{ textAlign: 'center' }}>
                 <Text as="h2" variant="headingLg" fontWeight="semibold">
                   Join successful Shopify merchants
                 </Text>
@@ -416,7 +482,7 @@ export default function Index() {
                 </div>
               </div>
             </BlockStack>
-          </Card>
+          </div>
         </BlockStack>
       </Page>
     </>
