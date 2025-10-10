@@ -552,10 +552,6 @@ export default function Index() {
                       <span className="pricing-checkmark">✓</span>
                       <Text as="p" variant="bodyMd">Advanced analytics with data exports</Text>
                     </div>
-                    <div className="pricing-feature-item">
-                      <span className="pricing-checkmark">✓</span>
-                      <Text as="p" variant="bodyMd">Custom integration support</Text>
-                    </div>
                   </div>
 
                   <div className="pricing-button-wrapper">
