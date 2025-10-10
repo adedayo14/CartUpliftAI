@@ -120,6 +120,12 @@ model Settings {
   themeEmbedEnabled       Boolean  @default(false)
   themeEmbedLastSeen      DateTime?
   
+  // Subscription & Billing
+  subscriptionPlan        String?  // "growth" | "pro" | "enterprise"
+  subscriptionStatus      String   @default("trial") // "trial" | "active" | "cancelled" | "expired"
+  trialEndsAt             DateTime? // When the 14-day trial ends
+  subscriptionStartedAt   DateTime? // When they first subscribed
+  
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
