@@ -93,10 +93,22 @@ export default function Index() {
           margin-bottom: 16px;
         }
 
-        .icon-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .icon-green { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
-        .icon-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .icon-purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .icon-blue { 
+          background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .icon-green { 
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .icon-orange { 
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        .icon-purple { 
+          background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
 
         .action-card {
           padding: 32px;
@@ -124,9 +136,18 @@ export default function Index() {
           flex-shrink: 0;
         }
 
-        .step-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .step-2 { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
-        .step-3 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .step-1 { 
+          background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .step-2 { 
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .step-3 { 
+          background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
 
         .stats-grid {
           display: grid;
@@ -139,39 +160,51 @@ export default function Index() {
         .stat-number {
           font-size: 48px;
           font-weight: bold;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
 
         .info-banner {
-          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          background: #eff6ff;
           padding: 20px 24px;
           border-radius: 12px;
-          border-left: 4px solid #3b82f6;
+          border: 1px solid #93c5fd;
+          color: #1e40af;
         }
 
         .warning-banner {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          background: #fffbeb;
           padding: 20px 24px;
           border-radius: 12px;
-          border-left: 4px solid #f59e0b;
+          border: 1px solid #fcd34d;
+          color: #92400e;
         }
 
         .ai-highlight {
-          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-          padding: 32px;
-          border-radius: 12px;
-          border: 2px solid #10b981;
+          background: #f8fafc;
+          padding: 40px;
+          border-radius: 16px;
+          border: 2px solid #e2e8f0;
           margin-bottom: 32px;
         }
 
         .comparison-box {
           background: white;
-          padding: 20px;
-          border-radius: 8px;
-          border: 1px solid #e5e7eb;
+          padding: 24px;
+          border-radius: 10px;
+          border: 2px solid #e5e7eb;
+        }
+
+        .comparison-box.success {
+          border-color: #10b981;
+          background: #f0fdf4;
+        }
+
+        .comparison-box.error {
+          border-color: #ef4444;
+          background: #fef2f2;
         }
 
         .grid-2 {
@@ -247,39 +280,63 @@ export default function Index() {
           <div className="ai-highlight">
             <BlockStack gap="400">
               <InlineStack gap="300" blockAlign="start" wrap={false}>
-                <div style={{ fontSize: '48px' }}>🎯</div>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 3H4C3.44772 3 3 3.44772 3 4V9C3 9.55228 3.44772 10 4 10H9C9.55228 10 10 9.55228 10 9V4C10 3.44772 9.55228 3 9 3Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20 3H15C14.4477 3 14 3.44772 14 4V9C14 9.55228 14.4477 10 15 10H20C20.5523 10 21 9.55228 21 9V4C21 3.44772 20.5523 3 20 3Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 14H4C3.44772 14 3 14.4477 3 15V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V15C10 14.4477 9.55228 14 9 14Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M18 16L20 14L22 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20 14V21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
                 <BlockStack gap="300">
                   <Text as="h2" variant="headingLg" fontWeight="bold">
                     Why Personalized Recommendations Matter
                   </Text>
-                  <Text as="p" variant="bodyLg">
+                  <Text as="p" variant="bodyLg" tone="subdued">
                     Our AI learns from each customer's behavior to show products they actually want, not random suggestions. This is the difference between a 5% conversion rate and a 40% conversion rate.
                   </Text>
                   
                   <div className="grid-2" style={{ marginTop: '16px' }}>
-                    <div className="comparison-box">
+                    <div className="comparison-box error">
                       <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd" fontWeight="semibold">
-                          ❌ Random Recommendations
-                        </Text>
+                        <InlineStack gap="200" blockAlign="center">
+                          <span style={{ fontSize: '20px' }}>❌</span>
+                          <Text as="p" variant="bodyMd" fontWeight="semibold">
+                            Random Recommendations
+                          </Text>
+                        </InlineStack>
                         <Text as="p" variant="bodyMd" tone="subdued">
                           Shows the same products to everyone. Low relevance = customers ignore them = wasted opportunity.
                         </Text>
-                        <Text as="p" variant="bodyMd" tone="critical">
+                        <Text as="p" variant="bodyMd" fontWeight="bold" tone="critical">
                           5-10% click rate
                         </Text>
                       </BlockStack>
                     </div>
 
-                    <div className="comparison-box" style={{ borderColor: '#10b981', borderWidth: '2px' }}>
+                    <div className="comparison-box success">
                       <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd" fontWeight="semibold">
-                          ✅ AI Personalized (Cart Uplift)
-                        </Text>
+                        <InlineStack gap="200" blockAlign="center">
+                          <span style={{ fontSize: '20px' }}>✅</span>
+                          <Text as="p" variant="bodyMd" fontWeight="semibold">
+                            AI Personalized (Cart Uplift)
+                          </Text>
+                        </InlineStack>
                         <Text as="p" variant="bodyMd" tone="subdued">
                           Analyzes cart contents, behavior patterns, and purchase history to show products each customer wants.
                         </Text>
-                        <Text as="p" variant="bodyMd" tone="success">
+                        <Text as="p" variant="bodyMd" fontWeight="bold" tone="success">
                           35-42% click rate → More revenue
                         </Text>
                       </BlockStack>
@@ -298,7 +355,15 @@ export default function Index() {
             
             <div className="grid-4">
               <div className="feature-card">
-                <div className="feature-icon icon-blue">🤖</div>
+                <div className="feature-icon icon-blue">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 3H4C3.44772 3 3 3.44772 3 4V9C3 9.55228 3.44772 10 4 10H9C9.55228 10 10 9.55228 10 9V4C10 3.44772 9.55228 3 9 3Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20 3H15C14.4477 3 14 3.44772 14 4V9C14 9.55228 14.4477 10 15 10H20C20.5523 10 21 9.55228 21 9V4C21 3.44772 20.5523 3 20 3Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 14H4C3.44772 14 3 14.4477 3 15V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V15C10 14.4477 9.55228 14 9 14Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M18 16L20 14L22 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20 14V21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd" fontWeight="semibold">
                     AI Personalized Recommendations
