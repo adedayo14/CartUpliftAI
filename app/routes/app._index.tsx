@@ -455,11 +455,11 @@ export default function Index() {
             </div>
 
             <div className="grid-3">
-              {/* Growth Plan */}
+              {/* Starter Plan */}
               <div className="pricing-card">
                 <div>
                   <Text as="h3" variant="headingLg" fontWeight="bold">
-                    Growth
+                    Starter
                   </Text>
                   <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                     <span className="pricing-price">$49</span>
@@ -512,12 +512,12 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* Pro Plan - Featured */}
+              {/* Growth Plan - Featured */}
               <div className="pricing-card featured">
                 <div className="pricing-badge">RECOMMENDED</div>
                 <div>
                   <Text as="h3" variant="headingLg" fontWeight="bold">
-                    Pro
+                    Growth
                   </Text>
                   <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                     <span className="pricing-price">$79</span>
@@ -535,7 +535,7 @@ export default function Index() {
                   </div>
                   <div className="pricing-feature-item">
                     <span className="pricing-checkmark">✓</span>
-                    <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Growth, plus:</Text>
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Starter, plus:</Text>
                   </div>
                   <div className="pricing-feature-item">
                     <span className="pricing-checkmark">✓</span>
@@ -553,17 +553,16 @@ export default function Index() {
 
                 <div className="pricing-button-wrapper">
                   <Button size="large" variant="primary" fullWidth>
-                    Upgrade to Pro
+                    Upgrade to Growth
                   </Button>
                 </div>
               </div>
-              </div>
 
-              {/* Enterprise Plan */}
+              {/* Pro Plan */}
               <div className="pricing-card">
                 <div>
                   <Text as="h3" variant="headingLg" fontWeight="bold">
-                    Enterprise
+                    Pro
                   </Text>
                   <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                     <span className="pricing-price">$149</span>
@@ -581,7 +580,7 @@ export default function Index() {
                   </div>
                   <div className="pricing-feature-item">
                     <span className="pricing-checkmark">✓</span>
-                    <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Pro, plus:</Text>
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">Everything in Growth, plus:</Text>
                   </div>
                   <div className="pricing-feature-item">
                     <span className="pricing-checkmark">✓</span>
@@ -603,7 +602,7 @@ export default function Index() {
 
                 <div className="pricing-button-wrapper">
                   <Button size="large" fullWidth>
-                    Upgrade to Enterprise
+                    Upgrade to Pro
                   </Button>
                 </div>
               </div>

@@ -121,7 +121,7 @@ model Settings {
   themeEmbedLastSeen      DateTime?
   
   // Subscription & Billing
-  subscriptionPlan        String?  // "growth" | "pro" | "enterprise"
+  subscriptionPlan        String?  // "starter" | "growth" | "pro"
   subscriptionStatus      String   @default("trial") // "trial" | "active" | "cancelled" | "expired"
   trialEndsAt             DateTime? // When the 14-day trial ends
   subscriptionStartedAt   DateTime? // When they first subscribed
