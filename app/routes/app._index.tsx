@@ -75,7 +75,7 @@ export default function Index() {
     : `https://admin.shopify.com/store/${shopHandle}/themes/current/editor?context=apps`;
 
   return (
-    <Page narrowWidth>
+    <Page>
       <TitleBar title="Cart Uplift" />
       
       <BlockStack gap="600">
