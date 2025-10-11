@@ -1,32 +1,34 @@
 import { json } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { withAuth } from "../utils/auth.server";
+import prismaClient from "~/db.server";
 
-/**
- * Collaborative Filtering Data Endpoint
- * Provides user-item interaction data for collaborative filtering with privacy controls
- */
-export const action = withAuth(async ({ request }: ActionFunctionArgs) => {
+const prisma: any = prismaClient as any;
+
+export async function action({ request }: ActionFunctionArgs) {
   try {
     const data = await request.json();
-    const { privacy_level, include_user_similarities } = data;
+    const { shop, privacy_level, include_user_similarities, session_id } = data;
+    
+    if (!shop) {
+      return json({ error: 'Shop parameter required' }, { status: 400 });
+    }
     
     if (privacy_level === 'basic') {
-      // Return only aggregated item similarities
       return json({
-        item_similarities: await getAggregatedItemSimilarities(),
-        global_stats: await getGlobalStats(),
+        item_similarities: await getAggregatedItemSimilarities(shop),
+        global_stats: await getGlobalStats(shop),
         user_item_interactions: [],
         user_similarities: []
       });
     }
     
-    // Enhanced/Full ML mode
     const response = {
-      item_similarities: await getItemSimilarities(),
-      global_stats: await getGlobalStats(),
-      user_item_interactions: await getUserItemInteractions(privacy_level),
-      user_similarities: include_user_similarities ? await getUserSimilarities() : []
+      item_similarities: await getItemSimilarities(shop),
+      global_stats: await getGlobalStats(shop),
+      user_item_interactions: privacy_level === 'advanced' ? 
+        await getUserItemInteractions(shop, session_id) : [],
+      user_similarities: include_user_similarities && privacy_level === 'advanced' ? 
+        await getUserSimilarities(shop, session_id) : []
     };
     
     return json(response);
@@ -35,134 +37,220 @@ export const action = withAuth(async ({ request }: ActionFunctionArgs) => {
     console.error('Collaborative filtering data error:', error);
     return json({ error: 'Failed to load collaborative data' }, { status: 500 });
   }
-});
+}
 
-/**
- * Collaborative Filtering Update Endpoint
- * Updates the collaborative filtering model with new interactions
- */
-export async function updateCollaborativeModel({ request }: ActionFunctionArgs) {
+async function getAggregatedItemSimilarities(shop: string) {
   try {
-    const data = await request.json();
-    const { user_id, item_id, rating, timestamp, privacy_level } = data;
-    
-    if (privacy_level === 'basic') {
-      // Only update aggregated statistics
-      await updateAggregatedStats(item_id, rating);
-      return json({ success: true });
-    }
-    
-    // Store user-item interaction for ML processing
-    await storeUserItemInteraction({
-      user_id,
-      item_id,
-      rating,
-      timestamp,
-      privacy_level
+    const similarities = await prisma.mLProductSimilarity.findMany({
+      where: { shop },
+      orderBy: { overallScore: 'desc' },
+      take: 100,
+      select: {
+        productId1: true,
+        productId2: true,
+        overallScore: true
+      }
     });
     
-    // Queue model retraining if needed
-    await queueModelUpdate(user_id, item_id);
-    
-    return json({ success: true });
-    
+    return similarities.map((sim: any) => ({
+      item1_id: sim.productId1,
+      item2_id: sim.productId2,
+      similarity: sim.overallScore
+    }));
   } catch (error) {
-    console.error('Collaborative model update error:', error);
-    return json({ error: 'Failed to update model' }, { status: 500 });
+    console.error('Error fetching aggregated similarities:', error);
+    return [];
   }
 }
 
-// Mock data functions - would be replaced with real database queries
-
-async function getAggregatedItemSimilarities() {
-  // Return anonymized item-to-item similarities
-  return [
-    { item1_id: "product_1", item2_id: "product_2", similarity: 0.85 },
-    { item1_id: "product_1", item2_id: "product_3", similarity: 0.72 },
-    { item1_id: "product_2", item2_id: "product_4", similarity: 0.68 },
-    // More similarities...
-  ];
+async function getItemSimilarities(shop: string) {
+  try {
+    const similarities = await prisma.mLProductSimilarity.findMany({
+      where: { shop },
+      orderBy: { overallScore: 'desc' },
+      take: 200
+    });
+    
+    return similarities.map((sim: any) => ({
+      item1_id: sim.productId1,
+      item2_id: sim.productId2,
+      similarity: sim.overallScore,
+      category_score: sim.categoryScore || 0,
+      price_score: sim.priceScore || 0,
+      support: sim.cooccurrenceCount || 0
+    }));
+  } catch (error) {
+    console.error('Error fetching item similarities:', error);
+    return [];
+  }
 }
 
-async function getItemSimilarities() {
-  // Return comprehensive item similarities for enhanced/full ML
-  return [
-    { item1_id: "product_1", item2_id: "product_2", similarity: 0.85, support: 0.15 },
-    { item1_id: "product_1", item2_id: "product_3", similarity: 0.72, support: 0.12 },
-    { item1_id: "product_2", item2_id: "product_4", similarity: 0.68, support: 0.08 },
-    { item1_id: "product_3", item2_id: "product_5", similarity: 0.79, support: 0.11 },
-    // More comprehensive data...
-  ];
+async function getGlobalStats(shop: string) {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const trackingEvents = await prisma.trackingEvent.findMany({
+      where: {
+        shop,
+        createdAt: { gte: thirtyDaysAgo }
+      },
+      select: {
+        eventType: true
+      }
+    });
+    
+    const totalInteractions = trackingEvents.length;
+    const viewCount = trackingEvents.filter((e: any) => e.eventType === 'view').length;
+    const cartCount = trackingEvents.filter((e: any) => e.eventType === 'add_to_cart').length;
+    const purchaseCount = trackingEvents.filter((e: any) => e.eventType === 'purchase').length;
+    
+    const conversionRate = viewCount > 0 ? purchaseCount / viewCount : 0;
+    const cartRate = viewCount > 0 ? cartCount / viewCount : 0;
+    
+    return {
+      total_interactions: totalInteractions,
+      view_count: viewCount,
+      cart_count: cartCount,
+      purchase_count: purchaseCount,
+      conversion_rate: conversionRate,
+      cart_rate: cartRate,
+      data_quality: totalInteractions > 1000 ? 'good' : totalInteractions > 100 ? 'moderate' : 'limited'
+    };
+  } catch (error) {
+    console.error('Error fetching global stats:', error);
+    return {
+      total_interactions: 0,
+      view_count: 0,
+      cart_count: 0,
+      purchase_count: 0,
+      conversion_rate: 0,
+      cart_rate: 0,
+      data_quality: 'limited'
+    };
+  }
 }
 
-async function getGlobalStats() {
-  return {
-    avgRating: 3.7,
-    totalInteractions: 15420,
-    uniqueUsers: 2840,
-    uniqueItems: 1250
-  };
+async function getUserItemInteractions(shop: string, sessionId?: string) {
+  try {
+    if (!sessionId) {
+      return [];
+    }
+    
+    const profile = await prisma.mLUserProfile.findUnique({
+      where: {
+        shop_sessionId: {
+          shop,
+          sessionId
+        }
+      }
+    });
+    
+    if (!profile) {
+      return [];
+    }
+    
+    const interactions = [];
+    
+    if (profile.viewedProducts) {
+      profile.viewedProducts.forEach((productId: string) => {
+        interactions.push({
+          product_id: productId,
+          interaction_type: 'view',
+          weight: 1.0
+        });
+      });
+    }
+    
+    if (profile.cartedProducts) {
+      profile.cartedProducts.forEach((productId: string) => {
+        interactions.push({
+          product_id: productId,
+          interaction_type: 'cart',
+          weight: 2.0
+        });
+      });
+    }
+    
+    if (profile.purchasedProducts) {
+      profile.purchasedProducts.forEach((productId: string) => {
+        interactions.push({
+          product_id: productId,
+          interaction_type: 'purchase',
+          weight: 3.0
+        });
+      });
+    }
+    
+    return interactions;
+  } catch (error) {
+    console.error('Error fetching user interactions:', error);
+    return [];
+  }
 }
 
-async function getUserItemInteractions(privacyLevel: string) {
-  if (privacyLevel === 'basic') return [];
-  
-  // Return user-item interaction data (anonymized user IDs)
-  return [
-    {
-      user_id: "user_hash_123",
-      product_id: "product_1",
-      interaction_type: "purchase",
-      rating: 5,
-      timestamp: Date.now() - 86400000,
-      view_duration: 45000
-    },
-    {
-      user_id: "user_hash_456",
-      product_id: "product_1",
-      interaction_type: "cart_add",
-      rating: 4,
-      timestamp: Date.now() - 172800000,
-      view_duration: 30000
-    },
-    // More interactions...
-  ];
-}
-
-async function getUserSimilarities() {
-  // Return user-to-user similarities (only for full ML mode)
-  return [
-    { user1_id: "user_hash_123", user2_id: "user_hash_456", similarity: 0.76 },
-    { user1_id: "user_hash_123", user2_id: "user_hash_789", similarity: 0.68 },
-    { user1_id: "user_hash_456", user2_id: "user_hash_101", similarity: 0.71 },
-    // More similarities...
-  ];
-}
-
-async function updateAggregatedStats(itemId: string, rating: number) {
-  // Update anonymous aggregated statistics
-  console.log(`Updating aggregated stats for item ${itemId} with rating ${rating}`);
-  
-  // This would update database aggregations
-  // Example: UPDATE item_stats SET total_rating = total_rating + rating, rating_count = rating_count + 1
-}
-
-async function storeUserItemInteraction(interaction: any) {
-  // Store user-item interaction for ML processing
-  console.log('Storing user-item interaction:', {
-    user_id: interaction.user_id,
-    item_id: interaction.item_id,
-    rating: interaction.rating,
-    privacy_level: interaction.privacy_level
-  });
-  
-  // This would insert into a user_item_interactions table
-}
-
-async function queueModelUpdate(userId: string, itemId: string) {
-  // Queue background job to retrain collaborative filtering model
-  console.log(`Queuing model update for user ${userId} and item ${itemId}`);
-  
-  // This would typically queue a background job
-  // Example: Redis queue, database job table, or message queue
+async function getUserSimilarities(shop: string, sessionId?: string) {
+  try {
+    if (!sessionId) {
+      return [];
+    }
+    
+    const currentProfile = await prisma.mLUserProfile.findUnique({
+      where: {
+        shop_sessionId: {
+          shop,
+          sessionId
+        }
+      }
+    });
+    
+    if (!currentProfile) {
+      return [];
+    }
+    
+    const allProfiles = await prisma.mLUserProfile.findMany({
+      where: {
+        shop,
+        sessionId: { not: sessionId }
+      },
+      take: 50
+    });
+    
+    const currentProducts = new Set([
+      ...(currentProfile.viewedProducts || []),
+      ...(currentProfile.cartedProducts || []),
+      ...(currentProfile.purchasedProducts || [])
+    ]);
+    
+    const similarities = allProfiles
+      .map((profile: any) => {
+        const otherProducts = new Set([
+          ...(profile.viewedProducts || []),
+          ...(profile.cartedProducts || []),
+          ...(profile.purchasedProducts || [])
+        ]);
+        
+        const intersection = new Set(
+          [...currentProducts].filter(p => otherProducts.has(p))
+        );
+        
+        const union = new Set([...currentProducts, ...otherProducts]);
+        
+        const jaccardSimilarity = union.size > 0 ? intersection.size / union.size : 0;
+        
+        return {
+          user_id: profile.sessionId,
+          similarity: jaccardSimilarity,
+          common_products: intersection.size
+        };
+      })
+      .filter(s => s.similarity > 0.1)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 10);
+    
+    return similarities;
+  } catch (error) {
+    console.error('Error fetching user similarities:', error);
+    return [];
+  }
 }
