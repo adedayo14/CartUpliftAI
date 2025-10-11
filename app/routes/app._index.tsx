@@ -45,15 +45,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.error('Failed to fetch current theme:', err);
   }
 
+  const search = new URL(request.url).search;
+
   return json({ 
     shop, 
     currentThemeId,
     hasSettings: !!settings,
+    search,
   });
 };
 
 export default function Index() {
-  const { shop, currentThemeId, hasSettings } = useLoaderData<typeof loader>();
+  const { shop, currentThemeId, hasSettings, search } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [subscribing, setSubscribing] = useState<string | null>(null);
   
@@ -187,11 +190,18 @@ export default function Index() {
           border: 1px solid #e5e7eb;
           background: white;
           transition: transform 0.2s, box-shadow 0.2s;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
         }
 
         .action-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .action-card-content {
+          flex: 1;
         }
 
         .info-banner {
@@ -740,7 +750,7 @@ export default function Index() {
           {/* Quick Actions */}
           <div className="grid-2">
             <div className="action-card">
-              <BlockStack gap="400">
+              <div className="action-card-content">
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd" fontWeight="semibold">
                     📊 Analytics Dashboard
@@ -749,16 +759,16 @@ export default function Index() {
                     See your revenue impact, conversion rates, and top products at a glance.
                   </Text>
                 </BlockStack>
-                <Link to="/app/dashboard" className="no-underline">
-                  <Button variant="primary" size="large" fullWidth>
-                    View Dashboard →
-                  </Button>
-                </Link>
-              </BlockStack>
+              </div>
+              <a href={`/app/dashboard${search}`} className="no-underline">
+                <Button variant="primary" size="large" fullWidth>
+                  View Dashboard →
+                </Button>
+              </a>
             </div>
 
             <div className="action-card">
-              <BlockStack gap="400">
+              <div className="action-card-content">
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd" fontWeight="semibold">
                     ⚙️ App Settings
@@ -767,12 +777,12 @@ export default function Index() {
                     Configure AI recommendations, progress bars, gifts, and customize the cart experience.
                   </Text>
                 </BlockStack>
-                <Link to="/app/settings" className="no-underline">
-                  <Button size="large" fullWidth>
-                    Manage Settings →
-                  </Button>
-                </Link>
-              </BlockStack>
+              </div>
+              <a href={`/app/settings${search}`} className="no-underline">
+                <Button size="large" fullWidth>
+                  Manage Settings →
+                </Button>
+              </a>
             </div>
           </div>
         </BlockStack>
