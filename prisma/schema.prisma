@@ -120,19 +120,19 @@ model Settings {
   themeEmbedEnabled       Boolean  @default(false)
   themeEmbedLastSeen      DateTime?
   
-  // Subscription & Billing
-  subscriptionPlan        String?  // "starter" | "growth" | "pro"
-  subscriptionStatus      String   @default("trial") // "trial" | "active" | "cancelled" | "expired"
-  trialEndsAt             DateTime? // When the 14-day trial ends
-  subscriptionStartedAt   DateTime? // When they first subscribed
-  chargeId                String?  // Shopify charge ID for active subscription
+  // Subscription & Billing (COMMENTED OUT - ACTIVATE AFTER DB MIGRATION)
+  // subscriptionPlan        String?  // "starter" | "growth" | "pro"
+  // subscriptionStatus      String   @default("trial") // "trial" | "active" | "cancelled" | "expired"
+  // trialEndsAt             DateTime? // When the 14-day trial ends
+  // subscriptionStartedAt   DateTime? // When they first subscribed
+  // chargeId                String?  // Shopify charge ID for active subscription
   
-  // Order Tracking & Limits
-  monthlyOrderCount       Int      @default(0)
-  currentPeriodStart      DateTime @default(now())
-  currentPeriodEnd        DateTime?
-  orderLimitReached       Boolean  @default(false)
-  lastOrderCountReset     DateTime?
+  // Order Tracking & Limits (COMMENTED OUT - ACTIVATE AFTER DB MIGRATION)
+  // monthlyOrderCount       Int      @default(0)
+  // currentPeriodStart      DateTime @default(now())
+  // currentPeriodEnd        DateTime?
+  // orderLimitReached       Boolean  @default(false)
+  // lastOrderCountReset     DateTime?
   
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
