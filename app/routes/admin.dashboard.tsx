@@ -28,6 +28,7 @@ import {
 } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { getSettings } from "../models/settings.server";
+import { getShopCurrency } from "../services/currency.server";
 import db from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -167,9 +168,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const orders = ordersData.data?.orders?.edges || [];
     const shop = shopData.data?.shop;
     
-    // Extract currency from first order or default to USD
+    // Fetch shop currency
+    const shopCurrency = await getShopCurrency(session.shop);
     const storeCurrency = orders.length > 0 ? 
-      orders[0].node.totalPriceSet?.shopMoney?.currencyCode || 'USD' : 'USD';
+      orders[0].node.totalPriceSet?.shopMoney?.currencyCode || shopCurrency.code : shopCurrency.code;
     
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum: number, order: any) => {
@@ -440,7 +442,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   } catch (error) {
     console.error('Error fetching analytics:', error);
-  return json({
+    
+    // Get currency for error fallback
+    let fallbackCurrency = 'USD';
+    try {
+      const shopCurrency = await getShopCurrency(session.shop);
+      fallbackCurrency = shopCurrency.code;
+    } catch (e) {
+      console.warn('Could not fetch currency in error handler');
+    }
+    
+    return json({
       analytics: {
         // Core metrics
         totalOrders: 0,
@@ -481,7 +493,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         // Metadata
         timeframe: "30d",
         shopName: "demo-shop",
-        currency: "USD",
+        currency: fallbackCurrency, // Use detected store currency or USD fallback
       },
       shop: 'demo-shop'
     });

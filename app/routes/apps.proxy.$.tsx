@@ -288,6 +288,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       if (!shop) return json({ error: 'Unauthorized' }, { status: 401 });
       const shopStr = shop as string;
 
+      // Fetch shop currency (cached)
+      const shopCurrency = await getShopCurrency(shopStr);
+
       // Query params
       const productIdParam = url.searchParams.get('product_id');
       const productId = productIdParam ? String(productIdParam) : undefined; // single anchor
@@ -996,10 +999,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const shop = session?.shop;
       if (!shop) return json({ products: [], error: 'Unauthorized' }, { status: 401, headers: { 'Access-Control-Allow-Origin': '*' } });
 
+      const shopStr = shop as string;
+      const shopCurrency = await getShopCurrency(shopStr);
+
       const q = url.searchParams.get('query') || '';
       const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10)));
 
-      const { admin } = await unauthenticated.admin(shop as string);
+      const { admin } = await unauthenticated.admin(shopStr);
       const resp = await admin.graphql(`#graphql
         query getProducts($first: Int!, $query: String) {
           products(first: $first, query: $query) {
@@ -1041,7 +1047,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           availableForSale: ve.node.availableForSale,
         }));
         const minPriceAmount = n.priceRangeV2?.minVariantPrice?.amount;
-        const currency = n.priceRangeV2?.minVariantPrice?.currencyCode || 'USD';
+        const currency = n.priceRangeV2?.minVariantPrice?.currencyCode || shopCurrency.code;
         const minPrice = typeof minPriceAmount === 'number' ? minPriceAmount : parseFloat(minPriceAmount ?? '0') || (variants[0]?.price ?? 0);
         return {
           id: n.id,
@@ -1057,7 +1063,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         };
       });
 
-      return json({ products, hasNextPage: Boolean(data.data.products.pageInfo?.hasNextPage) }, {
+      return json({ 
+        products, 
+        hasNextPage: Boolean(data.data.products.pageInfo?.hasNextPage),
+        currency: shopCurrency.code,
+        currencyFormat: shopCurrency.format
+      }, {
         headers: { 'Access-Control-Allow-Origin': '*' }
       });
     } catch (e) {

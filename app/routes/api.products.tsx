@@ -1,9 +1,15 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { getShopCurrency } from "../services/currency.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
-    const { admin } = await authenticate.admin(request);
+    const { admin, session } = await authenticate.admin(request);
+    const shop = session.shop;
+    
+    // Fetch shop currency
+    const shopCurrency = await getShopCurrency(shop);
+    
     const url = new URL(request.url);
     const query = url.searchParams.get('query') || '';
     const limit = parseInt(url.searchParams.get('limit') || '50');
@@ -81,7 +87,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       
       const minVariant = variants.find((v: any) => typeof v.price === 'number') || variants[0];
       const minPriceAmount = product.priceRangeV2?.minVariantPrice?.amount;
-      const currencyCode = product.priceRangeV2?.minVariantPrice?.currencyCode || 'USD';
+      const currencyCode = product.priceRangeV2?.minVariantPrice?.currencyCode || shopCurrency.code;
       const minPrice = typeof minPriceAmount === 'number' ? minPriceAmount : parseFloat(minPriceAmount ?? '0') || (minVariant?.price ?? 0);
       return {
         id: product.id,
@@ -99,7 +105,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
       };
     });
 
-  return json({ products, hasNextPage: (data as any).data.products.pageInfo.hasNextPage });
+    return json({ 
+      products, 
+      hasNextPage: (data as any).data.products.pageInfo.hasNextPage,
+      currency: shopCurrency.code,
+      currencyFormat: shopCurrency.format
+    });
 
   } catch (error) {
     console.error('Error fetching products:', error);
