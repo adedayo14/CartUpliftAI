@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
+import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { useEffect } from "react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
@@ -30,11 +30,11 @@ export default function App() {
       <AppBridgeInitializer apiKey={apiKey} />
       <SessionStatus />
       <NavMenu>
-        <a href={`/app${search}`} rel="home">
+        <Link to={`/app${search}`} rel="home">
           Home
-        </a>
-        <a href={`/app/dashboard${search}`}>Dashboard</a>
-        <a href={`/app/settings${search}`}>Settings</a>
+        </Link>
+        <Link to={`/app/dashboard${search}`}>📊 Dashboard</Link>
+        <Link to={`/app/settings${search}`}>⚙️ Settings</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
