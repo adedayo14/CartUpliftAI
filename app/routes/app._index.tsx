@@ -56,6 +56,9 @@ export default function Index() {
   const { shop, currentThemeId, hasSettings } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  
+  // Billing feature flag - disable until database migrated
+  const billingEnabled = false; // Set to true after running: npx prisma db push
 
   const shopHandle = (shop || '').replace('.myshopify.com', '');
   const themeEditorUrl = currentThemeId
@@ -64,6 +67,11 @@ export default function Index() {
 
   // Handle subscription flow
   const handleSubscribe = async (plan: string) => {
+    if (!billingEnabled) {
+      alert('Billing system will be activated after deployment. Stay tuned!');
+      return;
+    }
+    
     setSubscribing(plan);
     
     const formData = new FormData();
@@ -77,6 +85,8 @@ export default function Index() {
 
   // Handle subscription response
   useEffect(() => {
+    if (!billingEnabled) return;
+    
     if (fetcher.data) {
       const data = fetcher.data as { success?: boolean; confirmationUrl?: string; error?: string };
       
@@ -88,10 +98,12 @@ export default function Index() {
         setSubscribing(null);
       }
     }
-  }, [fetcher.data]);
+  }, [fetcher.data, billingEnabled]);
 
   // Check for billing status in URL
   useEffect(() => {
+    if (!billingEnabled) return;
+    
     const url = new URL(window.location.href);
     const billingStatus = url.searchParams.get("billing");
     
@@ -105,7 +117,7 @@ export default function Index() {
       url.searchParams.delete("billing");
       window.history.replaceState({}, '', url.toString());
     }
-  }, []);
+  }, [billingEnabled]);
 
   return (
     <>
