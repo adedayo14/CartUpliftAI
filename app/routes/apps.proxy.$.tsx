@@ -124,7 +124,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             is_control: variant.isControl,
             traffic_percentage: Number(variant.trafficPct ?? 0),
             config: {
-              discount_pct: Number(variant.discountPct ?? 0),
+              discount_pct: Number(variant.value ?? 0),
             },
           })),
         }));
@@ -148,7 +148,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // If experiment is completed and has an activeVariantId, force that selection
         if (experiment.status === 'completed' && experiment.activeVariantId) {
           const selected = vars.find(v => v.id === experiment.activeVariantId) || vars[0];
-          const config = { discount_pct: Number(selected?.discountPct ?? 0) };
+          const config = { discount_pct: Number(selected?.value ?? 0) };
           return json({ ok: true, variant: selected?.name, config, variantId: selected?.id }, { headers: hdrs });
         }
 
@@ -168,7 +168,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         let cum = 0; let idx = 0;
         for (let i=0;i<normalized.length;i++) { cum += normalized[i]; if (r <= cum) { idx = i; break; } }
         const selected = vars[idx];
-        const config = { discount_pct: Number(selected?.discountPct ?? 0) };
+        const config = { discount_pct: Number(selected?.value ?? 0) };
 
         // Persist assignment event (best-effort, idempotent) — skip for completed experiments
         try {

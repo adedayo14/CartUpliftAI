@@ -36,16 +36,6 @@ export async function getDataQualityMetrics(shop: string): Promise<DataQualityMe
             hasNextPage
           }
         }
-        shop {
-          name
-          fulfillmentOrders(first: 0) {
-            edges {
-              node {
-                id
-              }
-            }
-          }
-        }
       }
     `);
 
