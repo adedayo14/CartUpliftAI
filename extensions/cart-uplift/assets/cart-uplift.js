@@ -1984,11 +1984,18 @@
       this._rebuildInProgress = true;
       
       requestAnimationFrame(() => {
+        // Check if we should hide recommendations after all thresholds are met
+        if (this.settings.hideRecommendationsAfterThreshold && this.checkIfAllThresholdsMet()) {
+          this.recommendations = [];
+          this._rebuildInProgress = false;
+          return;
+        }
+        
         const cartProductIds = (this.cart?.items || []).map(i => i.product_id);
         
     // Build visible list by skipping any product in cart and taking next from master, preserving order
     const max = this.normalizeMaxRecommendations(this.settings.maxRecommendations);
-        const newRecommendations = [];
+        let newRecommendations = [];
         for (const p of this._allRecommendations) {
           // Check both strict and loose equality for ID comparison
           const isInCartStrict = cartProductIds.includes(p.id);
@@ -1996,6 +2003,11 @@
           if (isInCartStrict || isInCartLoose) continue;
           newRecommendations.push(p);
           if (newRecommendations.length >= max) break;
+        }
+        
+        // Apply threshold-based filtering if enabled
+        if (this.settings.enableThresholdBasedSuggestions) {
+          newRecommendations = this.filterRecommendationsForThreshold(newRecommendations);
         }
         
         // Only update if recommendations actually changed
@@ -2016,11 +2028,17 @@
       // STABILITY: Prevent rapid rebuilds that cause shaking
       if (this._rebuildInProgress) return;
       
+      // Check if we should hide recommendations after all thresholds are met
+      if (this.settings.hideRecommendationsAfterThreshold && this.checkIfAllThresholdsMet()) {
+        this.recommendations = [];
+        return;
+      }
+      
       const cartProductIds = (this.cart?.items || []).map(i => i.product_id);
       
       // Build visible list by skipping any product in cart and taking next from master, preserving order
       const max = this.normalizeMaxRecommendations(this.settings.maxRecommendations);
-      const newRecommendations = [];
+      let newRecommendations = [];
       for (const p of this._allRecommendations) {
         // Check both strict and loose equality for ID comparison
         const isInCartStrict = cartProductIds.includes(p.id);
@@ -2028,6 +2046,11 @@
         if (isInCartStrict || isInCartLoose) continue;
         newRecommendations.push(p);
         if (newRecommendations.length >= max) break;
+      }
+      
+      // Apply threshold-based filtering if enabled
+      if (this.settings.enableThresholdBasedSuggestions) {
+        newRecommendations = this.filterRecommendationsForThreshold(newRecommendations);
       }
       
       // Only update if recommendations actually changed
@@ -5010,6 +5033,155 @@
       } catch (error) {
         console.warn('🛒 Failed to normalize free shipping threshold:', error);
         return null;
+      }
+    }
+
+    /**
+     * Check if all cart thresholds (free shipping + all gifts) have been met
+     * Used for hideRecommendationsAfterThreshold setting
+     * @returns {boolean} True if all thresholds met, false otherwise
+     */
+    checkIfAllThresholdsMet() {
+      try {
+        const cartTotal = this.cart?.total_price || 0;
+        
+        // Check free shipping threshold
+        const freeShippingThreshold = this.settings.freeShippingThresholdCents;
+        const freeShippingMet = !freeShippingThreshold || cartTotal >= freeShippingThreshold;
+        
+        // Check gift thresholds
+        let allGiftsMet = true;
+        if (this.settings.enableGiftGating && this.settings.giftThresholds) {
+          try {
+            const giftThresholds = JSON.parse(this.settings.giftThresholds);
+            if (giftThresholds && giftThresholds.length > 0) {
+              // All gifts must be unlocked (cart total >= highest threshold)
+              const highestGiftThreshold = Math.max(...giftThresholds.map(t => t.amount * 100));
+              allGiftsMet = cartTotal >= highestGiftThreshold;
+            }
+          } catch (e) {
+            console.warn('🛒 Failed to parse gift thresholds:', e);
+          }
+        }
+        
+        return freeShippingMet && allGiftsMet;
+      } catch (error) {
+        console.warn('🛒 Failed to check threshold status:', error);
+        return false;
+      }
+    }
+
+    /**
+     * Filter recommendations to suggest products that help reach thresholds
+     * Applies different strategies based on merchant settings
+     * @param {Array} recommendations - Array of product objects to filter
+     * @returns {Array} Filtered and sorted recommendations
+     */
+    filterRecommendationsForThreshold(recommendations) {
+      try {
+        if (!recommendations || recommendations.length === 0) return [];
+        
+        const cartTotal = this.cart?.total_price || 0;
+        const strategy = this.settings.thresholdSuggestionMode || 'smart';
+        
+        // Determine which threshold to target
+        let targetThreshold = null;
+        let thresholdType = null;
+        
+        // Check free shipping first
+        const freeShippingThreshold = this.settings.freeShippingThresholdCents;
+        if (freeShippingThreshold && cartTotal < freeShippingThreshold) {
+          targetThreshold = freeShippingThreshold;
+          thresholdType = 'shipping';
+        }
+        
+        // Check next gift threshold
+        if (this.settings.enableGiftGating && this.settings.giftThresholds) {
+          try {
+            const giftThresholds = JSON.parse(this.settings.giftThresholds);
+            if (giftThresholds && giftThresholds.length > 0) {
+              const sortedGifts = giftThresholds.sort((a, b) => a.amount - b.amount);
+              const nextGift = sortedGifts.find(t => cartTotal < (t.amount * 100));
+              if (nextGift) {
+                const nextGiftThreshold = nextGift.amount * 100;
+                // Target whichever comes first
+                if (!targetThreshold || nextGiftThreshold < targetThreshold) {
+                  targetThreshold = nextGiftThreshold;
+                  thresholdType = 'gift';
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('🛒 Failed to parse gift thresholds for filtering:', e);
+          }
+        }
+        
+        // If no threshold to target, return original recommendations
+        if (!targetThreshold) return recommendations;
+        
+        const gap = targetThreshold - cartTotal;
+        const tolerance = 500; // $5 tolerance in cents
+        
+        // Add threshold gap info to each recommendation
+        const enrichedRecs = recommendations.map(product => {
+          const price = product.variants?.[0]?.price || 0;
+          const priceGap = Math.abs(price - gap);
+          const isGoodFit = price >= (gap - tolerance) && price <= (gap + tolerance);
+          
+          return {
+            ...product,
+            _thresholdPrice: price,
+            _thresholdGap: priceGap,
+            _thresholdGoodFit: isGoodFit,
+            _thresholdType: thresholdType
+          };
+        });
+        
+        // Apply filtering strategy
+        let filtered = enrichedRecs;
+        
+        switch (strategy) {
+          case 'price':
+            // Show only products that help reach threshold (within tolerance)
+            filtered = enrichedRecs.filter(p => p._thresholdGoodFit);
+            // Sort by closest to gap
+            filtered.sort((a, b) => a._thresholdGap - b._thresholdGap);
+            break;
+            
+          case 'popular_price':
+            // Prioritize good-fit products, but don't exclude others
+            filtered.sort((a, b) => {
+              // Good fits first
+              if (a._thresholdGoodFit && !b._thresholdGoodFit) return -1;
+              if (!a._thresholdGoodFit && b._thresholdGoodFit) return 1;
+              // Then by price gap
+              return a._thresholdGap - b._thresholdGap;
+            });
+            break;
+            
+          case 'smart':
+          default:
+            // Balance between ML relevance and threshold fit
+            // Keep all recommendations but boost good-fit products
+            filtered.sort((a, b) => {
+              // Heavily favor good fits
+              if (a._thresholdGoodFit && !b._thresholdGoodFit) return -1;
+              if (!a._thresholdGoodFit && b._thresholdGoodFit) return 1;
+              // For good fits, prefer closer to gap
+              if (a._thresholdGoodFit && b._thresholdGoodFit) {
+                return a._thresholdGap - b._thresholdGap;
+              }
+              // For non-good-fits, keep ML order (don't sort)
+              return 0;
+            });
+            break;
+        }
+        
+        // Remove threshold metadata before returning
+        return filtered.map(({ _thresholdPrice, _thresholdGap, _thresholdGoodFit, _thresholdType, ...product }) => product);
+      } catch (error) {
+        console.warn('🛒 Failed to filter recommendations for threshold:', error);
+        return recommendations; // Return original on error
       }
     }
 
