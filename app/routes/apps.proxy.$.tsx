@@ -740,15 +740,165 @@ export async function loader({ request }: LoaderFunctionArgs) {
           }
         }
 
+        // ---------- ENHANCED ML INTEGRATION ----------
         if (effectiveMlEnabled && orderEdges.length > 0) {
           try {
-            // Real ML enhancement based on actual data
-            if (orderEdges.length >= 50 && effectivePersonalizationMode !== 'basic') {
-              console.log('🚀 Applying advanced ML with', orderEdges.length, 'orders of data');
+            const sessionId = url.searchParams.get('session_id') || url.searchParams.get('sid') || 'anonymous';
+            const customerId = url.searchParams.get('customer_id') || url.searchParams.get('cid') || undefined;
+            
+            // Determine if we have enough data for advanced ML
+            const hasRichData = orderEdges.length >= 100;
+            const hasGoodData = orderEdges.length >= 50;
+            
+            // Update data quality metric
+            if (orderEdges.length >= 500) {
+              dataMetrics.dataQuality = 'rich';
+            } else if (orderEdges.length >= 200) {
+              dataMetrics.dataQuality = 'good';
+            } else if (orderEdges.length >= 50) {
+              dataMetrics.dataQuality = 'growing';
+            } else {
+              dataMetrics.dataQuality = 'new_store';
+            }
+            
+            // ML PERSONALIZATION MODE ROUTING
+            let mlRecommendations: any[] = [];
+            
+            if (effectivePersonalizationMode === 'ai_first' && hasGoodData) {
+              console.log('🤖 AI-First Mode: Prioritizing ML recommendations');
               
-              // Enhanced scoring with real customer behavior (implemented inline)
+              // Get ML user profile (respecting privacy)
+              const userProfile = mlPrivacyLevel !== 'basic' ? {
+                sessionId,
+                customerId: mlPrivacyLevel === 'advanced' ? customerId : undefined,
+                privacyLevel: mlPrivacyLevel
+              } : null;
+              
+              // Combine multiple ML strategies
+              const mlPromises = [];
+              
+              // 1. Content-based recommendations
+              if (anchors.size > 0) {
+                mlPromises.push(
+                  fetch(`${url.origin}/api/ml/content-recommendations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      product_ids: Array.from(anchors),
+                      exclude_ids: cartParam ? cartParam.split(',') : [],
+                      customer_preferences: userProfile,
+                      privacy_level: mlPrivacyLevel
+                    })
+                  }).then(r => r.ok ? r.json() : null).catch(() => null)
+                );
+              }
+              
+              // 2. Collaborative filtering (if advanced personalization)
+              if (mlPrivacyLevel === 'advanced' && customerId) {
+                mlPromises.push(
+                  fetch(`${url.origin}/api/ml/collaborative-data`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      privacy_level: mlPrivacyLevel,
+                      include_user_similarities: true
+                    })
+                  }).then(r => r.ok ? r.json() : null).catch(() => null)
+                );
+              }
+              
+              const mlResults = await Promise.all(mlPromises);
+              
+              // Extract recommendations from ML responses
+              mlResults.forEach(result => {
+                if (result?.recommendations) {
+                  mlRecommendations.push(...result.recommendations);
+                }
+              });
+              
+              if (mlRecommendations.length > 0) {
+                // Merge ML recommendations with existing ones
+                const mlProductIds = mlRecommendations.map((r: any) => r.product_id);
+                const mlProducts = await normalizeIdsToProducts(mlProductIds);
+                
+                // Prioritize ML recommendations
+                const mlEnhanced = mlProducts.slice(0, Math.floor(limit * 0.7)); // 70% ML
+                const traditional = combined.filter(c => !mlProductIds.includes(c.id)).slice(0, Math.ceil(limit * 0.3)); // 30% traditional
+                
+                finalRecommendations = [...mlEnhanced, ...traditional].slice(0, limit);
+                dataMetrics.mlEnhanced = true;
+                
+                console.log('✨ AI-First: Using', mlEnhanced.length, 'ML +', traditional.length, 'traditional');
+              }
+              
+            } else if (effectivePersonalizationMode === 'popular') {
+              console.log('🔥 Popular Mode: Showing trending products');
+              
+              // Get popular recommendations
+              const popularResponse = await fetch(`${url.origin}/api/ml/popular-recommendations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  exclude_ids: cartParam ? cartParam.split(',').concat(Array.from(anchors)) : Array.from(anchors),
+                  customer_preferences: mlPrivacyLevel !== 'basic' ? { sessionId, customerId, privacyLevel: mlPrivacyLevel } : null,
+                  privacy_level: mlPrivacyLevel
+                })
+              }).then(r => r.ok ? r.json() : null).catch(() => null);
+              
+              if (popularResponse?.recommendations) {
+                const popularIds = popularResponse.recommendations.map((r: any) => r.product_id);
+                const popularProducts = await normalizeIdsToProducts(popularIds);
+                
+                finalRecommendations = popularProducts.slice(0, limit);
+                dataMetrics.mlEnhanced = true;
+                
+                console.log('🔥 Popular: Showing', finalRecommendations.length, 'trending products');
+              }
+              
+            } else if (effectivePersonalizationMode === 'balanced') {
+              console.log('⚖️ Balanced Mode: Mixing ML, co-purchase, and popular');
+              
+              // Balanced approach: 40% ML, 30% co-purchase, 30% popular
+              if (hasGoodData) {
+                const contentResponse = await fetch(`${url.origin}/api/ml/content-recommendations`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    product_ids: Array.from(anchors),
+                    exclude_ids: cartParam ? cartParam.split(',') : [],
+                    privacy_level: mlPrivacyLevel
+                  })
+                }).then(r => r.ok ? r.json() : null).catch(() => null);
+                
+                if (contentResponse?.recommendations) {
+                  const mlIds = contentResponse.recommendations.slice(0, Math.floor(limit * 0.4)).map((r: any) => r.product_id);
+                  const mlProducts = await normalizeIdsToProducts(mlIds);
+                  
+                  // Mix with traditional recommendations
+                  const coPurchase = combined.slice(0, Math.ceil(limit * 0.6));
+                  
+                  // Interleave for diversity
+                  const balanced: any[] = [];
+                  const maxLen = Math.max(mlProducts.length, coPurchase.length);
+                  for (let i = 0; i < maxLen && balanced.length < limit; i++) {
+                    if (i < mlProducts.length) balanced.push(mlProducts[i]);
+                    if (balanced.length < limit && i < coPurchase.length) balanced.push(coPurchase[i]);
+                  }
+                  
+                  finalRecommendations = balanced.slice(0, limit);
+                  dataMetrics.mlEnhanced = true;
+                  
+                  console.log('⚖️ Balanced: Mixed', mlProducts.length, 'ML +', coPurchase.length, 'traditional');
+                }
+              }
+            }
+            
+            // Fallback to basic inline ML if no advanced ML was applied
+            if (!dataMetrics.mlEnhanced && hasGoodData) {
+              console.log('📊 Using inline ML scoring with', orderEdges.length, 'orders');
+              
+              // Enhanced scoring with real customer behavior
               const enhancedScoring = combined.map(rec => {
-                // Find frequency of this product in recent orders
                 const productAppearances = orderEdges.filter(order => 
                   order.node?.lineItems?.edges?.some((li: any) => 
                     li.node?.product?.id?.includes(rec.id)
@@ -761,55 +911,44 @@ export async function loader({ request }: LoaderFunctionArgs) {
                 return { ...rec, mlScore: enhancedScore };
               });
               
-              // Re-sort by ML score
               finalRecommendations = enhancedScoring
                 .sort((a, b) => (b.mlScore || 0) - (a.mlScore || 0))
                 .slice(0, limit);
               
               dataMetrics.mlEnhanced = true;
-              dataMetrics.dataQuality = orderEdges.length >= 200 ? 'rich' : orderEdges.length >= 100 ? 'good' : 'growing';
-            } else if (orderEdges.length < 10) {
-              console.log('📊 New store detected, using existing algorithm with', orderEdges.length, 'orders');
-              // Cold start: Keep existing recommendations but mark as new store
-              dataMetrics.dataQuality = 'new_store';
             }
             
-            // Track ML recommendation event with real data (if privacy allows)
+            // Track ML recommendation event (if privacy allows)
             if (enableBehaviorTracking && mlPrivacyLevel !== 'basic') {
               try {
-                // Real event tracking implementation
-                console.log('📈 Tracking ML recommendation event:', {
-                  shop: shopStr,
-                  eventType: 'ml_recommendation_served',
-                  anchors: Array.from(anchors),
-                  recommendationCount: finalRecommendations.length,
-                  dataQuality: dataMetrics.dataQuality,
-                  mlMode: mlPersonalizationMode,
-                  orderDataPoints: orderEdges.length
-                });
+                console.log('📈 Tracking ML recommendation event');
                 
-                // Store in tracking events if available
                 if ((db as any)?.trackingEvent?.create) {
                   await (db as any).trackingEvent.create({
                     data: {
                       shop: shopStr,
                       event: 'ml_recommendation_served',
                       productId: Array.from(anchors)[0] || '',
+                      sessionId: sessionId,
+                      customerId: mlPrivacyLevel === 'advanced' ? customerId : null,
+                      source: 'cart_drawer',
                       metadata: JSON.stringify({
                         anchors: Array.from(anchors),
                         recommendationCount: finalRecommendations.length,
                         dataQuality: dataMetrics.dataQuality,
-                        mlMode: mlPersonalizationMode,
-                        orderDataPoints: orderEdges.length
+                        mlMode: effectivePersonalizationMode,
+                        orderDataPoints: orderEdges.length,
+                        privacyLevel: mlPrivacyLevel
                       }),
                       createdAt: new Date()
                     }
-                  }).catch(() => null); // Graceful failure
+                  }).catch((err: any) => console.warn('Tracking failed:', err));
                 }
               } catch (trackingError) {
                 console.warn('📊 ML event tracking failed:', trackingError);
               }
             }
+            
           } catch (mlError) {
             console.warn('⚠️ ML enhancement failed, using standard algorithm:', mlError);
             // Graceful degradation - keep original recommendations
