@@ -1,0 +1,176 @@
+{% comment %} Placeholder snippet retained for future use. {% endcomment %}
+
+  Loads CartUpliftSettings into window for the theme app extension.  Cart Uplift Settings Injection
+
+<script>
+
+(function() {
+
+  'use strict';
+
+  This snippet loads and injects CartUpliftSettings into the global window object
+
+  if (window.CartUpliftSettings && window.CartUpliftSettings._source === 'snippet') {
+
+    return;<script><script>
+
+  }
+
+(function() {(function() {
+
+  const shop = '{{ shop.permanent_domain }}';
+
+  'use strict';
+
+  async function loadSettings() {
+
+    try {
+
+      const response = await fetch('/apps/cart-uplift/api/settings');
+
+      if (!response.ok) {  if (window.CartUpliftSettings && window.CartUpliftSettings._source === 'snippet') {  if (window.CartUpliftSettings && window.CartUpliftSettings._source === 'snippet') {
+
+        console.warn('[CartUplift] Failed to fetch settings (status: ' + response.status + ')');
+
+        return;    return;    return;
+
+      }
+
+  }  }
+
+      const settings = await response.json();
+
+      window.CartUpliftSettings = Object.assign({}, settings, {
+
+        _source: 'snippet',
+
+        shopDomain: shop,  const shop = '{{ shop.permanent_domain }}';  const shop = '{{ shop.permanent_domain }}';
+
+      });
+
+
+
+      document.dispatchEvent(new CustomEvent('cartuplift:settings:loaded', {
+
+        detail: window.CartUpliftSettings,  async function loadSettings() {  async function loadCartUpliftSettings() {
+
+      }));
+
+    } catch (error) {    try {    try {
+
+      console.error('[CartUplift] Settings load failed:', error);
+
+    }      const response = await fetch('/apps/cart-uplift/api/settings');      const response = await fetch('/apps/cart-uplift/api/settings');
+
+  }
+
+      if (!response.ok) {      if (!response.ok) {
+
+  if (document.readyState === 'loading') {
+
+    document.addEventListener('DOMContentLoaded', loadSettings);        console.warn('[CartUplift] Failed to fetch settings (status: ' + response.status + ')');        console.warn('[CartUplift] Failed to fetch settings, status:', response.status);
+
+  } else {
+
+    loadSettings();        return;        return;
+
+  }
+
+})();      }      }
+
+</script>
+
+
+
+      const settings = await response.json();      const settings = await response.json();
+
+      window.CartUpliftSettings = Object.assign({}, settings, {      window.CartUpliftSettings = Object.assign({}, settings, {
+
+        _source: 'snippet',        _source: 'snippet',
+
+        shopDomain: shop,        shopDomain: shop,
+
+      });      });
+
+
+
+      document.dispatchEvent(new CustomEvent('cartuplift:settings:loaded', {      document.dispatchEvent(new CustomEvent('cartuplift:settings:loaded', {
+
+        detail: window.CartUpliftSettings,        detail: window.CartUpliftSettings,
+
+      }));      }));
+
+    } catch (error) {    } catch (error) {
+
+      console.error('[CartUplift] Settings load failed:', error);      console.error('[CartUplift] Settings load failed:', error);
+
+    }    }
+
+  }  }
+
+
+
+  if (document.readyState === 'loading') {  loadCartUpliftSettings();
+
+    document.addEventListener('DOMContentLoaded', loadSettings);})();
+
+  } else {</script>
+
+    loadSettings();
+
+  }        console.warn('[CartUplift] Failed to fetch settings, status:', response.status);        const settings = await response.json();
+
+})();
+
+</script>        return;        
+
+
+      }        // Set global settings
+
+      const settings = await response.json();        window.CartUpliftSettings = settings;
+
+              window.CartUpliftShop = shop;
+
+      window.CartUpliftSettings = Object.assign({}, settings, {        
+
+        _source: 'snippet',        // Trigger cart initialization if the drawer script is already loaded
+
+        shopDomain: shop,        if (window.CartUpliftDrawer && !window.cartUpliftDrawer) {
+
+      });          window.cartUpliftDrawer = new window.CartUpliftDrawer(settings);
+
+              }
+
+      document.dispatchEvent(new CustomEvent('cartuplift:settings:loaded', {        
+
+        detail: window.CartUpliftSettings,        // Dispatch event to notify other scripts
+
+      }));        const event = new CustomEvent('cartuplift:settings-loaded', { detail: settings });
+
+    } catch (error) {        document.dispatchEvent(event);
+
+      console.error('[CartUplift] Settings load failed:', error);        
+
+    }        console.log('[CartUplift] Settings loaded successfully:', settings);
+
+  }      } else {
+
+          console.warn('[CartUplift] Failed to load settings:', response.status);
+
+  loadCartUpliftSettings();      }
+
+})();    } catch (error) {
+
+</script>      console.error('[CartUplift] Error loading settings:', error);
+
+    }
+  }
+  
+  // Load settings when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadCartUpliftSettings);
+  } else {
+    loadCartUpliftSettings();
+  }
+})();
+</script>

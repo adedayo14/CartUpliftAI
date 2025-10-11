@@ -232,6 +232,10 @@ export default function Index() {
           gap: 20px;
         }
 
+        .no-underline {
+          text-decoration: none;
+        }
+
         .grid-3 {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -372,13 +376,13 @@ export default function Index() {
                   href={themeEditorUrl} 
                   target="_top" 
                   rel="noopener noreferrer" 
-                  style={{ textDecoration: 'none' }}
+                  className="no-underline"
                 >
                   <Button size="large" variant="primary">
                     🎨 Enable in Theme
                   </Button>
                 </a>
-                <Link to="/app/settings" style={{ textDecoration: 'none' }}>
+                <Link to="/app/settings" className="no-underline">
                   <Button size="large">
                     ⚙️ Configure Settings
                   </Button>
@@ -749,7 +753,7 @@ export default function Index() {
                     See your revenue impact, conversion rates, and top products at a glance.
                   </Text>
                 </BlockStack>
-                <Link to="/app/dashboard" style={{ textDecoration: 'none' }}>
+                <Link to="/app/dashboard" className="no-underline">
                   <Button variant="primary" size="large" fullWidth>
                     View Dashboard →
                   </Button>
@@ -767,7 +771,7 @@ export default function Index() {
                     Configure AI recommendations, progress bars, gifts, and customize the cart experience.
                   </Text>
                 </BlockStack>
-                <Link to="/app/settings" style={{ textDecoration: 'none' }}>
+                <Link to="/app/settings" className="no-underline">
                   <Button size="large" fullWidth>
                     Manage Settings →
                   </Button>
