@@ -388,3 +388,98 @@ model TrackingEvent {
   @@index([sessionId, createdAt(sort: Desc)])
   @@map("tracking_events")
 }
+
+// ML User Profiles for personalization (respects privacy settings)
+model MLUserProfile {
+  id                String   @id @default(cuid())
+  shop              String
+  customerId        String?  // Only stored if privacy level allows
+  sessionId         String   // Always stored
+  anonymousId       String?  // Generated ID for basic privacy mode
+  
+  // Privacy Control
+  privacyLevel      String   @default("basic") // "basic" | "standard" | "advanced"
+  consentTimestamp  DateTime?
+  dataRetentionDays Int      @default(30)
+  
+  // Behavioral Data (only collected based on privacy level)
+  viewedProducts    Json?    // Array of product IDs
+  cartedProducts    Json?    // Array of product IDs
+  purchasedProducts Json?    // Array of product IDs
+  categoryPreferences Json?  // Category affinity scores
+  priceRangePreference Json? // Min/max price preferences
+  
+  // ML Feature Vectors (computed)
+  featureVector     Json?    // ML-generated feature representation
+  similarUsers      Json?    // Array of similar user IDs (collaborative filtering)
+  
+  // Metadata
+  lastActivity      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Soft delete for GDPR compliance
+  deletedAt         DateTime?
+  
+  @@unique([shop, sessionId])
+  @@index([shop, customerId])
+  @@index([shop, lastActivity(sort: Desc)])
+  @@index([shop, privacyLevel])
+  @@index([deletedAt]) // For cleanup jobs
+  @@map("ml_user_profiles")
+}
+
+// Product Similarity Matrix (for content-based recommendations)
+model MLProductSimilarity {
+  id            String   @id @default(cuid())
+  shop          String
+  productId1    String
+  productId2    String
+  
+  // Similarity Scores
+  categoryScore Float    @default(0) // Category similarity
+  priceScore    Float    @default(0) // Price range similarity
+  coViewScore   Float    @default(0) // Co-viewing frequency
+  coPurchaseScore Float  @default(0) // Co-purchase frequency
+  overallScore  Float    @default(0) // Combined similarity score
+  
+  // Metadata
+  computedAt    DateTime @default(now())
+  sampleSize    Int      @default(0) // Number of data points used
+  
+  @@unique([shop, productId1, productId2])
+  @@index([shop, productId1, overallScore(sort: Desc)])
+  @@index([shop, overallScore(sort: Desc)])
+  @@map("ml_product_similarity")
+}
+
+// Data Retention Jobs (for privacy compliance)
+model MLDataRetentionJob {
+  id              String   @id @default(cuid())
+  shop            String
+  jobType         String   // "cleanup" | "anonymize" | "export" | "delete"
+  status          String   @default("pending") // "pending" | "running" | "completed" | "failed"
+  
+  // Job Parameters
+  privacyLevel    String?
+  dataType        String?  // "profiles" | "tracking" | "all"
+  retentionDays   Int?
+  cutoffDate      DateTime?
+  
+  // Results
+  recordsProcessed Int     @default(0)
+  recordsDeleted   Int     @default(0)
+  errorMessage     String?
+  
+  // Timestamps
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  
+  @@index([shop, status])
+  @@index([shop, createdAt(sort: Desc)])
+  @@index([status, scheduledAt])
+  @@map("ml_data_retention_jobs")
+}
+
