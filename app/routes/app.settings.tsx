@@ -20,16 +20,39 @@ import {
 import { CheckIcon } from '@shopify/polaris-icons';
 import { withAuth } from "../utils/auth.server";
 import { getSettings } from "../models/settings.server";
+import { getDataQualityMetrics } from "../services/ml-analytics.server";
 
 export const loader = withAuth(async ({ auth }) => {
   const shop = auth.session.shop;
   const settings = await getSettings(shop);
   
+  // Get real data quality metrics
+  const dataMetrics = await getDataQualityMetrics(shop);
+  
+  let ordersBadgeText = `${dataMetrics.orderCount} Orders`;
+  let dataQualityTone: 'info' | 'success' | 'warning' | 'critical' = 'info';
+  let dataQualityLabel = 'New Store';
+  
+  if (dataMetrics.qualityLevel === 'new_store') {
+    dataQualityTone = 'info';
+    dataQualityLabel = 'New Store';
+  } else if (dataMetrics.qualityLevel === 'growing') {
+    dataQualityTone = 'warning';
+    dataQualityLabel = 'Growing';
+  } else if (dataMetrics.qualityLevel === 'good') {
+    dataQualityTone = 'success';
+    dataQualityLabel = 'Good';
+  } else if (dataMetrics.qualityLevel === 'rich') {
+    dataQualityTone = 'success';
+    dataQualityLabel = 'Excellent';
+  }
+  
   return json({
     settings,
-    ordersBadgeText: '0 Orders',
-    dataQualityTone: 'info',
-    dataQualityLabel: 'Low',
+    ordersBadgeText,
+    dataQualityTone,
+    dataQualityLabel,
+    dataMetrics
   });
 });
 
@@ -106,7 +129,7 @@ export default function AppSettings() {
   return (
     <Page
       title="Settings"
-      subtitle="Configure AI recommendations, text customization, and features v1"
+      subtitle="Configure AI recommendations, text customization, and features"
     >
       <BlockStack gap="500">
         {/* Success/Error Banners */}
