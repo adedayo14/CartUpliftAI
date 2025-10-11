@@ -309,6 +309,33 @@ export default function Index() {
           grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
           gap: 20px;
         }
+
+        .text-center {
+          text-align: center;
+        }
+
+        .mt-8 {
+          margin-top: 8px;
+        }
+
+        .mt-12 {
+          margin-top: 12px;
+        }
+
+        .mt-16 {
+          margin-top: 16px;
+        }
+
+        .price-display {
+          margin-top: 12px;
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+        }
+
+        .icon-size {
+          font-size: 20px;
+        }
       `}</style>
 
       <Page fullWidth>
@@ -371,11 +398,11 @@ export default function Index() {
                   Our AI learns from each customer's behavior to show products they actually want, not random suggestions. This is the difference between a 5% conversion rate and a 40% conversion rate.
                 </Text>
                 
-                <div className="grid-2" style={{ marginTop: '16px' }}>
+                <div className="grid-2 mt-16">
                   <div className="comparison-box error">
                     <BlockStack gap="200">
                       <InlineStack gap="200" blockAlign="center">
-                        <span style={{ fontSize: '20px' }}>❌</span>
+                        <span className="icon-size">❌</span>
                         <Text as="p" variant="bodyMd" fontWeight="semibold">
                           Random Recommendations
                         </Text>
@@ -392,16 +419,16 @@ export default function Index() {
                   <div className="comparison-box success">
                     <BlockStack gap="200">
                       <InlineStack gap="200" blockAlign="center">
-                        <span style={{ fontSize: '20px' }}>✅</span>
+                        <span className="icon-size">✅</span>
                         <Text as="p" variant="bodyMd" fontWeight="semibold">
-                          AI Personalized (Cart Uplift)
+                          ML-Powered Recommendations
                         </Text>
                       </InlineStack>
                       <Text as="p" variant="bodyMd" tone="subdued">
-                        Analyzes cart contents, behavior patterns, and purchase history to show products each customer wants.
+                        Learns what each customer wants. Shows them products they're likely to buy. Feels personalized = higher trust = more sales.
                       </Text>
                       <Text as="p" variant="bodyMd" fontWeight="bold" tone="success">
-                        35-42% click rate → More revenue
+                        35-50% click rate
                       </Text>
                     </BlockStack>
                   </div>
@@ -506,13 +533,15 @@ export default function Index() {
 
           {/* Pricing Section */}
           <BlockStack gap="400">
-            <div style={{ textAlign: 'center' }}>
+            <div className="text-center">
               <Text as="h2" variant="headingLg" fontWeight="semibold">
                 Choose Your Plan
               </Text>
-              <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                Start with our 14-day free trial. Cancel anytime.
-              </Text>
+              <div className="mt-8">
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  Start with our 14-day free trial. Cancel anytime.
+                </Text>
+              </div>
             </div>
 
             <div className="grid-3">
@@ -522,13 +551,15 @@ export default function Index() {
                   <Text as="h3" variant="headingLg" fontWeight="bold">
                     Starter
                   </Text>
-                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <div className="price-display">
                     <span className="pricing-price">$49</span>
                     <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                   </div>
-                  <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                    Up to 500 orders per month
-                  </Text>
+                  <div className="mt-8">
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Up to 500 orders per month
+                    </Text>
+                  </div>
                 </div>
 
                 <div className="pricing-features">
@@ -585,13 +616,15 @@ export default function Index() {
                   <Text as="h3" variant="headingLg" fontWeight="bold">
                     Growth
                   </Text>
-                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <div className="price-display">
                     <span className="pricing-price">$79</span>
                     <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                   </div>
-                  <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                    Up to 2,000 orders per month
-                  </Text>
+                  <div className="mt-8">
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Up to 2,000 orders per month
+                    </Text>
+                  </div>
                 </div>
 
                 <div className="pricing-features">
@@ -636,13 +669,15 @@ export default function Index() {
                   <Text as="h3" variant="headingLg" fontWeight="bold">
                     Pro
                   </Text>
-                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <div className="price-display">
                     <span className="pricing-price">$149</span>
                     <Text as="span" variant="bodyLg" tone="subdued">/month</Text>
                   </div>
-                  <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                    Unlimited orders
-                  </Text>
+                  <div className="mt-8">
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Unlimited orders
+                    </Text>
+                  </div>
                 </div>
 
                 <div className="pricing-features">
@@ -685,16 +720,20 @@ export default function Index() {
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <div className="text-center mt-16">
               <Text as="p" variant="bodyMd" tone="subdued">
                 💡 Average ROI: 123x • Most merchants make back their investment in the first week
               </Text>
-              <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                ✓ No setup fees • No hidden charges • No per-order fees • Cancel anytime
-              </Text>
-              <Text as="p" variant="bodyMd" tone="subdued" style={{ marginTop: '8px' }}>
-                🔒 You control your data • Choose what the AI uses • Privacy-first approach
-              </Text>
+              <div className="mt-8">
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  ✓ No setup fees • No hidden charges • No per-order fees • Cancel anytime
+                </Text>
+              </div>
+              <div className="mt-8">
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  🔒 You control your data • Choose what the AI uses • Privacy-first approach
+                </Text>
+              </div>
             </div>
           </BlockStack>
 
