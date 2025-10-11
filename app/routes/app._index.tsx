@@ -9,7 +9,6 @@ import {
   InlineStack,
   Text,
   Badge,
-  Banner,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -760,11 +759,11 @@ export default function Index() {
                   </Text>
                 </BlockStack>
               </div>
-              <a href={`/app/dashboard${search}`} className="no-underline">
+              <Link to={`/admin/dashboard${search}`} className="no-underline">
                 <Button variant="primary" size="large" fullWidth>
                   View Dashboard →
                 </Button>
-              </a>
+              </Link>
             </div>
 
             <div className="action-card">
@@ -778,11 +777,11 @@ export default function Index() {
                   </Text>
                 </BlockStack>
               </div>
-              <a href={`/app/settings${search}`} className="no-underline">
+              <Link to={`/app/settings${search}`} className="no-underline">
                 <Button size="large" fullWidth>
                   Manage Settings →
                 </Button>
-              </a>
+              </Link>
             </div>
           </div>
         </BlockStack>
