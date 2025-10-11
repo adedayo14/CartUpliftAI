@@ -106,7 +106,7 @@ export default function AppSettings() {
   return (
     <Page
       title="Settings"
-      subtitle="Configure AI recommendations, text customization, and features"
+      subtitle="Configure AI recommendations, text customization, and features v1"
     >
       <BlockStack gap="500">
         {/* Success/Error Banners */}
@@ -164,7 +164,7 @@ export default function AppSettings() {
                       </Text>
                       <InlineStack gap="200">
                         <Badge tone={badgeTone}>{ordersBadgeText}</Badge>
-                        <Badge tone={badgeTone}>Quality: {dataQualityLabel}</Badge>
+                        <Badge tone={badgeTone}>{`Quality: ${dataQualityLabel}`}</Badge>
                       </InlineStack>
                       
                       {formSettings.mlPrivacyLevel === 'basic' && (
