@@ -244,6 +244,23 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
     console.log('🔧 saveSettings called for shop:', shop);
     console.log('🔧 settingsData received:', settingsData);
     
+    // Convert string boolean values to actual booleans
+    const normalizedData: any = {};
+    for (const [key, value] of Object.entries(settingsData)) {
+      if (value === 'true') {
+        normalizedData[key] = true;
+      } else if (value === 'false') {
+        normalizedData[key] = false;
+      } else if (value === 'on') {
+        // Handle checkbox form values
+        normalizedData[key] = true;
+      } else {
+        normalizedData[key] = value;
+      }
+    }
+    
+    console.log('🔧 Normalized data:', normalizedData);
+    
     // Test database connection first
     try {
       await (db as any).$connect();
@@ -280,7 +297,7 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
     const filteredData: Partial<SettingsData> = {};
     for (const field of validFields) {
       const key = field as keyof SettingsData;
-      const val = settingsData[key];
+      const val = normalizedData[key];
       if (val !== undefined) {
         (filteredData as any)[key] = val;
       }
@@ -289,7 +306,7 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
     // Include all fields for production PostgreSQL database
     for (const field of devOnlyFields) {
       const key = field as keyof SettingsData;
-      const val = settingsData[key as keyof SettingsData];
+      const val = normalizedData[key as keyof SettingsData];
       if (val !== undefined) {
         console.log(`🔧 Including field ${String(field)} in save operation`);
         (filteredData as any)[key] = val;
@@ -529,7 +546,7 @@ export function getDefaultSettings(): SettingsData {
     freeShippingThreshold: 0,
     
     // Advanced Features
-  enableRecommendations: false,
+  enableRecommendations: true, // Default to TRUE so recommendations show when ML is enabled
     enableAddons: false,
     enableDiscountCode: true,
     enableNotes: false,

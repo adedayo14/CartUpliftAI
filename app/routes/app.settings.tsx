@@ -151,13 +151,32 @@ export default function AppSettings() {
             </BlockStack>
 
             <Checkbox
-              label="Enable ML Recommendations"
-              checked={formSettings.enableMLRecommendations}
-              onChange={(value) => updateSetting("enableMLRecommendations", value)}
-              helpText="Use machine learning to personalize product recommendations"
+              label="Show Product Recommendations in Cart"
+              checked={formSettings.enableRecommendations}
+              onChange={(value) => updateSetting("enableRecommendations", value)}
+              helpText="Master toggle - must be enabled to show any recommendations to customers"
             />
 
-            {formSettings.enableMLRecommendations && (
+            {formSettings.enableRecommendations && (
+              <>
+                <Divider />
+                
+                <Checkbox
+                  label="Enable ML Recommendations"
+                  checked={formSettings.enableMLRecommendations}
+                  onChange={(value) => {
+                    updateSetting("enableMLRecommendations", value);
+                    // Auto-enable master recommendations toggle when ML is enabled
+                    if (value && !formSettings.enableRecommendations) {
+                      updateSetting("enableRecommendations", true);
+                    }
+                  }}
+                  helpText="Use machine learning to personalize product recommendations"
+                />
+              </>
+            )}
+
+            {formSettings.enableRecommendations && formSettings.enableMLRecommendations && (
               <BlockStack gap="400">
                 <Divider />
 
