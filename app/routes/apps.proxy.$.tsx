@@ -869,7 +869,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
                 title
                 handle
                 status
-                featuredImage { url altText }
+                featuredMedia { preview { image { url altText } } }
                 priceRangeV2 { minVariantPrice { amount currencyCode } }
                 variants(first: 10) {
                   edges { node { id title price availableForSale } }
@@ -908,8 +908,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
           title: n.title,
           handle: n.handle,
           status: n.status,
-          image: n.featuredImage?.url || null,
-          imageAlt: n.featuredImage?.altText || n.title,
+          image: n.featuredMedia?.preview?.image?.url || null,
+          imageAlt: n.featuredMedia?.preview?.image?.altText || n.title,
           minPrice,
           currency,
           price: minPrice,
