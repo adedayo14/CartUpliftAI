@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import type { Experiment, Variant } from "@prisma/client";
 import { getSettings, saveSettings } from "../models/settings.server";
+import { getShopCurrency } from "../services/currency.server";
 import db from "../db.server";
 import { authenticate, unauthenticated } from "../shopify.server";
 // import { generateBundlesFromOrders } from "../services/ml.server";

@@ -90,8 +90,8 @@ model Settings {
   giftPriceText           String   @default("FREE")
 
   // ML/Privacy Settings (required for AI Personalization section)
-  mlPersonalizationMode   String   @default("basic")
-  enableMLRecommendations Boolean  @default(false)
+  mlPersonalizationMode   String   @default("balanced")
+  enableMLRecommendations Boolean  @default(true)
   mlPrivacyLevel          String   @default("basic")
   enableAdvancedPersonalization Boolean @default(false)
   enableBehaviorTracking  Boolean  @default(false)
@@ -119,6 +119,10 @@ model Settings {
   // Theme App Embed Status
   themeEmbedEnabled       Boolean  @default(false)
   themeEmbedLastSeen      DateTime?
+  
+  // Store Configuration
+  currencyCode            String?  // Store's currency (fetched from Shopify)
+  moneyFormat             String?  // Store's money format pattern
   
   // Subscription & Billing (COMMENTED OUT - ACTIVATE AFTER DB MIGRATION)
   // subscriptionPlan        String?  // "starter" | "growth" | "pro"
