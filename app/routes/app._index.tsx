@@ -308,29 +308,6 @@ export default function Index() {
           margin-top: 2px;
         }
 
-        .pricing-trust-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          margin-bottom: 12px;
-          padding: 10px;
-          background: #f9fafb;
-          border-radius: 8px;
-          border-left: 3px solid #10b981;
-        }
-
-        .pricing-trust-icon {
-          font-size: 18px;
-          flex-shrink: 0;
-        }
-
-        .pricing-trust-text {
-          font-size: 13px;
-          color: #374151;
-          font-weight: 500;
-          line-height: 1.5;
-        }
-
         .grid-4 {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -622,14 +599,17 @@ export default function Index() {
                     <span className="pricing-checkmark">✓</span>
                     <Text as="p" variant="bodyMd">Email support (24-48hr)</Text>
                   </div>
-                  
-                  <div className="pricing-trust-item">
-                    <span className="pricing-trust-icon">💡</span>
-                    <div className="pricing-trust-text">Average ROI: 123x in first week</div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Cancel anytime, no setup fees</Text>
                   </div>
-                  <div className="pricing-trust-item">
-                    <span className="pricing-trust-icon">✓</span>
-                    <div className="pricing-trust-text">Cancel anytime • No setup fees</div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">No per-order charges</Text>
+                  </div>
+                  <div className="pricing-feature-item">
+                    <span className="pricing-checkmark">✓</span>
+                    <Text as="p" variant="bodyMd">Privacy-first, GDPR compliant</Text>
                   </div>
                 </div>
 
@@ -683,15 +663,6 @@ export default function Index() {
                   <div className="pricing-feature-item">
                     <span className="pricing-checkmark">✓</span>
                     <Text as="p" variant="bodyMd">Advanced analytics with data exports</Text>
-                  </div>
-                  
-                  <div className="pricing-trust-item">
-                    <span className="pricing-trust-icon">⭐</span>
-                    <div className="pricing-trust-text">Most popular plan • Best value</div>
-                  </div>
-                  <div className="pricing-trust-item">
-                    <span className="pricing-trust-icon">✓</span>
-                    <div className="pricing-trust-text">Cancel anytime • No per-order fees</div>
                   </div>
                 </div>
 
@@ -749,15 +720,6 @@ export default function Index() {
                   <div className="pricing-feature-item">
                     <span className="pricing-checkmark">✓</span>
                     <Text as="p" variant="bodyMd">Custom feature requests priority</Text>
-                  </div>
-                  
-                  <div className="pricing-trust-item">
-                    <span className="pricing-trust-icon">🚀</span>
-                    <div className="pricing-trust-text">Scale without limits • No hidden charges</div>
-                  </div>
-                  <div className="pricing-trust-item">
-                    <span className="pricing-trust-icon">🔒</span>
-                    <div className="pricing-trust-text">Privacy-first approach • Priority support</div>
                   </div>
                 </div>
 
