@@ -1,60 +1,51 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
-    const { session } = await authenticate.admin(request);
+    const { session } = await authenticate.public.appProxy(request);
     const url = new URL(request.url);
-    const shop = url.searchParams.get('shop') || session.shop;
+    const shop = url.searchParams.get('shop') || session?.shop;
 
-    // For now, return sample purchase patterns
-    // In production, this would fetch real analytics data from Shopify or your database
-    const purchasePatterns = {
-      frequentPairs: {
-        // Running Shoes
-        "7234567890123": {
-          "7234567890124": 0.35, // Athletic Socks
-          "7234567890125": 0.28, // Insoles
-          "7234567890126": 0.22, // Water Bottle
-          "7234567890127": 0.18, // Fitness Tracker
-        },
-        // Dress Shirt
-        "7234567890130": {
-          "7234567890131": 0.42, // Ties
-          "7234567890132": 0.31, // Cufflinks
-          "7234567890133": 0.25, // Belt
-          "7234567890134": 0.19, // Blazer
-        },
-        // Laptop
-        "7234567890140": {
-          "7234567890141": 0.65, // Laptop Case
-          "7234567890142": 0.54, // Wireless Mouse
-          "7234567890143": 0.38, // Keyboard
-          "7234567890144": 0.29, // Monitor
-        },
-        // Coffee Maker
-        "7234567890150": {
-          "7234567890151": 0.58, // Coffee Beans
-          "7234567890152": 0.45, // Coffee Filters
-          "7234567890153": 0.37, // Coffee Mug
-          "7234567890154": 0.24, // Milk Frother
-        },
-        // Yoga Mat
-        "7234567890160": {
-          "7234567890161": 0.33, // Yoga Blocks
-          "7234567890162": 0.29, // Yoga Strap
-          "7234567890163": 0.26, // Water Bottle
-          "7234567890164": 0.21, // Yoga Pants
-        },
-        // Winter Boots
-        "7234567890170": {
-          "7234567890171": 0.48, // Wool Socks
-          "7234567890172": 0.34, // Boot Spray
-          "7234567890173": 0.27, // Insoles
-          "7234567890174": 0.19, // Foot Warmers
-        }
+    if (!shop) {
+      return json({ error: 'Shop parameter required' }, { status: 400 });
+    }
+
+    // Fetch product pairs from ML similarity data
+    const similarityData = await prisma.mLProductSimilarity.findMany({
+      where: { shop },
+      orderBy: { overallScore: 'desc' },
+      take: 50 // Top 50 product pairs
+    });
+
+    // Build frequentPairs map from similarity scores
+    const frequentPairs: Record<string, Record<string, number>> = {};
+    similarityData.forEach((pair: { productId1: string; productId2: string; coPurchaseScore: number }) => {
+      if (!frequentPairs[pair.productId1]) {
+        frequentPairs[pair.productId1] = {};
+      }
+      frequentPairs[pair.productId1][pair.productId2] = pair.coPurchaseScore;
+    });
+
+    // Get store metadata for AOV calculation from checkout events
+    const recentOrders = await prisma.trackingEvent.findMany({
+      where: {
+        shop,
+        event: 'purchase'
       },
+      select: { revenueCents: true },
+      take: 100,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const avgOrderValue = recentOrders.length > 0
+      ? Math.round(recentOrders.reduce((sum, o) => sum + (o.revenueCents || 0), 0) / recentOrders.length)
+      : 5000; // Default $50 (5000 cents)
+
+    const purchasePatterns = {
+      frequentPairs,
       
       // Complement confidence scores by product category
       complementCategories: {
