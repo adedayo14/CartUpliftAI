@@ -340,6 +340,18 @@ export default function Index() {
         .icon-size {
           font-size: 20px;
         }
+
+        .pricing-trust-badges {
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .trust-badge {
+          font-size: 12px;
+          color: #6b7280;
+          line-height: 1.6;
+        }
       `}</style>
 
       <Page fullWidth>
@@ -610,6 +622,11 @@ export default function Index() {
                   >
                     Start Free Trial
                   </Button>
+                  
+                  <div className="pricing-trust-badges">
+                    <div className="trust-badge">✓ Cancel anytime • No setup fees</div>
+                    <div className="trust-badge">💡 Average ROI: 123x in first week</div>
+                  </div>
                 </div>
               </div>
 
@@ -664,6 +681,11 @@ export default function Index() {
                   >
                     Upgrade to Growth
                   </Button>
+                  
+                  <div className="pricing-trust-badges">
+                    <div className="trust-badge">✓ Cancel anytime • No per-order fees</div>
+                    <div className="trust-badge">💡 Most popular plan</div>
+                  </div>
                 </div>
               </div>
 
@@ -720,23 +742,12 @@ export default function Index() {
                   >
                     Upgrade to Pro
                   </Button>
+                  
+                  <div className="pricing-trust-badges">
+                    <div className="trust-badge">✓ No hidden charges • Priority support</div>
+                    <div className="trust-badge">🔒 Privacy-first approach</div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="text-center mt-16">
-              <Text as="p" variant="bodyMd" tone="subdued">
-                💡 Average ROI: 123x • Most merchants make back their investment in the first week
-              </Text>
-              <div className="mt-8">
-                <Text as="p" variant="bodyMd" tone="subdued">
-                  ✓ No setup fees • No hidden charges • No per-order fees • Cancel anytime
-                </Text>
-              </div>
-              <div className="mt-8">
-                <Text as="p" variant="bodyMd" tone="subdued">
-                  🔒 You control your data • Choose what the AI uses • Privacy-first approach
-                </Text>
               </div>
             </div>
           </BlockStack>
