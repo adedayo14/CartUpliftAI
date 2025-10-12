@@ -191,9 +191,9 @@ export default function AppSettings() {
                     <Select
                       label="Privacy & Data Usage Level"
                       options={[
-                        { label: '🔒 Basic - Product data only (no personal tracking)', value: 'basic' },
-                        { label: '📊 Standard - Session tracking (no customer ID)', value: 'standard' },
-                        { label: '🎯 Advanced - Full personalization (customer profiles)', value: 'advanced' }
+                        { label: 'Basic - Product data only (no personal tracking)', value: 'basic' },
+                        { label: 'Standard - Session tracking (no customer ID)', value: 'standard' },
+                        { label: 'Advanced - Full personalization (customer profiles)', value: 'advanced' }
                       ]}
                       value={formSettings.mlPrivacyLevel || "basic"}
                       onChange={(value) => {
