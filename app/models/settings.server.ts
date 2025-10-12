@@ -334,7 +334,9 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
   'cartIcon','freeShippingText','freeShippingAchievedText','recommendationsTitle','actionText',
         'addButtonText','checkoutButtonText','applyButtonText','backgroundColor','textColor','buttonColor','buttonTextColor',
         'recommendationsBackgroundColor','shippingBarBackgroundColor','shippingBarColor','recommendationLayout','maxRecommendations',
-        'complementDetectionMode','manualRecommendationProducts','hideRecommendationsAfterThreshold','enableThresholdBasedSuggestions','thresholdSuggestionMode','enableManualRecommendations','progressBarMode','giftProgressStyle','giftThresholds'
+        'complementDetectionMode','manualRecommendationProducts','hideRecommendationsAfterThreshold','enableThresholdBasedSuggestions','thresholdSuggestionMode','enableManualRecommendations','progressBarMode','giftProgressStyle','giftThresholds',
+        // ML/Privacy Settings - CRITICAL: Include these or they get stripped on fallback!
+        'mlPersonalizationMode','enableMLRecommendations','mlPrivacyLevel','enableAdvancedPersonalization','enableBehaviorTracking','mlDataRetentionDays'
       ];
       const fallbackData: any = {};
       for (const key of baselineFields) {
