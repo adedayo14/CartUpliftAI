@@ -558,6 +558,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         averageOrderValue: 0,
         checkoutsCompleted: 0,
         
+        // ✅ NEW: Attribution metrics (fallback)
+        attributedRevenue: 0,
+        attributedOrders: 0,
+        appCost: 49,
+        roi: 0,
+        topAttributedProducts: [],
+        
+        // ✅ NEW: ML system status (fallback)
+        mlStatus: {
+          productsAnalyzed: 0,
+          highPerformers: 0,
+          blacklistedProducts: 0,
+          performanceChange: 0,
+          lastUpdated: null
+        },
+        
         // Cart-specific metrics
         cartImpressions: 0,
         cartOpensToday: 0,
@@ -1025,6 +1041,7 @@ export default function Dashboard() {
           .cu-fw-600 { font-weight: 600; }
           .cu-text-12 { font-size: 12px; }
           .cu-flex-1 { flex: 1; }
+          .cu-divider-vertical { border-left: 1px solid var(--p-color-border); height: 24px; }
         `}
       </style>
       <BlockStack gap="500">
@@ -1061,6 +1078,64 @@ export default function Dashboard() {
               </Text>
             </BlockStack>
           </InlineStack>
+        </Card>
+        
+        {/* 🌟 HERO ROI CARD - Primary revenue impact showcase */}
+        <Card>
+          <BlockStack gap="500">
+            <InlineStack align="space-between" blockAlign="start">
+              <BlockStack gap="200">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Revenue from AI Recommendations
+                </Text>
+                <Text as="h1" variant="heading3xl" fontWeight="bold">
+                  {formatCurrency(analytics.attributedRevenue || 0)}
+                </Text>
+              </BlockStack>
+              
+              <InlineStack gap="300" blockAlign="center">
+                {analytics.roi > 0 && (
+                  <Badge tone="success" size="large">
+                    {`${analytics.roi.toFixed(1)}x ROI`}
+                  </Badge>
+                )}
+                <Badge tone="info" size="large">
+                  {`${formatCurrency(analytics.appCost)} app cost`}
+                </Badge>
+              </InlineStack>
+            </InlineStack>
+            
+            <InlineStack gap="500" blockAlign="center">
+              <InlineStack gap="200" blockAlign="center">
+                <Icon source={OrderIcon} tone="success" />
+                <Text as="p" variant="bodyLg" fontWeight="semibold">
+                  {analytics.attributedOrders || 0} orders
+                </Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  with AI recommendations
+                </Text>
+              </InlineStack>
+              
+              {analytics.attributedOrders > 0 && (
+                <>
+                  <Box paddingInlineStart="300" paddingInlineEnd="300">
+                    <div className="cu-divider-vertical" />
+                  </Box>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    Average order value: {formatCurrency((analytics.attributedRevenue / analytics.attributedOrders) || 0)}
+                  </Text>
+                </>
+              )}
+            </InlineStack>
+            
+            {analytics.attributedRevenue === 0 && (
+              <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  💡 Revenue tracking starts once customers purchase recommended products. Keep your AI learning enabled to see results.
+                </Text>
+              </Box>
+            )}
+          </BlockStack>
         </Card>
         
         {/* Key Metrics Grid with Comparison */}
