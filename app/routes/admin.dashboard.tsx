@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import {
   Page,
@@ -878,6 +878,9 @@ export default function Dashboard() {
     }
   }, [selectedCards]);
 
+  const queryString = typeof window !== "undefined" ? window.location.search : "";
+  const settingsHref = `/app/settings${queryString}`;
+
   const getTimeframeLabel = (timeframe: string) => {
     switch (timeframe) {
       case "today": return "Today";
@@ -1459,9 +1462,9 @@ export default function Dashboard() {
               <Text variant="bodyMd" as="p">
                 Customize your recommendation settings to match your brand
               </Text>
-              <Link to="/app/settings">
-                <Button>Configure Settings</Button>
-              </Link>
+              <a href={settingsHref} className="no-underline">
+                <Button variant="primary">Configure Settings</Button>
+              </a>
             </BlockStack>
           </Card>
         </BlockStack>
@@ -1616,9 +1619,9 @@ export default function Dashboard() {
                     Lowering it to {formatCurrency(Math.round(analytics.freeShippingThreshold * 0.8))} could unlock approximately {formatCurrency(Math.round(analytics.avgAOVWithoutFreeShipping * analytics.ordersWithoutFreeShipping * 0.3))} more in revenue.
                   </Text>
                 </BlockStack>
-                <Link to="/app/settings">
+                <a href={settingsHref} className="no-underline">
                   <Button variant="primary">Adjust Threshold</Button>
-                </Link>
+                </a>
               </InlineStack>
             </Box>
           </Card>
@@ -1924,11 +1927,11 @@ export default function Dashboard() {
                           Recommended action:
                         </Text>
                         {insight.action.includes("Enable") || insight.action.includes("settings") || insight.action.includes("threshold") ? (
-                          <Link to="/app/settings">
+                          <a href={settingsHref} className="no-underline">
                             <Button variant="plain" size="micro">
                               {insight.action} →
                             </Button>
-                          </Link>
+                          </a>
                         ) : (
                           <Text as="span" variant="bodySm" tone="subdued">
                             {insight.action}
