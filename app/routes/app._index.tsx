@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Link, useFetcher } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import {
   Page,
@@ -243,6 +243,7 @@ export default function Index() {
 
         .no-underline {
           text-decoration: none;
+          display: block;
         }
 
         .grid-3 {
@@ -391,11 +392,11 @@ export default function Index() {
                     🎨 Enable in Theme
                   </Button>
                 </a>
-                <Link to="/app/settings" className="no-underline">
+                <a href={`/app/settings${search}`} className="no-underline">
                   <Button size="large">
                     ⚙️ Configure Settings
                   </Button>
-                </Link>
+                </a>
               </InlineStack>
             </BlockStack>
           </div>
@@ -759,11 +760,11 @@ export default function Index() {
                   </Text>
                 </BlockStack>
               </div>
-              <Link to={`/admin/dashboard${search}`} className="no-underline">
+              <a href={`/admin/dashboard${search}`} className="no-underline">
                 <Button variant="primary" size="large" fullWidth>
                   View Dashboard →
                 </Button>
-              </Link>
+              </a>
             </div>
 
             <div className="action-card">
@@ -777,11 +778,11 @@ export default function Index() {
                   </Text>
                 </BlockStack>
               </div>
-              <Link to={`/app/settings${search}`} className="no-underline">
+              <a href={`/app/settings${search}`} className="no-underline">
                 <Button size="large" fullWidth>
                   Manage Settings →
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </BlockStack>
