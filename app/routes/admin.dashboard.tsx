@@ -624,6 +624,120 @@ export default function Dashboard() {
   const { analytics } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   
+  // 📥 CSV EXPORT UTILITIES
+  const downloadCSV = (filename: string, csvContent: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportAttributionData = () => {
+    const headers = ['Metric', 'Value'];
+    const rows = [
+      ['Attributed Revenue', formatCurrency(analytics.attributedRevenue)],
+      ['Attributed Orders', analytics.attributedOrders.toString()],
+      ['ROI', `${analytics.roi.toFixed(1)}x`],
+      ['App Cost', formatCurrency(analytics.appCost)],
+      ['Average Order Value', formatCurrency(analytics.attributedOrders > 0 ? analytics.attributedRevenue / analytics.attributedOrders : 0)],
+      ['Time Period', analytics.timeframe],
+      ['Shop', analytics.shopName]
+    ];
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    downloadCSV(`attribution-summary-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+
+  const exportTopProducts = () => {
+    if (!analytics.topAttributedProducts || analytics.topAttributedProducts.length === 0) return;
+    const headers = ['Product', 'Orders', 'Revenue', 'Average per Order'];
+    const rows = analytics.topAttributedProducts.map((p: any) => [
+      `"${p.productTitle || p.productId}"`,
+      p.orders,
+      analytics.currency + p.revenue.toFixed(2),
+      analytics.currency + (p.revenue / p.orders).toFixed(2)
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    downloadCSV(`top-products-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+
+  const exportMLStatus = () => {
+    const headers = ['Metric', 'Value'];
+    const rows = [
+      ['Products Analyzed', analytics.mlStatus.productsAnalyzed.toString()],
+      ['High Performers', analytics.mlStatus.highPerformers.toString()],
+      ['Blacklisted Products', analytics.mlStatus.blacklistedProducts.toString()],
+      ['Performance Change', `${analytics.mlStatus.performanceChange.toFixed(1)}%`],
+      ['Last Updated', analytics.mlStatus.lastUpdated || 'Never'],
+      ['Confidence Rate', analytics.mlStatus.productsAnalyzed > 0 
+        ? `${((analytics.mlStatus.highPerformers / analytics.mlStatus.productsAnalyzed) * 100).toFixed(0)}%` 
+        : '0%']
+    ];
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    downloadCSV(`ml-status-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+
+  const exportRecommendations = () => {
+    if (!analytics.topRecommended || analytics.topRecommended.length === 0) return;
+    const headers = ['Product', 'Times Shown', 'Times Clicked', 'Click Rate', 'Revenue'];
+    const rows = analytics.topRecommended.map((r: any) => [
+      `"${r.productTitle || r.productId}"`,
+      r.impressions || 0,
+      r.clicks || 0,
+      `${(r.ctr || 0).toFixed(1)}%`,
+      analytics.currency + ((r.revenueCents || 0) / 100).toFixed(2)
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    downloadCSV(`recommendations-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+
+  const exportFullDashboard = () => {
+    const sections = [];
+    
+    // Attribution Summary
+    sections.push('ATTRIBUTION SUMMARY');
+    sections.push('Metric,Value');
+    sections.push(`Attributed Revenue,${formatCurrency(analytics.attributedRevenue)}`);
+    sections.push(`Attributed Orders,${analytics.attributedOrders}`);
+    sections.push(`ROI,${analytics.roi.toFixed(1)}x`);
+    sections.push(`App Cost,${formatCurrency(analytics.appCost)}`);
+    sections.push('');
+    
+    // Core Metrics
+    sections.push('CORE METRICS');
+    sections.push('Metric,Value');
+    sections.push(`Total Orders,${analytics.totalOrders}`);
+    sections.push(`Total Revenue,${formatCurrency(analytics.totalRevenue)}`);
+    sections.push(`Average Order Value,${formatCurrency(analytics.averageOrderValue)}`);
+    sections.push(`Recommendation Click Rate,${analytics.recCTR.toFixed(1)}%`);
+    sections.push('');
+    
+    // ML Status
+    sections.push('ML LEARNING STATUS');
+    sections.push('Metric,Value');
+    sections.push(`Products Analyzed,${analytics.mlStatus.productsAnalyzed}`);
+    sections.push(`High Performers,${analytics.mlStatus.highPerformers}`);
+    sections.push(`Performance Change,${analytics.mlStatus.performanceChange.toFixed(1)}%`);
+    sections.push('');
+    
+    // Top Products
+    if (analytics.topAttributedProducts && analytics.topAttributedProducts.length > 0) {
+      sections.push('TOP REVENUE GENERATORS');
+      sections.push('Product,Orders,Revenue,Avg per Order');
+      analytics.topAttributedProducts.forEach((p: any) => {
+        sections.push(`"${p.productTitle || p.productId}",${p.orders},${analytics.currency}${p.revenue.toFixed(2)},${analytics.currency}${(p.revenue / p.orders).toFixed(2)}`);
+      });
+      sections.push('');
+    }
+    
+    const csv = sections.join('\n');
+    downloadCSV(`dashboard-full-export-${new Date().toISOString().split('T')[0]}.csv`, csv);
+  };
+  
   // Top 3 most important metrics by default
   const topMetricIds = ["upsell_revenue", "cart_uplift_impact", "recommendation_conversion"];
   
@@ -1190,7 +1304,7 @@ export default function Dashboard() {
         
         {/* Header with Enhanced Time Filter */}
         <Card>
-          <InlineStack gap="300" align="space-between">
+          <InlineStack gap="300" align="space-between" wrap={false}>
             <BlockStack gap="200">
               <Text as="p" variant="bodyMd" tone="subdued">
                 {analytics.shopName} • {getTimeframeLabel(analytics.timeframe)}
@@ -1199,7 +1313,10 @@ export default function Dashboard() {
                 )}
               </Text>
             </BlockStack>
-            <BlockStack gap="200">
+            <InlineStack gap="300" blockAlign="center">
+              <Button variant="plain" onClick={exportFullDashboard}>
+                Export All Data
+              </Button>
               <Select
                 label=""
                 options={[
@@ -1218,7 +1335,7 @@ export default function Dashboard() {
               <Text as="p" variant="bodyXs" tone="subdued" alignment="end">
                 💡 Use different timeframes to spot trends and patterns
               </Text>
-            </BlockStack>
+            </InlineStack>
           </InlineStack>
         </Card>
         
@@ -1227,9 +1344,14 @@ export default function Dashboard() {
           <BlockStack gap="500">
             <InlineStack align="space-between" blockAlign="start">
               <BlockStack gap="200">
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Revenue from AI Recommendations
-                </Text>
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Revenue from AI Recommendations
+                  </Text>
+                  <Button variant="plain" size="micro" onClick={exportAttributionData}>
+                    Export
+                  </Button>
+                </InlineStack>
                 <Text as="h1" variant="heading3xl" fontWeight="bold">
                   {formatCurrency(analytics.attributedRevenue || 0)}
                 </Text>
@@ -1367,14 +1489,19 @@ export default function Dashboard() {
         {/* 🤖 ML LEARNING STATUS - Show AI is actively improving */}
         <Card>
           <BlockStack gap="500">
-            <BlockStack gap="200">
-              <Text as="h2" variant="headingMd">
-                AI Learning Status
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                Your AI analyzes purchase patterns and improves recommendations over time
-              </Text>
-            </BlockStack>
+            <InlineStack align="space-between" blockAlign="start">
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">
+                  AI Learning Status
+                </Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Your AI analyzes purchase patterns and improves recommendations over time
+                </Text>
+              </BlockStack>
+              <Button variant="plain" size="micro" onClick={exportMLStatus}>
+                Export
+              </Button>
+            </InlineStack>
             
             <Grid>
               <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
@@ -1474,14 +1601,19 @@ export default function Dashboard() {
         {analytics.topAttributedProducts && analytics.topAttributedProducts.length > 0 && (
           <Card>
             <BlockStack gap="400">
-              <BlockStack gap="200">
-                <Text as="h2" variant="headingMd">
-                  Top Revenue Generators
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Products that made the most money from AI recommendations
-                </Text>
-              </BlockStack>
+              <InlineStack align="space-between" blockAlign="start">
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingMd">
+                    Top Revenue Generators
+                  </Text>
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Products that made the most money from AI recommendations
+                  </Text>
+                </BlockStack>
+                <Button variant="plain" size="micro" onClick={exportTopProducts}>
+                  Export
+                </Button>
+              </InlineStack>
               
               <DataTable
                 columnContentTypes={['text', 'numeric', 'numeric', 'numeric']}
@@ -1695,7 +1827,12 @@ export default function Dashboard() {
               <Card>
                 <BlockStack gap="400">
                   <InlineStack gap="200" align="space-between">
-                    <Text as="h2" variant="headingMd">🔝 Most Popular Recommendations</Text>
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="h2" variant="headingMd">🔝 Most Popular Recommendations</Text>
+                      <Button variant="plain" size="micro" onClick={exportRecommendations}>
+                        Export
+                      </Button>
+                    </InlineStack>
                     <Badge tone="success">By customer interest</Badge>
                   </InlineStack>
                   <DataTable
