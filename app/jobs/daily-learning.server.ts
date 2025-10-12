@@ -1,4 +1,5 @@
 import db from "~/db.server";
+import { startHealthLog } from "~/services/health-logger.server";
 
 /**
  * 🧠 DAILY LEARNING JOB
@@ -18,6 +19,8 @@ import db from "~/db.server";
  */
 
 export async function runDailyLearning(shop: string) {
+  const logger = await startHealthLog(shop, 'daily_learning');
+  
   console.log(`🧠 Starting daily learning for shop: ${shop}`);
   
   try {
@@ -195,13 +198,27 @@ export async function runDailyLearning(shop: string) {
           blacklistReason: update.blacklistReason,
           lastUpdated: update.lastUpdated
         }
-      }).catch((e: any) => console.warn(`Failed to update ${update.productId}:`, e));
+      }).catch((e: any) => {
+        console.warn(`Failed to update ${update.productId}:`, e);
+        logger.logError(e);
+      });
     }
     
     console.log(`✅ Daily learning complete for ${shop}`);
     console.log(`   📊 ${updates.length} products analyzed`);
     console.log(`   🚫 ${blacklistedCount} products blacklisted`);
     console.log(`   ⭐ ${boostedCount} high-performers identified`);
+    
+    await logger.success({
+      recordsProcessed: updates.length,
+      recordsUpdated: updates.length,
+      metadata: {
+        blacklisted: blacklistedCount,
+        boosted: boostedCount,
+        trackingEvents: trackingEvents.length,
+        attributions: attributions.length
+      }
+    });
     
     return {
       success: true,
@@ -212,6 +229,9 @@ export async function runDailyLearning(shop: string) {
     
   } catch (error) {
     console.error(`❌ Daily learning failed for ${shop}:`, error);
+    
+    await logger.failure(error as Error);
+    
     return {
       success: false,
       error: (error as Error).message

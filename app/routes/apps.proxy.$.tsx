@@ -1165,11 +1165,98 @@ export async function loader({ request }: LoaderFunctionArgs) {
         });
       }
     } catch (error) {
-      console.error('Recs API error:', error);
-      // Soft-fail with empty list to avoid breaking the storefront UX
-      return json({ recommendations: [], reason: 'unavailable' }, {
+      console.error('🚨 [RECS API] Fatal error:', error);
+      
+      // 🛡️ ULTIMATE FALLBACK - Never return empty, always show something
+      try {
+        console.log('🔄 [FALLBACK] Attempting emergency recommendations...');
+        
+        // Get admin for emergency query
+        const { session } = await authenticate.public.appProxy(request);
+        const shop = session?.shop;
+        if (!shop) {
+          return json({ recommendations: [], fallback: 'none', reason: 'no_shop_session' }, {
+            status: 200,
+            headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' }
+          });
+        }
+        
+        const { admin: emergencyAdmin } = await unauthenticated.admin(shop as string);
+        const emergencyLimit = parseInt(url.searchParams.get('limit') || '6', 10);
+        
+        // Last resort: Get random products from catalog
+        const emergencyQuery = `
+          query getEmergencyProducts {
+            products(first: 10, query: "published_status:published") {
+              edges {
+                node {
+                  id
+                  title
+                  handle
+                  priceRangeV2 {
+                    minVariantPrice {
+                      amount
+                    }
+                  }
+                  images(first: 1) {
+                    edges {
+                      node {
+                        url
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        
+        const emergencyResponse = await emergencyAdmin.graphql(emergencyQuery);
+        const emergencyData = await emergencyResponse.json();
+        
+        if (emergencyData?.data?.products?.edges) {
+          const emergencyRecs = emergencyData.data.products.edges
+            .slice(0, emergencyLimit)
+            .map((edge: any) => ({
+              id: edge.node.id.split('/').pop(),
+              title: edge.node.title,
+              handle: edge.node.handle,
+              price: parseFloat(edge.node.priceRangeV2?.minVariantPrice?.amount || '0'),
+              image: edge.node.images?.edges?.[0]?.node?.url
+            }));
+          
+          console.log(`✅ [FALLBACK] Returning ${emergencyRecs.length} emergency products`);
+          
+          return json({ 
+            recommendations: emergencyRecs,
+            fallback: 'emergency',
+            reason: 'primary_system_failure'
+          }, {
+            status: 200,
+            headers: { 
+              'Access-Control-Allow-Origin': '*', 
+              'Cache-Control': 'public, max-age=10',
+              'X-Fallback-Level': 'emergency'
+            }
+          });
+        }
+      } catch (fallbackError) {
+        console.error('❌ [FALLBACK] Emergency recommendations failed:', fallbackError);
+      }
+      
+      // Absolute last resort: Empty list (but logged)
+      console.warn('⚠️  [FALLBACK] All recommendation sources exhausted - returning empty');
+      return json({ 
+        recommendations: [], 
+        fallback: 'none',
+        reason: 'all_systems_down' 
+      }, {
         status: 200,
-        headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=10' }
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Cache-Control': 'no-cache',
+          'X-Fallback-Level': 'complete_failure'
+        }
       });
     }
   }

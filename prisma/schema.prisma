@@ -542,4 +542,42 @@ model MLProductPerformance {
   @@map("ml_product_performance")
 }
 
+// 🏥 ML System Health - Monitor job performance for dashboard
+model MLSystemHealth {
+  id                String   @id @default(cuid())
+  shop              String
+  jobType           String   // "daily_learning" | "similarity_computation" | "profile_update"
+  
+  // Execution details
+  status            String   // "running" | "success" | "failed" | "partial"
+  startedAt         DateTime
+  completedAt       DateTime?
+  durationMs        Int?     // Execution time in milliseconds
+  
+  // Results
+  recordsProcessed  Int      @default(0)
+  recordsCreated    Int      @default(0)
+  recordsUpdated    Int      @default(0)
+  recordsDeleted    Int      @default(0)
+  
+  // Errors
+  errorCount        Int      @default(0)
+  errorMessage      String?  // First error encountered
+  errorDetails      Json?    // Array of all errors
+  
+  // Performance metrics
+  memoryUsageMb     Float?   // Memory usage
+  cpuUsagePercent   Float?   // CPU usage
+  
+  // Metadata
+  triggeredBy       String   @default("cron") // "cron" | "manual" | "webhook"
+  metadata          Json?    // Additional context
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([shop, createdAt(sort: Desc)])
+  @@index([shop, jobType, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("ml_system_health")
+}
 

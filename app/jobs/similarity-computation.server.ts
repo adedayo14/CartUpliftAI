@@ -25,6 +25,7 @@
  */
 
 import prisma from "~/db.server";
+import { startHealthLog } from "~/services/health-logger.server";
 
 interface ProductPair {
   productId1: string;
@@ -44,6 +45,8 @@ interface ProductMetadata {
  * Run similarity computation for a single shop
  */
 export async function runSimilarityComputation(shop: string) {
+  const logger = await startHealthLog(shop, 'similarity_computation');
+  
   console.log(`🔄 [SIMILARITY] Starting computation for shop: ${shop}`);
   
   try {
@@ -204,6 +207,16 @@ export async function runSimilarityComputation(shop: string) {
     
     console.log(`✅ [SIMILARITY] ${shop}: Created ${similarityRecords.length} similarity records`);
     
+    await logger.success({
+      recordsProcessed: pairMap.size,
+      recordsCreated: similarityRecords.length,
+      metadata: {
+        purchaseEvents: purchaseEvents.length,
+        orderCount: orderMap.size,
+        productCount: productMetadata.size
+      }
+    });
+    
     return {
       shop,
       analyzed: pairMap.size,
@@ -212,6 +225,9 @@ export async function runSimilarityComputation(shop: string) {
     
   } catch (error) {
     console.error(`❌ [SIMILARITY] Error for ${shop}:`, error);
+    
+    await logger.failure(error as Error);
+    
     return {
       shop,
       analyzed: 0,

@@ -28,6 +28,7 @@
  */
 
 import prisma from "~/db.server";
+import { startHealthLog } from "~/services/health-logger.server";
 
 interface SessionBehavior {
   sessionId: string;
@@ -44,6 +45,8 @@ interface SessionBehavior {
  * Run user profile updates for a single shop
  */
 export async function runUserProfileUpdate(shop: string, settings?: { mlPrivacyLevel?: string }) {
+  const logger = await startHealthLog(shop, 'profile_update');
+  
   console.log(`🔄 [PROFILE UPDATE] Starting for shop: ${shop}`);
   
   try {
@@ -192,10 +195,21 @@ export async function runUserProfileUpdate(shop: string, settings?: { mlPrivacyL
         }
       } catch (error) {
         console.error(`❌ [PROFILE UPDATE] Error upserting profile for session ${sessionId}:`, error);
+        logger.logError(error as Error);
       }
     }
     
     console.log(`✅ [PROFILE UPDATE] ${shop}: Updated ${profilesUpdated}, Created ${profilesCreated}`);
+    
+    await logger.success({
+      recordsProcessed: sessionMap.size,
+      recordsCreated: profilesCreated,
+      recordsUpdated: profilesUpdated,
+      metadata: {
+        trackingEvents: events.length,
+        privacyLevel
+      }
+    });
     
     return {
       shop,
@@ -206,6 +220,9 @@ export async function runUserProfileUpdate(shop: string, settings?: { mlPrivacyL
     
   } catch (error) {
     console.error(`❌ [PROFILE UPDATE] Error for ${shop}:`, error);
+    
+    await logger.failure(error as Error);
+    
     return {
       shop,
       profilesUpdated: 0,
