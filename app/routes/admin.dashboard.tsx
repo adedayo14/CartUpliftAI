@@ -139,31 +139,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     // Get app settings for free shipping threshold analysis
     const settings = await getSettings(session.shop);
-
-    // Get A/B testing data for dashboard insights
-    let abTestingData = { activeExperiments: [], totalExperiments: 0 };
-    try {
-      const activeExperiments = await (db as any).aBExperiment?.findMany?.({
-        where: { 
-          shop: session.shop,
-          status: 'active'
-        },
-        include: {
-          variants: true,
-          _count: {
-            select: { assignments: true, events: true }
-          }
-        }
-      }) ?? [];
-      
-      const totalExperiments = await (db as any).aBExperiment?.count?.({
-        where: { shop: session.shop }
-      }) ?? 0;
-
-      abTestingData = { activeExperiments, totalExperiments };
-    } catch (error) {
-      console.log('A/B testing data not available:', error);
-    }
     
     const orders = ordersData.data?.orders?.edges || [];
     const shop = shopData.data?.shop;
@@ -388,6 +363,118 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         .slice(0, 10);
   } catch (_error) { void 0; }
 
+    // ============================================
+    // 🎯 CRITICAL: Real Attribution Data (Phase 1 Implementation!)
+    // ============================================
+    let attributedRevenue = 0;
+    let attributedOrders = 0;
+    let topAttributedProducts: Array<{ productId: string; productTitle: string; revenue: number; orders: number }> = [];
+    
+    try {
+      const attributions = await (db as any).recommendationAttribution?.findMany?.({
+        where: {
+          shop: session.shop,
+          createdAt: { gte: startDate, lte: endDate }
+        }
+      }) ?? [];
+      
+      // Calculate total attributed revenue (already in currency, not cents)
+      attributedRevenue = attributions.reduce((sum: number, a: any) => 
+        sum + (a.attributedRevenue || 0), 0
+      );
+      
+      // Count unique orders with attributed sales
+      const uniqueOrderIds = new Set(attributions.map((a: any) => a.orderId));
+      attributedOrders = uniqueOrderIds.size;
+      
+      // Group by product to find top performers
+      const productMap = new Map<string, { revenue: number; orders: Set<string>; title: string }>();
+      for (const attr of attributions) {
+        const pid = attr.productId;
+        if (!productMap.has(pid)) {
+          productMap.set(pid, { revenue: 0, orders: new Set(), title: '' });
+        }
+        const p = productMap.get(pid)!;
+        p.revenue += attr.attributedRevenue || 0;
+        p.orders.add(attr.orderId);
+        // Try to find product title from order data
+        if (!p.title) {
+          p.title = `Product ${pid.split('/').pop()}`;
+        }
+      }
+      
+      topAttributedProducts = Array.from(productMap.entries())
+        .map(([productId, data]) => ({
+          productId,
+          productTitle: data.title,
+          revenue: data.revenue,
+          orders: data.orders.size
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+        
+    } catch (error) {
+      console.error('Error fetching attribution data:', error);
+    }
+    
+    // ============================================
+    // 🧠 ML System Status (Phase 2 & 3 Implementation!)
+    // ============================================
+    let mlStatus = {
+      productsAnalyzed: 0,
+      highPerformers: 0,
+      blacklistedProducts: 0,
+      performanceChange: 0,
+      lastUpdated: null as Date | null
+    };
+    
+    try {
+      const mlPerformance = await (db as any).mLProductPerformance?.findMany?.({
+        where: { shop: session.shop }
+      }) ?? [];
+      
+      mlStatus.productsAnalyzed = mlPerformance.length;
+      mlStatus.highPerformers = mlPerformance.filter((p: any) => p.confidence > 0.7).length;
+      mlStatus.blacklistedProducts = mlPerformance.filter((p: any) => p.isBlacklisted).length;
+      
+      // Get latest system health job
+      const latestJob = await (db as any).mLSystemHealth?.findFirst?.({
+        where: { shop: session.shop },
+        orderBy: { completedAt: 'desc' }
+      });
+      
+      if (latestJob?.completedAt) {
+        mlStatus.lastUpdated = latestJob.completedAt;
+      }
+      
+      // Calculate performance trend from recent CTR data
+      if (recCTRSeries.length >= 14) {
+        const recentWeek = recCTRSeries.slice(-7);
+        const previousWeek = recCTRSeries.slice(-14, -7);
+        const recentAvg = recentWeek.reduce((sum, d) => sum + d.ctr, 0) / recentWeek.length;
+        const previousAvg = previousWeek.reduce((sum, d) => sum + d.ctr, 0) / previousWeek.length;
+        if (previousAvg > 0) {
+          mlStatus.performanceChange = ((recentAvg - previousAvg) / previousAvg) * 100;
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error fetching ML status:', error);
+    }
+
+    // Calculate app cost and ROI
+    const appCost = 49; // Base cost, can be dynamic based on plan
+    const roi = appCost > 0 && attributedRevenue > 0 ? (attributedRevenue / appCost) : 0;
+    
+    // Determine setup progress for new installs
+    const hasRecommendations = recSummary.totalImpressions > 0;
+    const hasClicks = recSummary.totalClicks > 0;
+    const hasAttributions = attributedOrders > 0;
+    
+    const setupProgress = !hasRecommendations ? 0 :
+                          !hasClicks ? 33 :
+                          !hasAttributions ? 66 : 100;
+
     return json({
       analytics: {
         // Core metrics - ALL REAL DATA
@@ -395,6 +482,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         totalRevenue,
         averageOrderValue,
         checkoutsCompleted: checkoutsCompleted,
+        
+        // 🎯 NEW: Attribution metrics (REAL from RecommendationAttribution)
+        attributedRevenue,
+        attributedOrders,
+        appCost,
+        roi,
+        topAttributedProducts,
+        
+        // 🧠 NEW: ML System Status (REAL from MLProductPerformance & MLSystemHealth)
+        mlStatus,
+        
+        // Setup progress for new installs
+        setupProgress,
+        setupComplete: setupProgress === 100,
         
         // Cart-specific metrics
         cartImpressions: cartImpressions,
@@ -433,10 +534,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         endDate: endDate.toISOString(),
         isCustomDateRange: !!(customStartDate && customEndDate),
         shopName: shop?.name || session.shop,
-        currency: storeCurrency,
-
-        // A/B Testing Summary
-        abTesting: abTestingData
+        currency: storeCurrency
       },
       shop: session.shop
     });
@@ -448,7 +546,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     try {
       const shopCurrency = await getShopCurrency(session.shop);
       fallbackCurrency = shopCurrency.code;
-    } catch (e) {
+    } catch (_e) {
       console.warn('Could not fetch currency in error handler');
     }
     
@@ -1172,67 +1270,6 @@ export default function Dashboard() {
 
           <Layout.Section variant="oneThird">
             <BlockStack gap="500">
-              {/* A/B Testing Summary */}
-              {(analytics as any).abTesting && (
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack gap="200" align="space-between">
-                      <InlineStack gap="200" align="center">
-                        <Text variant="headingMd" as="h3">🧪 A/B Tests Active</Text>
-                      </InlineStack>
-                      <Link to="/admin/ab-testing">
-                        <Button size="micro" variant="primary">View All</Button>
-                      </Link>
-                    </InlineStack>
-                    
-                    {(analytics as any).abTesting.activeExperiments && (analytics as any).abTesting.activeExperiments.length > 0 ? (
-                      <BlockStack gap="300">
-                        {(analytics as any).abTesting.activeExperiments.slice(0, 3).map((experiment: any, index: number) => (
-                          <Box key={index} padding="300" background="bg-surface-secondary" borderRadius="100">
-                            <BlockStack gap="200">
-                              <InlineStack align="space-between">
-                                <Text variant="bodyMd" as="p" fontWeight="semibold">
-                                  {experiment.name}
-                                </Text>
-                                <Badge tone={experiment.status === 'active' ? 'success' : 'info'}>
-                                  {experiment.status}
-                                </Badge>
-                              </InlineStack>
-                              <Text variant="bodySm" as="p" tone="subdued">
-                                {experiment.variants?.length || 0} variants • {experiment._count?.assignments || 0} participants
-                              </Text>
-                              <Text variant="bodySm" as="p" tone="subdued">
-                                {experiment.test_type.replace('_', ' ')} • {experiment.traffic_allocation}% traffic
-                              </Text>
-                            </BlockStack>
-                          </Box>
-                        ))}
-                        
-                        {(analytics as any).abTesting.totalExperiments > 3 && (
-                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
-                            +{(analytics as any).abTesting.totalExperiments - 3} more experiments
-                          </Text>
-                        )}
-                      </BlockStack>
-                    ) : (
-                      <Box padding="400" background="bg-surface-secondary" borderRadius="100">
-                        <BlockStack gap="200" align="center">
-                          <Text variant="bodyMd" as="p" tone="subdued">
-                            No active A/B tests
-                          </Text>
-                          <Text variant="bodySm" as="p" tone="subdued">
-                            Start testing to optimize conversion rates
-                          </Text>
-                          <Link to="/admin/ab-testing">
-                            <Button size="slim" variant="primary">Create Test</Button>
-                          </Link>
-                        </BlockStack>
-                      </Box>
-                    )}
-                  </BlockStack>
-                </Card>
-              )}
-
               {/* Smart Bundle Opportunities */}
               <Card>
                 <BlockStack gap="400">
