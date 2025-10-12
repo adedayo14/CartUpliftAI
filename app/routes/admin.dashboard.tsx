@@ -714,7 +714,19 @@ export default function Dashboard() {
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
   
-  // 📥 CSV EXPORT UTILITIES
+  // � BROWSER CONSOLE DEBUG - Check if we're in error fallback
+  useEffect(() => {
+    if (analytics.shopName === 'demo-shop') {
+      console.error('🚨 DASHBOARD ERROR: Loader returned fallback data');
+      console.error('This means the server-side loader caught an error.');
+      console.error('Check Vercel logs at: https://vercel.com/your-project/logs');
+      console.error('Or check server console for "❌ DASHBOARD LOADER ERROR"');
+    } else {
+      console.log('✅ Dashboard loaded successfully for shop:', analytics.shopName);
+    }
+  }, [analytics.shopName]);
+  
+  // �📥 CSV EXPORT UTILITIES
   const downloadCSV = (filename: string, csvContent: string) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -1506,6 +1518,33 @@ export default function Dashboard() {
   return (
     <Page>
       <TitleBar title="📊 Analytics & Performance Dashboard" />
+      
+      {/* 🚨 ERROR WARNING BANNER */}
+      {analytics.shopName === 'demo-shop' && (
+        <Banner tone="critical">
+          <BlockStack gap="200">
+            <Text variant="bodyMd" as="p" fontWeight="semibold">
+              ⚠️ Dashboard Error: Unable to load real store data
+            </Text>
+            <Text variant="bodyMd" as="p">
+              The dashboard is showing demo data because of a server error. Possible causes:
+            </Text>
+            <Text variant="bodyMd" as="p">
+              • Database connection issue (check DATABASE_URL in Vercel)
+            </Text>
+            <Text variant="bodyMd" as="p">
+              • Missing Shopify API permissions
+            </Text>
+            <Text variant="bodyMd" as="p">
+              • Prisma schema mismatch
+            </Text>
+            <Text variant="bodyMd" as="p" fontWeight="semibold">
+              Check Vercel logs or browser console (F12) for details.
+            </Text>
+          </BlockStack>
+        </Banner>
+      )}
+      
       {/* Local utility styles to replace inline styles in this route */}
       <style>
         {`
