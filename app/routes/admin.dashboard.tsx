@@ -95,15 +95,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       throw new Error(`Database connection error: ${dbError instanceof Error ? dbError.message : 'Unknown DB error'}`);
     }
 
-    // Get real orders with detailed line items for the selected timeframe
-    const ordersResponse = await admin.graphql(`
-      #graphql
-      query getRecentOrders($query: String!) {
-        orders(first: 250, query: $query) {
-          edges {
-            node {
-              id
-              name
+    // ⚠️ WORKAROUND: Check if app has order access, if not use tracking data only
+    let ordersData: any = null;
+    let shopData: any = null;
+    let hasOrderAccess = true;
+    
+    try {
+      // Get real orders with detailed line items for the selected timeframe
+      const ordersResponse = await admin.graphql(`
+        #graphql
+        query getRecentOrders($query: String!) {
+          orders(first: 250, query: $query) {
+            edges {
+              node {
+                id
+                name
               totalPriceSet {
                 shopMoney {
                   amount
@@ -139,6 +145,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     });
 
+      ordersData = await ordersResponse.json();
+      
+      // Check for permission errors
+      if (ordersData.errors && ordersData.errors[0]?.message?.includes('not approved to access')) {
+        console.warn('⚠️ App does not have order access yet - using tracking data only');
+        hasOrderAccess = false;
+        ordersData = null;
+      }
+    } catch (orderError) {
+      console.warn('⚠️ Could not fetch orders:', orderError);
+      hasOrderAccess = false;
+      ordersData = null;
+    }
+
     // Get shop analytics for real cart data
     const shopResponse = await admin.graphql(`
       #graphql
@@ -153,19 +173,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     `);
 
-    const ordersData = await ordersResponse.json();
-    const shopData = await shopResponse.json();
+    shopData = await shopResponse.json();
     
     // Get app settings for free shipping threshold analysis
     const settings = await getSettings(session.shop);
     
-    const orders = ordersData.data?.orders?.edges || [];
+    // Handle order data - use empty array if no access
+    const orders = (hasOrderAccess && ordersData?.data?.orders?.edges) ? ordersData.data.orders.edges : [];
     const shop = shopData.data?.shop;
     
     // Fetch shop currency
     const shopCurrency = await getShopCurrency(session.shop);
     const storeCurrency = orders.length > 0 ? 
       orders[0].node.totalPriceSet?.shopMoney?.currencyCode || shopCurrency.code : shopCurrency.code;
+    
+    // ⚠️ Log if using limited data due to permissions
+    if (!hasOrderAccess) {
+      console.warn('⚠️ LIMITED DATA: App awaiting Shopify approval for order access');
+      console.warn('Dashboard will show tracking-based metrics only until approved');
+    }
     
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum: number, order: any) => {
@@ -637,7 +663,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       errorDetails = error.message;
       
       // Categorize error types
-      if (errorDetails.includes('Database connection') || errorDetails.includes('PrismaClient')) {
+      if (errorDetails.includes('not approved to access') || errorDetails.includes('protected customer data')) {
+        errorType = 'PROTECTED_DATA_PERMISSION';
+      } else if (errorDetails.includes('Database connection') || errorDetails.includes('PrismaClient')) {
         errorType = 'DATABASE';
       } else if (errorDetails.includes('session') || errorDetails.includes('authenticate')) {
         errorType = 'AUTHENTICATION';
@@ -1574,29 +1602,62 @@ export default function Dashboard() {
               ⚠️ Dashboard Error: Unable to load store data
             </Text>
             {(analytics as any).errorType && (
-              <Text variant="bodyMd" as="p">
-                Error Type: <strong>{(analytics as any).errorType}</strong>
-              </Text>
+              <>
+                <Text variant="bodyMd" as="p">
+                  Error Type: <strong>{(analytics as any).errorType}</strong>
+                </Text>
+                
+                {(analytics as any).errorType === 'PROTECTED_DATA_PERMISSION' && (
+                  <Box background="bg-fill-warning-secondary" padding="300" borderRadius="200">
+                    <BlockStack gap="200">
+                      <Text variant="bodyMd" as="p" fontWeight="bold">
+                        🔐 Action Required: Request Protected Data Access
+                      </Text>
+                      <Text variant="bodyMd" as="p">
+                        Your app needs Shopify's approval to access order data. This is a standard security requirement.
+                      </Text>
+                      <Text variant="bodyMd" as="p" fontWeight="semibold">
+                        Next Steps:
+                      </Text>
+                      <Text variant="bodySm" as="p">
+                        1. Go to your Shopify Partners dashboard
+                      </Text>
+                      <Text variant="bodySm" as="p">
+                        2. Select this app and navigate to "API access"
+                      </Text>
+                      <Text variant="bodySm" as="p">
+                        3. Request access to "Protected customer data"
+                      </Text>
+                      <Text variant="bodySm" as="p">
+                        4. Provide use case: "Display order analytics and product recommendations"
+                      </Text>
+                      <Text variant="bodySm" as="p" tone="subdued">
+                        Approval typically takes 1-2 business days
+                      </Text>
+                    </BlockStack>
+                  </Box>
+                )}
+              </>
             )}
             {(analytics as any).errorMessage && (
-              <Text variant="bodyMd" as="p">
-                Details: {(analytics as any).errorMessage}
+              <Text variant="bodySm" as="p" tone="subdued">
+                Technical Details: {(analytics as any).errorMessage}
               </Text>
             )}
             <Text variant="bodyMd" as="p">
-              Common causes:
+              Common Solutions:
             </Text>
             <Text variant="bodySm" as="p">
-              • <strong>DATABASE</strong>: Check DATABASE_URL environment variable in Vercel
+              • <strong>PROTECTED_DATA_PERMISSION</strong>: Request approval in Partners dashboard
+            </Text>
+            <Text variant="bodySm" as="p">
+              • <strong>DATABASE</strong>: Check DATABASE_URL in Vercel environment variables
             </Text>
             <Text variant="bodySm" as="p">
               • <strong>AUTHENTICATION</strong>: Try reinstalling the app
             </Text>
             <Text variant="bodySm" as="p">
-              • <strong>SHOPIFY_API</strong>: Check API scopes and permissions
-            </Text>
-            <Text variant="bodyMd" as="p" fontWeight="semibold">
-              Check Vercel function logs or browser console (F12) for full details
+              • <strong>SHOPIFY_API</strong>: Verify API scopes in app configuration
             </Text>
           </BlockStack>
         </Banner>
