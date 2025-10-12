@@ -144,7 +144,7 @@ export default function AppSettings() {
         <Card>
           <BlockStack gap="400">
             <BlockStack gap="200">
-              <Text variant="headingMd" as="h2">🤖 AI-Powered Recommendations</Text>
+              <Text variant="headingMd" as="h2">AI-Powered Recommendations</Text>
               <Text as="p" variant="bodyMd" tone="subdued">
                 Configure machine learning to show personalized product suggestions based on customer behavior.
               </Text>
@@ -183,7 +183,7 @@ export default function AppSettings() {
                 {/* Data Control - PROMINENT */}
                 <Card background="bg-surface-secondary">
                   <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">🔒 You Control Your Data</Text>
+                    <Text variant="headingSm" as="h3">You Control Your Data</Text>
                     <Text as="p" variant="bodyMd" tone="subdued">
                       Choose what data the AI uses to learn. More data = better recommendations, but you decide what you're comfortable with.
                     </Text>
@@ -210,7 +210,7 @@ export default function AppSettings() {
                     {/* Explain what each level means */}
                     <BlockStack gap="200">
                       <Text as="p" variant="bodyMd" tone="subdued">
-                        <strong>📊 Your current data:</strong>
+                        <strong>Your current data:</strong>
                       </Text>
                       <InlineStack gap="200">
                         <Badge tone={badgeTone}>{ordersBadgeText}</Badge>
@@ -219,18 +219,18 @@ export default function AppSettings() {
                       
                       {formSettings.mlPrivacyLevel === 'basic' && (
                         <Text as="p" variant="bodyMd" tone="subdued">
-                          ℹ️ <strong>Basic mode:</strong> Uses product order data and categories only. No session or customer tracking. Completely anonymous recommendations based on store-wide patterns.
+                          <strong>Basic mode:</strong> Uses product order data and categories only. No session or customer tracking. Completely anonymous recommendations based on store-wide patterns.
                         </Text>
                       )}
                       {formSettings.mlPrivacyLevel === 'standard' && (
                         <Text as="p" variant="bodyMd" tone="subdued">
-                          ℹ️ <strong>Standard mode:</strong> Tracks anonymous shopping sessions (cart views, product interest) but no customer identity. Shows what products go well together based on session behavior.
+                          <strong>Standard mode:</strong> Tracks anonymous shopping sessions (cart views, product interest) but no customer identity. Shows what products go well together based on session behavior.
                         </Text>
                       )}
                       {formSettings.mlPrivacyLevel === 'advanced' && (
                         <>
                           <Text as="p" variant="bodyMd" tone="subdued">
-                            ℹ️ <strong>Advanced mode:</strong> Full behavioral tracking with customer ID. Learns individual customer preferences and builds personalized recommendations for returning customers.
+                            <strong>Advanced mode:</strong> Full behavioral tracking with customer ID. Learns individual customer preferences and builds personalized recommendations for returning customers.
                           </Text>
                           <Banner tone="warning">
                             <Text as="p" variant="bodyMd">
@@ -272,7 +272,7 @@ export default function AppSettings() {
 
                 {/* Smart Threshold Features */}
                 <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">🎯 Smart Threshold Suggestions</Text>
+                  <Text variant="headingSm" as="h3">Smart Threshold Suggestions</Text>
                   
                   <Checkbox
                     label="Help customers reach free shipping & gift thresholds"
@@ -285,9 +285,9 @@ export default function AppSettings() {
                     <Select
                       label="Threshold Strategy"
                       options={[
-                        { label: '🤖 Smart AI - Best relevance + price match', value: 'smart' },
-                        { label: '💰 Price Only - Cheapest path to threshold', value: 'price' },
-                        { label: '🔥 Popular + Price - Trending items at right price', value: 'popular_price' }
+                        { label: 'Smart AI - Best relevance + price match', value: 'smart' },
+                        { label: 'Price Only - Cheapest path to threshold', value: 'price' },
+                        { label: 'Popular + Price - Trending items at right price', value: 'popular_price' }
                       ]}
                       value={formSettings.thresholdSuggestionMode || 'smart'}
                       onChange={(value) => updateSetting("thresholdSuggestionMode", value)}
@@ -310,14 +310,14 @@ export default function AppSettings() {
         <Card>
           <BlockStack gap="400">
             <BlockStack gap="200">
-              <Text variant="headingMd" as="h2">✏️ Text & Copy</Text>
+              <Text variant="headingMd" as="h2">Text & Copy</Text>
               <Text as="p" variant="bodyMd" tone="subdued">
                 Customize text shown to customers in the cart.
               </Text>
             </BlockStack>
 
             <FormLayout>
-              <Text variant="headingSm" as="h3">🎁 Gift Settings</Text>
+              <Text variant="headingSm" as="h3">Gift Settings</Text>
               
               <TextField
                 label="Free Gift Price Label"
@@ -330,7 +330,7 @@ export default function AppSettings() {
 
               <Divider />
 
-              <Text variant="headingSm" as="h3">🔘 Button Labels</Text>
+              <Text variant="headingSm" as="h3">Button Labels</Text>
 
               <InlineStack gap="400" wrap>
                 <TextField
