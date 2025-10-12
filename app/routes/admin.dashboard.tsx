@@ -788,17 +788,6 @@ export default function Dashboard() {
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
   
-  // � BROWSER CONSOLE DEBUG - Check if we're in error fallback
-  useEffect(() => {
-    if (analytics.shopName === 'demo-shop') {
-      console.error('🚨 DASHBOARD ERROR: Loader returned fallback data');
-      console.error('This means the server-side loader caught an error.');
-      console.error('Check Vercel logs at: https://vercel.com/your-project/logs');
-      console.error('Or check server console for "❌ DASHBOARD LOADER ERROR"');
-    } else {
-      console.log('✅ Dashboard loaded successfully for shop:', analytics.shopName);
-    }
-  }, [analytics.shopName]);
   
   // �📥 CSV EXPORT UTILITIES
   const downloadCSV = (filename: string, csvContent: string) => {
@@ -1548,22 +1537,6 @@ export default function Dashboard() {
                   </BlockStack>
                 </Box>
               )}
-              
-              <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-                <BlockStack gap="200">
-                  <Text variant="bodyMd" as="p" fontWeight="semibold">
-                    📊 Debug Info (for testing)
-                  </Text>
-                  <Text variant="bodySm" as="p">
-                    Impressions: {analytics.recImpressions} | Clicks: {analytics.recClicks} | Attributed Orders: {analytics.attributedOrders}
-                  </Text>
-                  {analytics.recImpressions === 0 && (
-                    <Text variant="bodySm" as="p" tone="caution">
-                      ⚠️ No impressions yet. Make sure cart drawer is enabled and showing recommendations.
-                    </Text>
-                  )}
-                </BlockStack>
-              </Box>
             </BlockStack>
           </Card>
           
@@ -1595,68 +1568,16 @@ export default function Dashboard() {
       
       {/* 🚨 ERROR WARNING BANNER */}
       {analytics.shopName === 'demo-shop' && (
-        <Banner tone="critical">
+        <Banner tone="info">
           <BlockStack gap="200">
             <Text variant="bodyMd" as="p" fontWeight="semibold">
-              ⚠️ Dashboard Error: Unable to load store data
+              ⏳ Waiting for Shopify Protected Data Approval
             </Text>
-            {(analytics as any).errorType && (
-              <>
-                <Text variant="bodyMd" as="p">
-                  Error Type: <strong>{(analytics as any).errorType}</strong>
-                </Text>
-                
-                {(analytics as any).errorType === 'PROTECTED_DATA_PERMISSION' && (
-                  <Box background="bg-fill-warning-secondary" padding="300" borderRadius="200">
-                    <BlockStack gap="200">
-                      <Text variant="bodyMd" as="p" fontWeight="bold">
-                        🔐 Action Required: Request Protected Data Access
-                      </Text>
-                      <Text variant="bodyMd" as="p">
-                        Your app needs Shopify's approval to access order data. This is a standard security requirement.
-                      </Text>
-                      <Text variant="bodyMd" as="p" fontWeight="semibold">
-                        Next Steps:
-                      </Text>
-                      <Text variant="bodySm" as="p">
-                        1. Go to your Shopify Partners dashboard
-                      </Text>
-                      <Text variant="bodySm" as="p">
-                        2. Select this app and navigate to "API access"
-                      </Text>
-                      <Text variant="bodySm" as="p">
-                        3. Request access to "Protected customer data"
-                      </Text>
-                      <Text variant="bodySm" as="p">
-                        4. Provide use case: "Display order analytics and product recommendations"
-                      </Text>
-                      <Text variant="bodySm" as="p" tone="subdued">
-                        Approval typically takes 1-2 business days
-                      </Text>
-                    </BlockStack>
-                  </Box>
-                )}
-              </>
-            )}
-            {(analytics as any).errorMessage && (
-              <Text variant="bodySm" as="p" tone="subdued">
-                Technical Details: {(analytics as any).errorMessage}
-              </Text>
-            )}
             <Text variant="bodyMd" as="p">
-              Common Solutions:
+              Analytics will display once Shopify approves your protected customer data access request (typically 1-3 business days).
             </Text>
-            <Text variant="bodySm" as="p">
-              • <strong>PROTECTED_DATA_PERMISSION</strong>: Request approval in Partners dashboard
-            </Text>
-            <Text variant="bodySm" as="p">
-              • <strong>DATABASE</strong>: Check DATABASE_URL in Vercel environment variables
-            </Text>
-            <Text variant="bodySm" as="p">
-              • <strong>AUTHENTICATION</strong>: Try reinstalling the app
-            </Text>
-            <Text variant="bodySm" as="p">
-              • <strong>SHOPIFY_API</strong>: Verify API scopes in app configuration
+            <Text variant="bodySm" as="p" tone="subdued">
+              After approval, reinstall the app to grant the necessary permissions.
             </Text>
           </BlockStack>
         </Banner>
