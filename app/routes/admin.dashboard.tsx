@@ -857,101 +857,101 @@ export default function Dashboard() {
     const insights = [];
     const maxInsights = 6; // Limit to 6 most important insights
     
-    // 1. CRITICAL: Cart conversion rate insight (most important)
+    // 1. Cart conversion rate insight
     if (analytics.cartToCheckoutRate < 25) {
       insights.push({
         type: "critical",
-        title: "Cart Conversion Crisis",
-        description: `Only ${analytics.cartToCheckoutRate.toFixed(1)}% of cart viewers complete checkout. Industry average is 35-45%. This could be your biggest revenue opportunity.`,
-        action: "Optimize checkout flow and cart design"
+        title: "Low Checkout Completion Rate",
+        description: `${analytics.cartToCheckoutRate.toFixed(1)}% of cart viewers complete checkout. The average is 35-45%. Improving this could significantly increase your revenue.`,
+        action: "Review your checkout process for friction points"
       });
     } else if (analytics.cartToCheckoutRate < 35) {
       insights.push({
         type: "warning", 
-        title: "Cart Conversion Below Average",
-        description: `${analytics.cartToCheckoutRate.toFixed(1)}% conversion rate. You're close to industry standards but can improve significantly.`,
-        action: "Test cart optimization features"
+        title: "Checkout Rate Below Average",
+        description: `${analytics.cartToCheckoutRate.toFixed(1)}% conversion rate is close to average but has room for improvement.`,
+        action: "Test simplifying your cart and checkout"
       });
     } else if (analytics.cartToCheckoutRate >= 45) {
       insights.push({
         type: "success",
-        title: "Excellent Cart Performance",
-        description: `${analytics.cartToCheckoutRate.toFixed(1)}% conversion rate exceeds industry average. You're converting exceptionally well!`,
-        action: "Focus on increasing cart value now"
+        title: "Strong Checkout Performance",
+        description: `${analytics.cartToCheckoutRate.toFixed(1)}% conversion rate is above average. Your customers complete checkout smoothly.`,
+        action: "Focus on increasing average order value"
       });
     }
     
-    // 2. REVENUE: Upsell effectiveness based on actual revenue data
+    // 2. Revenue from recommendations
     const upsellPercentage = analytics.totalRevenue > 0 ? (analytics.revenueFromUpsells / analytics.totalRevenue) * 100 : 0;
     if (analytics.revenueFromUpsells > 0 && upsellPercentage < 8) {
       insights.push({
         type: "warning",
-        title: "Untapped Upsell Revenue", 
-        description: `Additional sales are only ${upsellPercentage.toFixed(1)}% of revenue. Top stores achieve 15-25%. Potential: ${formatCurrency(analytics.totalRevenue * 0.15 - analytics.revenueFromUpsells)} more.`,
-        action: "Enable product recommendations"
+        title: "More Revenue Available from Recommendations", 
+        description: `Recommendations generate ${upsellPercentage.toFixed(1)}% of revenue. Top stores reach 15-25% by showing relevant products at the right time.`,
+        action: "Review your recommendation settings"
       });
     } else if (analytics.revenueFromUpsells === 0 && analytics.totalOrders > 5) {
       insights.push({
         type: "info",
-        title: "Missing Upsell Revenue",
-        description: `No additional product sales detected. With ${analytics.totalOrders} orders, you could generate ${formatCurrency(analytics.totalRevenue * 0.15)} in upsell revenue.`,
-        action: "Enable Cart Uplift recommendations"
+        title: "Start Showing Recommendations",
+        description: `With ${analytics.totalOrders} orders, product recommendations could generate ${formatCurrency(analytics.totalRevenue * 0.15)} in additional revenue.`,
+        action: "Enable AI recommendations in settings"
       });
     } else if (upsellPercentage >= 15) {
       insights.push({
         type: "success",
-        title: "Strong Upselling Performance",
-        description: `${upsellPercentage.toFixed(1)}% of revenue from additional sales exceeds industry benchmarks. Great work!`,
-        action: "Test higher-value product recommendations"
+        title: "Recommendations Performing Well",
+        description: `${upsellPercentage.toFixed(1)}% of revenue comes from recommendations. This is excellent performance.`,
+        action: "Try recommending higher-value products"
       });
     }
     
-    // 3. AOV OPTIMIZATION: Based on actual order values and market position
+    // 3. Average order value optimization
     if (analytics.averageOrderValue > 0) {
       if (analytics.averageOrderValue < 50) {
         insights.push({
           type: "info",
-          title: "AOV Growth Opportunity",
-          description: `AOV of ${formatCurrency(analytics.averageOrderValue)} suggests quick-buy behavior. Product bundles could increase this 30-50%.`,
-          action: analytics.freeShippingEnabled ? "Optimize free shipping threshold" : "Enable free shipping incentive"
+          title: "Opportunity to Increase Order Size",
+          description: `Average order of ${formatCurrency(analytics.averageOrderValue)} suggests customers buy one item at a time. Bundles could increase this by 30-50%.`,
+          action: analytics.freeShippingEnabled ? "Adjust free shipping threshold" : "Try free shipping above a threshold"
         });
       } else if (analytics.averageOrderValue > 150) {
         insights.push({
           type: "success",
-          title: "High-Value Customer Base",
-          description: `AOV of ${formatCurrency(analytics.averageOrderValue)} indicates premium customers. Focus on exclusive products and VIP experiences.`,
-          action: "Consider premium upsells and loyalty features"
+          title: "High Average Order Value",
+          description: `Average of ${formatCurrency(analytics.averageOrderValue)} indicates premium customers who spend well.`,
+          action: "Consider premium product recommendations"
         });
       }
     }
     
-    // 4. FREE SHIPPING EFFECTIVENESS (only if enabled)
+    // 4. Free shipping effectiveness
     if (analytics.freeShippingEnabled) {
       if (analytics.freeShippingConversionRate < 15) {
         insights.push({
           type: "warning",
-          title: "Free Shipping Threshold Blocking Sales",
-          description: `Only ${analytics.freeShippingConversionRate.toFixed(1)}% reach your ${formatCurrency(analytics.freeShippingThreshold)} threshold. Lowering it could unlock ${formatCurrency(analytics.avgAOVWithoutFreeShipping * analytics.ordersWithoutFreeShipping * 0.3)} in revenue.`,
-          action: "Consider lowering free shipping threshold"
+          title: "Few Customers Reach Free Shipping",
+          description: `Only ${analytics.freeShippingConversionRate.toFixed(1)}% reach your ${formatCurrency(analytics.freeShippingThreshold)} threshold. Lowering it slightly could increase conversions.`,
+          action: "Test a lower free shipping threshold"
         });
       } else if (analytics.freeShippingConversionRate > 70) {
         insights.push({
           type: "attention",
-          title: "Free Shipping Threshold Too Easy", 
-          description: `${analytics.freeShippingConversionRate.toFixed(1)}% easily reach your threshold. Raising it could increase AOV by ${formatCurrency((analytics.avgAOVWithFreeShipping * 1.2) - analytics.avgAOVWithFreeShipping)}.`,
-          action: "Consider raising free shipping threshold"
+          title: "Most Orders Get Free Shipping", 
+          description: `${analytics.freeShippingConversionRate.toFixed(1)}% reach your threshold easily. Raising it could encourage larger orders.`,
+          action: "Test a higher free shipping threshold"
         });
       } else if (analytics.freeShippingAOVLift > 25) {
         insights.push({
           type: "success",
-          title: "Free Shipping Driving Strong AOV",
-          description: `Free shipping increases AOV by ${analytics.freeShippingAOVLift.toFixed(1)}%. This feature is working excellently for your store.`,
-          action: "Promote free shipping more prominently"
+          title: "Free Shipping Increasing Order Size",
+          description: `Free shipping boosts orders by ${analytics.freeShippingAOVLift.toFixed(1)}%. This is working well for you.`,
+          action: "Highlight free shipping more prominently"
         });
       }
     }
     
-    // 5. MOBILE/SEASONAL INSIGHTS: Based on conversion patterns and time
+    // 5. Mobile and timing insights
     const currentHour = new Date().getHours();
     const isWeekend = [0, 6].includes(new Date().getDay());
     const currentMonth = new Date().getMonth();
@@ -960,51 +960,51 @@ export default function Dashboard() {
     if (analytics.cartToCheckoutRate < 30 && (currentHour >= 18 || isWeekend)) {
       insights.push({
         type: "info",
-        title: "Peak Shopping Time Opportunity",
-        description: `Conversion is low during peak shopping hours. ${isWeekend ? 'Weekend' : 'Evening'} shoppers often browse on mobile - ensure cart works perfectly on phones.`,
-        action: "Test mobile cart experience"
+        title: "Check Mobile Experience",
+        description: `Conversion is lower during ${isWeekend ? 'weekend' : 'evening'} hours when mobile shopping peaks. Make sure your cart works well on phones.`,
+        action: "Test your cart on mobile devices"
       });
     }
     
     if (isHolidaySeason && analytics.averageOrderValue < 75) {
       insights.push({
         type: "attention",
-        title: "Holiday Shopping Boost Potential",
-        description: `Holiday shoppers typically spend 40% more. Your AOV suggests opportunity for seasonal bundles and gift recommendations.`,
+        title: "Holiday Shopping Season",
+        description: `Shoppers typically spend 40% more during holidays. Consider featuring gift bundles and seasonal products.`,
         action: "Create holiday product bundles"
       });
     }
     
-    // 6. PRODUCT CATALOG INSIGHTS: Based on order diversity
+    // 6. Product diversity in orders
     const avgProductsPerOrder = analytics.totalRevenue > 0 && analytics.averageOrderValue > 0 ? 
       (analytics.revenueFromUpsells > 0 ? 2.3 : 1.2) : 1.0;
     
     if (avgProductsPerOrder < 1.5 && analytics.totalOrders > 10) {
       insights.push({
         type: "info",
-        title: "Single-Product Order Pattern",
-        description: `Most orders contain one product. Cross-selling related items could increase revenue by 25-35%. Consider "frequently bought together" suggestions.`,
+        title: "Most Orders Have One Product",
+        description: `Customers usually buy one item. Showing related products could increase revenue by 25-35%.`,
         action: "Enable related product recommendations"
       });
     }
     
-    // 7. DATA VOLUME INSIGHTS: Important for actionability
+    // 7. Early stage guidance
     if (analytics.totalOrders < 10 && analytics.timeframe === "30d") {
       insights.push({
         type: "info",
-        title: "Building Analytics Foundation",
-        description: `With ${analytics.totalOrders} orders in 30 days, insights will become more accurate as you grow. Focus on conversion optimization first.`,
-        action: "Continue monitoring as sales increase"
+        title: "Getting Started",
+        description: `With ${analytics.totalOrders} orders in 30 days, insights will improve as your store grows. Focus on getting more traffic and conversions.`,
+        action: "Keep monitoring as sales increase"
       });
     }
 
-    // Default positive insight if nothing critical found
+    // Default insight
     if (insights.length === 0) {
       insights.push({
         type: "success",
-        title: "Strong Overall Performance",
-        description: "Your cart metrics are performing well across key areas. Continue monitoring and testing new optimization features.",
-        action: "Experiment with advanced features"
+        title: "Overall Performance Looks Good",
+        description: "Your cart metrics are healthy. Keep testing new features to continue improving.",
+        action: "Experiment with advanced settings"
       });
     }
     
@@ -1137,6 +1137,207 @@ export default function Dashboard() {
             )}
           </BlockStack>
         </Card>
+        
+        {/* 🎯 CORE METRICS - 3 Key Performance Indicators */}
+        <Grid>
+          {/* 1. Orders with Recommendations */}
+          <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 4, lg: 4, xl: 4}}>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Orders with Recommendations
+                </Text>
+                <Text as="h2" variant="headingXl" fontWeight="bold">
+                  {analytics.attributedOrders || 0}
+                </Text>
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  {analytics.totalOrders > 0 
+                    ? `${((analytics.attributedOrders / analytics.totalOrders) * 100).toFixed(1)}% of all orders`
+                    : 'Start getting recommendations shown'}
+                </Text>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+          
+          {/* 2. Recommendation Success Rate */}
+          <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 4, lg: 4, xl: 4}}>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Recommendation Success Rate
+                </Text>
+                <Text as="h2" variant="headingXl" fontWeight="bold">
+                  {analytics.recClicks > 0 && analytics.attributedOrders > 0
+                    ? `${((analytics.attributedOrders / analytics.recClicks) * 100).toFixed(1)}%`
+                    : '0%'}
+                </Text>
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  {analytics.recClicks > 0
+                    ? `${analytics.attributedOrders} purchases from ${analytics.recClicks} clicks`
+                    : 'Customers haven\'t clicked recommendations yet'}
+                </Text>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+          
+          {/* 3. Click-Through Rate */}
+          <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 4, lg: 4, xl: 4}}>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Click Rate
+                </Text>
+                <Text as="h2" variant="headingXl" fontWeight="bold">
+                  {analytics.recCTR > 0 ? `${analytics.recCTR.toFixed(1)}%` : '0%'}
+                </Text>
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  {analytics.recImpressions > 0
+                    ? `${analytics.recClicks} clicks from ${analytics.recImpressions} views`
+                    : 'No recommendations shown yet'}
+                </Text>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+        </Grid>
+        
+        {/* 🤖 ML LEARNING STATUS - Show AI is actively improving */}
+        <Card>
+          <BlockStack gap="500">
+            <BlockStack gap="200">
+              <Text as="h2" variant="headingMd">
+                AI Learning Status
+              </Text>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Your AI analyzes purchase patterns and improves recommendations over time
+              </Text>
+            </BlockStack>
+            
+            <Grid>
+              <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Products Analyzed
+                  </Text>
+                  <Text as="p" variant="headingLg" fontWeight="bold">
+                    {analytics.mlStatus.productsAnalyzed || 0}
+                  </Text>
+                </BlockStack>
+              </Grid.Cell>
+              
+              <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    High Performers
+                  </Text>
+                  <Text as="p" variant="headingLg" fontWeight="bold">
+                    {analytics.mlStatus.highPerformers || 0}
+                  </Text>
+                  <Badge tone="success" size="small">
+                    {analytics.mlStatus.productsAnalyzed > 0
+                      ? `${((analytics.mlStatus.highPerformers / analytics.mlStatus.productsAnalyzed) * 100).toFixed(0)}% confidence`
+                      : '0% confidence'}
+                  </Badge>
+                </BlockStack>
+              </Grid.Cell>
+              
+              <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Performance Trend
+                  </Text>
+                  <Text as="p" variant="headingLg" fontWeight="bold">
+                    {analytics.mlStatus.performanceChange > 0 ? '+' : ''}
+                    {analytics.mlStatus.performanceChange.toFixed(1)}%
+                  </Text>
+                  <Badge 
+                    tone={analytics.mlStatus.performanceChange > 0 ? "success" : "info"}
+                    size="small"
+                  >
+                    {analytics.mlStatus.performanceChange > 0 ? 'Improving' : 'Stable'}
+                  </Badge>
+                </BlockStack>
+              </Grid.Cell>
+              
+              <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Last Updated
+                  </Text>
+                  <Text as="p" variant="headingLg" fontWeight="bold">
+                    {analytics.mlStatus.lastUpdated 
+                      ? new Date(analytics.mlStatus.lastUpdated).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })
+                      : 'Never'}
+                  </Text>
+                  <Text as="p" variant="bodyXs" tone="subdued">
+                    {analytics.mlStatus.lastUpdated
+                      ? new Date(analytics.mlStatus.lastUpdated).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })
+                      : 'Waiting for data'}
+                  </Text>
+                </BlockStack>
+              </Grid.Cell>
+            </Grid>
+            
+            {analytics.mlStatus.blacklistedProducts > 0 && (
+              <Box padding="400" background="bg-surface-caution" borderRadius="200">
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="p" variant="bodySm" fontWeight="semibold">
+                    ⚠️ {analytics.mlStatus.blacklistedProducts} products excluded
+                  </Text>
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    — Poor performance detected, not showing in recommendations
+                  </Text>
+                </InlineStack>
+              </Box>
+            )}
+            
+            {analytics.mlStatus.productsAnalyzed === 0 && (
+              <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  💡 Your AI will start learning once you have order data. The more orders, the better the recommendations become.
+                </Text>
+              </Box>
+            )}
+          </BlockStack>
+        </Card>
+        
+        {/* 💰 TOP ATTRIBUTED PRODUCTS - Show what's making money */}
+        {analytics.topAttributedProducts && analytics.topAttributedProducts.length > 0 && (
+          <Card>
+            <BlockStack gap="400">
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">
+                  Top Revenue Generators
+                </Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Products that made the most money from AI recommendations
+                </Text>
+              </BlockStack>
+              
+              <DataTable
+                columnContentTypes={['text', 'numeric', 'numeric', 'numeric']}
+                headings={['Product', 'Orders', 'Revenue', 'Avg per Order']}
+                rows={analytics.topAttributedProducts.map((product: any) => [
+                  product.productTitle || `Product ${product.productId}`,
+                  product.orders.toString(),
+                  formatCurrency(product.revenue),
+                  formatCurrency(product.revenue / product.orders)
+                ])}
+              />
+              
+              <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                <Text as="p" variant="bodyXs" tone="subdued">
+                  💡 These products converted well when recommended by AI. Consider featuring them more prominently.
+                </Text>
+              </Box>
+            </BlockStack>
+          </Card>
+        )}
         
         {/* Key Metrics Grid with Comparison */}
         <Card>
@@ -1300,10 +1501,10 @@ export default function Dashboard() {
                     ]}
                     headings={[
                       'Product',
-                      'Impressions',
-                      'Clicks',
-                      'CTR',
-                      'Conversion',
+                      'Times Shown',
+                      'Times Added',
+                      'Success Rate',
+                      'Purchase Rate',
                       'Revenue'
                     ]}
                     rows={upsellTableRows}
@@ -1315,12 +1516,12 @@ export default function Dashboard() {
               <Card>
                 <BlockStack gap="400">
                   <InlineStack gap="200" align="space-between">
-                    <Text as="h2" variant="headingMd">📈 Recommendation CTR (trend)</Text>
-                    <Badge tone="attention">Time series</Badge>
+                    <Text as="h2" variant="headingMd">📈 Recommendation Performance Over Time</Text>
+                    <Badge tone="attention">Daily trend</Badge>
                   </InlineStack>
                   <DataTable
                     columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric' ]}
-                    headings={[ 'Date', 'Impressions', 'Clicks', 'CTR' ]}
+                    headings={[ 'Date', 'Times Shown', 'Times Added', 'Success Rate' ]}
                     rows={recCTRRows}
                   />
                 </BlockStack>
@@ -1330,12 +1531,12 @@ export default function Dashboard() {
               <Card>
                 <BlockStack gap="400">
                   <InlineStack gap="200" align="space-between">
-                    <Text as="h2" variant="headingMd">🔝 Top Recommended Items</Text>
-                    <Badge tone="success">By clicks</Badge>
+                    <Text as="h2" variant="headingMd">🔝 Most Popular Recommendations</Text>
+                    <Badge tone="success">By customer interest</Badge>
                   </InlineStack>
                   <DataTable
                     columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric', 'numeric' ]}
-                    headings={[ 'Product', 'Impressions', 'Clicks', 'CTR', 'Revenue' ]}
+                    headings={[ 'Product', 'Times Shown', 'Times Added', 'Success Rate', 'Revenue' ]}
                     rows={topRecommendedRows}
                   />
                 </BlockStack>
