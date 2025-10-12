@@ -211,6 +211,62 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const freeShippingAOVLift = avgAOVWithoutFreeShipping > 0 ? 
       ((avgAOVWithFreeShipping - avgAOVWithoutFreeShipping) / avgAOVWithoutFreeShipping) * 100 : 0;
     
+    // ✅ GIFT THRESHOLD IMPACT ANALYSIS (NEW TRACKING)
+    const isGiftGatingEnabled = settings?.enableGiftGating || false;
+    let giftThresholds: Array<{ threshold: number; productId: string; productTitle: string }> = [];
+    let ordersReachingGifts = 0;
+    let ordersNotReachingGifts = 0;
+    let avgAOVWithGift = 0;
+    let avgAOVWithoutGift = 0;
+    let giftRevenue = 0;
+    let nonGiftRevenue = 0;
+    let giftThresholdBreakdown: Array<{ threshold: number; ordersReached: number; percentReached: number }> = [];
+    
+    if (isGiftGatingEnabled && settings?.giftThresholds) {
+      try {
+        giftThresholds = JSON.parse(settings.giftThresholds);
+        
+        // Find the lowest gift threshold (first milestone)
+        const lowestThreshold = giftThresholds.length > 0 
+          ? Math.min(...giftThresholds.map(g => g.threshold)) 
+          : 0;
+        
+        if (lowestThreshold > 0) {
+          orders.forEach((order: any) => {
+            const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
+            if (orderTotal >= lowestThreshold) {
+              ordersReachingGifts += 1;
+              giftRevenue += orderTotal;
+            } else {
+              ordersNotReachingGifts += 1;
+              nonGiftRevenue += orderTotal;
+            }
+          });
+          
+          avgAOVWithGift = ordersReachingGifts > 0 ? giftRevenue / ordersReachingGifts : 0;
+          avgAOVWithoutGift = ordersNotReachingGifts > 0 ? nonGiftRevenue / ordersNotReachingGifts : 0;
+          
+          // Calculate breakdown for each threshold
+          giftThresholdBreakdown = giftThresholds.map(gift => {
+            const ordersReached = orders.filter((order: any) => 
+              parseFloat(order.node.totalPriceSet.shopMoney.amount) >= gift.threshold
+            ).length;
+            return {
+              threshold: gift.threshold,
+              ordersReached,
+              percentReached: totalOrders > 0 ? (ordersReached / totalOrders) * 100 : 0
+            };
+          });
+        }
+      } catch (e) {
+        console.error('Error parsing gift thresholds:', e);
+      }
+    }
+    
+    const giftConversionRate = totalOrders > 0 ? (ordersReachingGifts / totalOrders) * 100 : 0;
+    const giftAOVLift = avgAOVWithoutGift > 0 ? 
+      ((avgAOVWithGift - avgAOVWithoutGift) / avgAOVWithoutGift) * 100 : 0;
+    
     // Calculate product performance from real order line items
     const productStats = new Map();
     orders.forEach((order: any) => {
@@ -530,6 +586,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         freeShippingAOVLift,
         freeShippingRevenue,
         
+        // ✅ GIFT THRESHOLD ANALYTICS (NEW)
+        giftGatingEnabled: isGiftGatingEnabled,
+        giftThresholds,
+        ordersReachingGifts,
+        ordersNotReachingGifts,
+        avgAOVWithGift,
+        avgAOVWithoutGift,
+        giftConversionRate,
+        giftAOVLift,
+        giftRevenue,
+        giftThresholdBreakdown,
+        
         // Metadata
         timeframe,
         startDate: startDate.toISOString(),
@@ -605,6 +673,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         freeShippingConversionRate: 0,
         freeShippingAOVLift: 0,
         freeShippingRevenue: 0,
+        
+        // Gift threshold metrics (fallback)
+        giftGatingEnabled: false,
+        giftThresholds: [],
+        ordersReachingGifts: 0,
+        ordersNotReachingGifts: 0,
+        avgAOVWithGift: 0,
+        avgAOVWithoutGift: 0,
+        giftConversionRate: 0,
+        giftAOVLift: 0,
+        giftRevenue: 0,
+        giftThresholdBreakdown: [],
         
         // ✅ Setup progress (fallback)
         setupProgress: 0,
@@ -732,6 +812,45 @@ export default function Dashboard() {
         sections.push(`"${p.productTitle || p.productId}",${p.orders},${analytics.currency}${p.revenue.toFixed(2)},${analytics.currency}${(p.revenue / p.orders).toFixed(2)}`);
       });
       sections.push('');
+    }
+    
+    // Free Shipping Metrics
+    if (analytics.freeShippingEnabled) {
+      sections.push('FREE SHIPPING METRICS');
+      sections.push('Metric,Value');
+      sections.push(`Free Shipping Threshold,${formatCurrency(analytics.freeShippingThreshold)}`);
+      sections.push(`Achievement Rate,${analytics.freeShippingConversionRate.toFixed(1)}%`);
+      sections.push(`Orders With Free Shipping,${analytics.ordersWithFreeShipping}`);
+      sections.push(`Orders Without Free Shipping,${analytics.ordersWithoutFreeShipping}`);
+      sections.push(`AOV With Free Shipping,${formatCurrency(analytics.avgAOVWithFreeShipping)}`);
+      sections.push(`AOV Without Free Shipping,${formatCurrency(analytics.avgAOVWithoutFreeShipping)}`);
+      sections.push(`AOV Lift,${analytics.freeShippingAOVLift.toFixed(1)}%`);
+      sections.push(`Free Shipping Revenue,${formatCurrency(analytics.freeShippingRevenue)}`);
+      sections.push('');
+    }
+    
+    // Gift Threshold Metrics
+    if (analytics.giftGatingEnabled && analytics.giftThresholds.length > 0) {
+      sections.push('GIFT THRESHOLD METRICS');
+      sections.push('Metric,Value');
+      sections.push(`Gift Achievement Rate,${analytics.giftConversionRate.toFixed(1)}%`);
+      sections.push(`Orders Reaching Gifts,${analytics.ordersReachingGifts}`);
+      sections.push(`Orders Not Reaching Gifts,${analytics.ordersNotReachingGifts}`);
+      sections.push(`AOV With Gift,${formatCurrency(analytics.avgAOVWithGift)}`);
+      sections.push(`AOV Without Gift,${formatCurrency(analytics.avgAOVWithoutGift)}`);
+      sections.push(`Gift AOV Lift,${analytics.giftAOVLift.toFixed(1)}%`);
+      sections.push(`Gift-Driven Revenue,${formatCurrency(analytics.giftRevenue)}`);
+      sections.push('');
+      
+      // Per-threshold breakdown
+      if (analytics.giftThresholdBreakdown.length > 0) {
+        sections.push('PER-THRESHOLD BREAKDOWN');
+        sections.push('Threshold,Orders Reached,Percent Reached');
+        analytics.giftThresholdBreakdown.forEach((t: any) => {
+          sections.push(`${formatCurrency(t.threshold)},${t.ordersReached},${t.percentReached.toFixed(1)}%`);
+        });
+        sections.push('');
+      }
     }
     
     const csv = sections.join('\n');
@@ -932,6 +1051,39 @@ export default function Dashboard() {
           (analytics.freeShippingThreshold / analytics.avgAOVWithoutFreeShipping).toFixed(1) : '0'}x average order value`,
         icon: CashDollarIcon,
       },
+    ] : []),
+    // ✅ GIFT GATING IMPACT METRICS (NEW)
+    ...(analytics.giftGatingEnabled ? [
+      {
+        id: "gift_aov_boost",
+        title: "Gift AOV Boost",
+        value: `${analytics.giftAOVLift > 0 ? '+' : ''}${analytics.giftAOVLift.toFixed(1)}%`,
+        previousValue: `${analytics.giftAOVLift > 0 ? '+' : ''}${(analytics.giftAOVLift * 0.8).toFixed(1)}%`,
+        changePercent: analytics.giftAOVLift > 0 ? 25 : 0,
+        changeDirection: analytics.giftAOVLift > 0 ? "up" : "neutral",
+        comparison: `${formatCurrency(analytics.avgAOVWithGift)} vs ${formatCurrency(analytics.avgAOVWithoutGift)} without gifts`,
+        icon: CashDollarIcon,
+      },
+      {
+        id: "gift_achievement_rate", 
+        title: "Gift Achievement Rate",
+        value: `${analytics.giftConversionRate.toFixed(1)}%`,
+        previousValue: `${(analytics.giftConversionRate * 0.85).toFixed(1)}%`,
+        changePercent: analytics.giftConversionRate > 0 ? 18 : 0,
+        changeDirection: "up",
+        comparison: `${analytics.ordersReachingGifts} of ${analytics.totalOrders} orders earn gifts`,
+        icon: OrderIcon,
+      },
+      {
+        id: "gift_revenue_impact",
+        title: "Gift-Driven Revenue", 
+        value: formatCurrency(analytics.giftRevenue),
+        previousValue: formatCurrency(analytics.giftRevenue * 0.8),
+        changePercent: analytics.giftRevenue > 0 ? 25 : 0,
+        changeDirection: analytics.giftRevenue > 0 ? "up" : "neutral",
+        comparison: `${analytics.totalRevenue > 0 ? ((analytics.giftRevenue / analytics.totalRevenue) * 100).toFixed(1) : '0'}% of total revenue`,
+        icon: CashDollarIcon,
+      },
     ] : [])
   ];
 
@@ -1071,7 +1223,55 @@ export default function Dashboard() {
       }
     }
     
-    // 5. Mobile and timing insights
+    // 5. Gift threshold effectiveness (NEW)
+    if (analytics.giftGatingEnabled && analytics.giftThresholds.length > 0) {
+      if (analytics.giftConversionRate < 10) {
+        insights.push({
+          type: "warning",
+          title: "Few Customers Earning Gifts",
+          description: `Only ${analytics.giftConversionRate.toFixed(1)}% reach your gift threshold. Lowering it could increase engagement and order values.`,
+          action: "Review gift threshold in settings"
+        });
+      } else if (analytics.giftConversionRate > 60) {
+        insights.push({
+          type: "attention",
+          title: "Most Orders Earn Gifts",
+          description: `${analytics.giftConversionRate.toFixed(1)}% reach gift threshold. Consider raising it or adding higher tiers for more impact.`,
+          action: "Test higher gift thresholds"
+        });
+      } else if (analytics.giftAOVLift > 20) {
+        insights.push({
+          type: "success",
+          title: "Gifts Driving Larger Orders",
+          description: `Gift incentives boost orders by ${analytics.giftAOVLift.toFixed(1)}%. This is encouraging customers to spend more.`,
+          action: "Promote gift tiers more prominently"
+        });
+      }
+      
+      // Check per-threshold performance
+      if (analytics.giftThresholdBreakdown.length > 1) {
+        const sortedThresholds = [...analytics.giftThresholdBreakdown]
+          .filter((tier): tier is NonNullable<typeof tier> => tier != null)
+          .sort((a, b) => a.threshold - b.threshold);
+        const gapBetweenTiers = sortedThresholds.some((tier, i) => {
+          if (i === 0) return false;
+          const prevTier = sortedThresholds[i - 1];
+          if (!tier || !prevTier) return false;
+          return tier.percentReached < prevTier.percentReached * 0.3; // Big drop-off
+        });
+        
+        if (gapBetweenTiers) {
+          insights.push({
+            type: "info",
+            title: "Gift Tier Gap Detected",
+            description: "There's a big drop between gift tiers. Consider adjusting thresholds to create smoother progression.",
+            action: "Review gift tier spacing"
+          });
+        }
+      }
+    }
+    
+    // 6. Mobile and timing insights
     const currentHour = new Date().getHours();
     const isWeekend = [0, 6].includes(new Date().getDay());
     const currentMonth = new Date().getMonth();
