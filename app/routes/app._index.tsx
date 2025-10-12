@@ -56,6 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Index() {
   const { shop, currentThemeId, hasSettings, search } = useLoaderData<typeof loader>();
+  const safeSearch = search || "";
   const fetcher = useFetcher();
   const [subscribing, setSubscribing] = useState<string | null>(null);
   
@@ -392,7 +393,7 @@ export default function Index() {
                     🎨 Enable in Theme
                   </Button>
                 </a>
-                <a href={`/app/settings${search}`} className="no-underline">
+                <a href={`/app/settings${safeSearch}`} className="no-underline">
                   <Button size="large">
                     ⚙️ Configure Settings
                   </Button>
@@ -760,7 +761,7 @@ export default function Index() {
                   </Text>
                 </BlockStack>
               </div>
-              <a href={`/admin/dashboard${search}`} className="no-underline">
+                <a href={`/admin/dashboard${safeSearch}`} className="no-underline">
                 <Button variant="primary" size="large" fullWidth>
                   View Dashboard →
                 </Button>
@@ -778,7 +779,7 @@ export default function Index() {
                   </Text>
                 </BlockStack>
               </div>
-              <a href={`/app/settings${search}`} className="no-underline">
+              <a href={`/app/settings${safeSearch}`} className="no-underline">
                 <Button size="large" fullWidth>
                   Manage Settings →
                 </Button>
