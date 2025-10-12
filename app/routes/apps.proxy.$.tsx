@@ -952,6 +952,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
                       metadata: JSON.stringify({
                         anchors: Array.from(anchors),
                         recommendationCount: finalRecommendations.length,
+                        recommendationIds: finalRecommendations.map(r => r.id), // 🎯 KEY: For purchase attribution
                         dataQuality: dataMetrics.dataQuality,
                         mlMode: effectivePersonalizationMode,
                         orderDataPoints: orderEdges.length,
@@ -970,6 +971,57 @@ export async function loader({ request }: LoaderFunctionArgs) {
             console.warn('⚠️ ML enhancement failed, using standard algorithm:', mlError);
             // Graceful degradation - keep original recommendations
           }
+        }
+
+        // 🎯 APPLY DAILY LEARNING - Filter bad products, boost good ones
+        try {
+          const candidateIds = finalRecommendations.map(r => r.id);
+          
+          if (candidateIds.length > 0) {
+            const performance = await (db as any).mLProductPerformance?.findMany({
+              where: {
+                shop: shopStr,
+                productId: { in: candidateIds }
+              }
+            }) || [];
+            
+            if (performance.length > 0) {
+              console.log(`🎯 Applying performance data for ${performance.length} products`);
+              
+              // Filter out blacklisted products
+              const blacklisted = performance.filter((p: any) => p.isBlacklisted).map((p: any) => p.productId);
+              if (blacklisted.length > 0) {
+                console.log(`🚫 Filtering ${blacklisted.length} blacklisted products`);
+                finalRecommendations = finalRecommendations.filter(rec => !blacklisted.includes(rec.id));
+              }
+              
+              // Adjust scores based on confidence
+              for (const rec of finalRecommendations) {
+                const perf = performance.find((p: any) => p.productId === rec.id);
+                if (perf) {
+                  const originalScore = (rec as any).score || 0.5;
+                  
+                  if (perf.confidence > 0.7) {
+                    // High confidence - boost by 30%
+                    (rec as any).score = originalScore * 1.3;
+                    console.log(`⭐ Boosting ${rec.id}: confidence ${perf.confidence.toFixed(2)} (CVR: ${(perf.cvr * 100).toFixed(1)}%)`);
+                  } else if (perf.confidence < 0.3) {
+                    // Low confidence - penalize by 30%
+                    (rec as any).score = originalScore * 0.7;
+                    console.log(`⚠️  Penalizing ${rec.id}: confidence ${perf.confidence.toFixed(2)} (CVR: ${(perf.cvr * 100).toFixed(1)}%)`);
+                  }
+                }
+              }
+              
+              // Re-sort by adjusted scores
+              finalRecommendations.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+              
+              // Track that learning was applied
+              dataMetrics.mlEnhanced = true;
+            }
+          }
+        } catch (perfError) {
+          console.warn('⚠️ Failed to apply performance data:', perfError);
         }
 
         const payload = { 
