@@ -706,6 +706,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Dashboard() {
   const { analytics, search } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [forceShowDashboard, setForceShowDashboard] = useState(false);
   
   // 📥 CSV EXPORT UTILITIES
   const downloadCSV = (filename: string, csvContent: string) => {
@@ -1383,7 +1384,7 @@ export default function Dashboard() {
   const behavioralInsights = getBehavioralInsights();
 
   // 🚀 SETUP PROGRESS CHECK - Show onboarding for new installs
-  if (analytics.setupProgress < 100) {
+  if (analytics.setupProgress < 100 && !forceShowDashboard) {
     return (
       <Page>
         <TitleBar title="🚀 Getting Started" />
@@ -1435,10 +1436,10 @@ export default function Dashboard() {
               <Banner tone="info">
                 <BlockStack gap="200">
                   <Text variant="bodyMd" as="p">
-                    Check back in 2-3 days to see your first revenue numbers.
+                    Your dashboard will activate as soon as customers interact with recommendations (usually within minutes of enabling the app).
                   </Text>
                   <Text variant="bodyMd" as="p">
-                    The AI learns from each sale to improve recommendations.
+                    The AI learns from each sale to improve recommendations over time.
                   </Text>
                 </BlockStack>
               </Banner>
@@ -1455,6 +1456,22 @@ export default function Dashboard() {
                   </BlockStack>
                 </Box>
               )}
+              
+              <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" as="p" fontWeight="semibold">
+                    📊 Debug Info (for testing)
+                  </Text>
+                  <Text variant="bodySm" as="p">
+                    Impressions: {analytics.recImpressions} | Clicks: {analytics.recClicks} | Attributed Orders: {analytics.attributedOrders}
+                  </Text>
+                  {analytics.recImpressions === 0 && (
+                    <Text variant="bodySm" as="p" tone="caution">
+                      ⚠️ No impressions yet. Make sure cart drawer is enabled and showing recommendations.
+                    </Text>
+                  )}
+                </BlockStack>
+              </Box>
             </BlockStack>
           </Card>
           
@@ -1464,9 +1481,14 @@ export default function Dashboard() {
               <Text variant="bodyMd" as="p">
                 Customize your recommendation settings to match your brand
               </Text>
-              <a href={settingsHref} className="no-underline">
-                <Button variant="primary">Configure Settings</Button>
-              </a>
+              <InlineStack gap="300">
+                <a href={settingsHref} className="no-underline">
+                  <Button variant="primary">Configure Settings</Button>
+                </a>
+                <Button onClick={() => setForceShowDashboard(true)}>
+                  View Dashboard Anyway
+                </Button>
+              </InlineStack>
             </BlockStack>
           </Card>
         </BlockStack>
