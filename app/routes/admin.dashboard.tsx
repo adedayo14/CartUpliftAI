@@ -138,8 +138,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             }
           }
         }
-      }
-    `, {
+      `,{
       variables: {
         query: `created_at:>=${startDate.toISOString()} created_at:<=${endDate.toISOString()}`
       }
