@@ -611,7 +611,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       search
     });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    console.error('❌ DASHBOARD LOADER ERROR:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      shop: session?.shop || 'NO SHOP',
+      timeframe
+    });
     
     // Get currency for error fallback
     let fallbackCurrency = 'USD';
