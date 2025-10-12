@@ -778,6 +778,124 @@ export async function loader({ request }: LoaderFunctionArgs) {
               dataMetrics.dataQuality = 'new_store';
             }
             
+            // 🆕 COLD START HANDLING - Enhanced recommendations for new stores
+            if (orderEdges.length < 50) {
+              console.log(`🌱 [COLD START] Low data store (${orderEdges.length} orders) - using enhanced fallbacks`);
+              
+              try {
+                // Strategy 1: Use Shopify's recommendation API
+                const shopifyRecsPromise = admin.graphql(`
+                  query getRecommendations($productIds: [ID!]!) {
+                    productRecommendations(productId: $productIds) {
+                      id
+                      title
+                      handle
+                      priceRangeV2 {
+                        minVariantPrice {
+                          amount
+                          currencyCode
+                        }
+                      }
+                      images(first: 1) {
+                        edges {
+                          node {
+                            url
+                          }
+                        }
+                      }
+                    }
+                  }
+                `, {
+                  variables: {
+                    productIds: Array.from(anchors).slice(0, 1) // Use first anchor
+                  }
+                }).then(r => r.json()).catch(() => null);
+                
+                // Strategy 2: Get trending products (highest selling in catalog)
+                const trendingPromise = admin.graphql(`
+                  query getTrending {
+                    products(first: 10, sortKey: BEST_SELLING) {
+                      edges {
+                        node {
+                          id
+                          title
+                          handle
+                          priceRangeV2 {
+                            minVariantPrice {
+                              amount
+                              currencyCode
+                            }
+                          }
+                          images(first: 1) {
+                            edges {
+                              node {
+                                url
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `).then(r => r.json()).catch(() => null);
+                
+                const [shopifyRecsData, trendingData] = await Promise.all([shopifyRecsPromise, trendingPromise]);
+                
+                const coldStartRecs: Array<{ id: string, title: string, price: number, handle: string, image?: string }> = [];
+                
+                // Add Shopify recommendations
+                if (shopifyRecsData?.data?.productRecommendations) {
+                  for (const prod of shopifyRecsData.data.productRecommendations) {
+                    coldStartRecs.push({
+                      id: prod.id.split('/').pop()!,
+                      title: prod.title,
+                      price: parseFloat(prod.priceRangeV2?.minVariantPrice?.amount || '0'),
+                      handle: prod.handle,
+                      image: prod.images?.edges?.[0]?.node?.url
+                    });
+                  }
+                  console.log(`✅ [COLD START] Added ${coldStartRecs.length} Shopify recommendations`);
+                }
+                
+                // Add trending products
+                if (trendingData?.data?.products?.edges) {
+                  for (const edge of trendingData.data.products.edges) {
+                    const prod = edge.node;
+                    const prodId = prod.id.split('/').pop()!;
+                    
+                    // Don't add if already in list or in cart
+                    if (!coldStartRecs.find(r => r.id === prodId) && !anchors.has(prodId)) {
+                      coldStartRecs.push({
+                        id: prodId,
+                        title: prod.title,
+                        price: parseFloat(prod.priceRangeV2?.minVariantPrice?.amount || '0'),
+                        handle: prod.handle,
+                        image: prod.images?.edges?.[0]?.node?.url
+                      });
+                    }
+                  }
+                  console.log(`✅ [COLD START] Total recommendations: ${coldStartRecs.length}`);
+                }
+                
+                // Mix cold start recs with existing (70% cold start, 30% traditional)
+                if (coldStartRecs.length > 0) {
+                  const coldStartCount = Math.ceil(limit * 0.7);
+                  const traditionalCount = Math.floor(limit * 0.3);
+                  
+                  finalRecommendations = [
+                    ...coldStartRecs.slice(0, coldStartCount),
+                    ...combined.slice(0, traditionalCount)
+                  ].slice(0, limit);
+                  
+                  dataMetrics.mlEnhanced = true;
+                  console.log(`🌱 [COLD START] Using ${coldStartCount} enhanced + ${Math.min(traditionalCount, combined.length)} traditional`);
+                }
+              } catch (coldStartError) {
+                console.warn('⚠️ Cold start enhancement failed:', coldStartError);
+                // Fall through to normal ML processing
+              }
+            }
+            
             // ML PERSONALIZATION MODE ROUTING
             let mlRecommendations: any[] = [];
             

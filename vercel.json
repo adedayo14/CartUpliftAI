@@ -4,6 +4,14 @@
     {
       "path": "/api/cron/daily-learning",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/update-profiles",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/compute-similarities",
+      "schedule": "0 3 * * 0"
     }
   ]
 }
