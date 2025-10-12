@@ -18,6 +18,8 @@ import {
   Modal,
   Checkbox,
   Box,
+  ProgressBar,
+  Banner,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { 
@@ -604,6 +606,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         freeShippingAOVLift: 0,
         freeShippingRevenue: 0,
         
+        // ✅ Setup progress (fallback)
+        setupProgress: 0,
+        setupComplete: false,
+        
         // Metadata
         timeframe: "30d",
         shopName: "demo-shop",
@@ -997,6 +1003,49 @@ export default function Dashboard() {
         action: "Keep monitoring as sales increase"
       });
     }
+    
+    // 8. ROI Performance insight (attribution-specific)
+    if (analytics.attributedRevenue > 0 && analytics.roi > 0) {
+      if (analytics.roi > 20) {
+        insights.push({
+          type: "success",
+          title: "Outstanding ROI",
+          description: `Your AI recommendations generate ${analytics.roi.toFixed(1)}x return on investment. Every £1 spent on this app generates £${analytics.roi.toFixed(1)} in revenue.`,
+          action: "Keep your AI learning enabled"
+        });
+      } else if (analytics.roi < 5 && analytics.attributedOrders > 10) {
+        insights.push({
+          type: "warning",
+          title: "ROI Below Target",
+          description: `Current ROI is ${analytics.roi.toFixed(1)}x with ${analytics.attributedOrders} attributed orders. Performance should improve as the AI continues learning.`,
+          action: "Review recommendation settings"
+        });
+      } else if (analytics.roi >= 5 && analytics.roi <= 20) {
+        insights.push({
+          type: "success",
+          title: "Solid ROI Performance",
+          description: `${analytics.roi.toFixed(1)}x return means recommendations are profitable. The AI will continue optimizing for better results.`,
+          action: "Monitor performance trends"
+        });
+      }
+    }
+    
+    // 9. ML Learning Progress insight
+    if (analytics.mlStatus.performanceChange > 10) {
+      insights.push({
+        type: "success",
+        title: "AI Performance Improving",
+        description: `Recommendation performance up ${analytics.mlStatus.performanceChange.toFixed(0)}% vs. last week. Your AI is learning which products convert best.`,
+        action: "Keep the AI enabled for continued improvement"
+      });
+    } else if (analytics.mlStatus.performanceChange < -10 && analytics.mlStatus.productsAnalyzed > 20) {
+      insights.push({
+        type: "info",
+        title: "Performance Fluctuation Detected",
+        description: `Performance is ${Math.abs(analytics.mlStatus.performanceChange).toFixed(0)}% lower this week. This can be normal as the AI tests different recommendations.`,
+        action: "Give it time to optimize"
+      });
+    }
 
     // Default insight
     if (insights.length === 0) {
@@ -1014,6 +1063,99 @@ export default function Dashboard() {
 
   const behavioralInsights = getBehavioralInsights();
 
+  // 🚀 SETUP PROGRESS CHECK - Show onboarding for new installs
+  if (analytics.setupProgress < 100) {
+    return (
+      <Page>
+        <TitleBar title="🚀 Getting Started" />
+        <BlockStack gap="500">
+          <Card>
+            <BlockStack gap="500">
+              <BlockStack gap="200">
+                <Text variant="headingLg" as="h2">
+                  Your AI is Getting Ready
+                </Text>
+                <Text variant="bodyMd" as="p" tone="subdued">
+                  Setting up recommendations for your store
+                </Text>
+              </BlockStack>
+              
+              <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                <BlockStack gap="400">
+                  <ProgressBar 
+                    progress={analytics.setupProgress} 
+                    size="small"
+                    tone="success"
+                  />
+                  
+                  <BlockStack gap="300">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span">{analytics.recImpressions > 0 ? '✅' : '⏳'}</Text>
+                      <Text variant="bodyMd" as="p">
+                        Recommendations showing on your store
+                      </Text>
+                    </InlineStack>
+                    
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span">{analytics.recClicks > 0 ? '✅' : '⏳'}</Text>
+                      <Text variant="bodyMd" as="p">
+                        Customers clicking recommendations (usually within 24 hours)
+                      </Text>
+                    </InlineStack>
+                    
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span">{analytics.attributedOrders > 0 ? '✅' : '⏳'}</Text>
+                      <Text variant="bodyMd" as="p">
+                        First sales tracked from recommendations (2-3 days)
+                      </Text>
+                    </InlineStack>
+                  </BlockStack>
+                </BlockStack>
+              </Box>
+              
+              <Banner tone="info">
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" as="p">
+                    Check back in 2-3 days to see your first revenue numbers.
+                  </Text>
+                  <Text variant="bodyMd" as="p">
+                    The AI learns from each sale to improve recommendations.
+                  </Text>
+                </BlockStack>
+              </Banner>
+              
+              {analytics.totalOrders > 0 && (
+                <Box padding="400" background="bg-surface-success" borderRadius="200">
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p" fontWeight="semibold">
+                      Great start! Your store has {analytics.totalOrders} orders
+                    </Text>
+                    <Text variant="bodySm" as="p">
+                      The more orders you have, the better the AI recommendations become.
+                    </Text>
+                  </BlockStack>
+                </Box>
+              )}
+            </BlockStack>
+          </Card>
+          
+          <Card>
+            <BlockStack gap="300">
+              <Text variant="headingMd" as="h3">While you wait...</Text>
+              <Text variant="bodyMd" as="p">
+                Customize your recommendation settings to match your brand
+              </Text>
+              <Link to="/app/settings">
+                <Button>Configure Settings</Button>
+              </Link>
+            </BlockStack>
+          </Card>
+        </BlockStack>
+      </Page>
+    );
+  }
+
+  // 📊 FULL DASHBOARD - Only shows when setup is complete (setupProgress = 100)
   return (
     <Page>
       <TitleBar title="📊 Analytics & Performance Dashboard" />
@@ -1137,6 +1279,28 @@ export default function Dashboard() {
             )}
           </BlockStack>
         </Card>
+        
+        {/* 💡 QUICK WIN BANNER - Show best opportunity right now */}
+        {analytics.freeShippingEnabled && analytics.freeShippingConversionRate < 15 && analytics.freeShippingConversionRate > 0 && (
+          <Card>
+            <Box padding="400" background="bg-surface-caution" borderRadius="200">
+              <InlineStack gap="400" align="space-between" blockAlign="center" wrap={false}>
+                <BlockStack gap="200">
+                  <Text as="p" variant="headingMd" fontWeight="semibold">
+                    💡 Quick Win Available
+                  </Text>
+                  <Text as="p" variant="bodyMd">
+                    Only {analytics.freeShippingConversionRate.toFixed(0)}% of customers reach your {formatCurrency(analytics.freeShippingThreshold)} free shipping threshold. 
+                    Lowering it to {formatCurrency(Math.round(analytics.freeShippingThreshold * 0.8))} could unlock approximately {formatCurrency(Math.round(analytics.avgAOVWithoutFreeShipping * analytics.ordersWithoutFreeShipping * 0.3))} more in revenue.
+                  </Text>
+                </BlockStack>
+                <Link to="/app/settings">
+                  <Button variant="primary">Adjust Threshold</Button>
+                </Link>
+              </InlineStack>
+            </Box>
+          </Card>
+        )}
         
         {/* 🎯 CORE METRICS - 3 Key Performance Indicators */}
         <Grid>
@@ -1501,10 +1665,10 @@ export default function Dashboard() {
                     ]}
                     headings={[
                       'Product',
-                      'Times Shown',
-                      'Times Added',
-                      'Success Rate',
-                      'Purchase Rate',
+                      'Shown',
+                      'Clicked',
+                      'Click Rate',
+                      'Purchased',
                       'Revenue'
                     ]}
                     rows={upsellTableRows}
@@ -1521,7 +1685,7 @@ export default function Dashboard() {
                   </InlineStack>
                   <DataTable
                     columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric' ]}
-                    headings={[ 'Date', 'Times Shown', 'Times Added', 'Success Rate' ]}
+                    headings={[ 'Date', 'Shown', 'Clicked', 'Click Rate' ]}
                     rows={recCTRRows}
                   />
                 </BlockStack>
@@ -1536,7 +1700,7 @@ export default function Dashboard() {
                   </InlineStack>
                   <DataTable
                     columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric', 'numeric' ]}
-                    headings={[ 'Product', 'Times Shown', 'Times Added', 'Success Rate', 'Revenue' ]}
+                    headings={[ 'Product', 'Shown', 'Clicked', 'Click Rate', 'Revenue' ]}
                     rows={topRecommendedRows}
                   />
                 </BlockStack>
