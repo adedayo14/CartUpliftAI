@@ -196,7 +196,15 @@ export default function AppSettings() {
                         { label: '🎯 Advanced - Full personalization (customer profiles)', value: 'advanced' }
                       ]}
                       value={formSettings.mlPrivacyLevel || "basic"}
-                      onChange={(value) => updateSetting("mlPrivacyLevel", value)}
+                      onChange={(value) => {
+                        updateSetting("mlPrivacyLevel", value);
+                        // Auto-enable behavior tracking for Standard/Advanced modes
+                        if (value === 'standard' || value === 'advanced') {
+                          updateSetting("enableBehaviorTracking", true);
+                        } else {
+                          updateSetting("enableBehaviorTracking", false);
+                        }
+                      }}
                     />
 
                     {/* Explain what each level means */}
