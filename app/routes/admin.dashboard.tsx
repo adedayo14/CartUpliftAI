@@ -38,6 +38,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   
   const url = new URL(request.url);
   const timeframe = url.searchParams.get("timeframe") || "30d";
+  const search = url.search;
   const customStartDate = url.searchParams.get("startDate");
   const customEndDate = url.searchParams.get("endDate");
   
@@ -606,7 +607,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         shopName: shop?.name || session.shop,
         currency: storeCurrency
       },
-      shop: session.shop
+      shop: session.shop,
+      search
     });
   } catch (error) {
     console.error('Error fetching analytics:', error);
@@ -695,13 +697,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         shopName: "demo-shop",
         currency: fallbackCurrency, // Use detected store currency or USD fallback
       },
-      shop: 'demo-shop'
+      shop: 'demo-shop',
+      search
     });
   }
 };
 
 export default function Dashboard() {
-  const { analytics } = useLoaderData<typeof loader>();
+  const { analytics, search } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   
   // 📥 CSV EXPORT UTILITIES
@@ -878,8 +881,7 @@ export default function Dashboard() {
     }
   }, [selectedCards]);
 
-  const queryString = typeof window !== "undefined" ? window.location.search : "";
-  const settingsHref = `/app/settings${queryString}`;
+  const settingsHref = `/app/settings${search ?? ""}`;
 
   const getTimeframeLabel = (timeframe: string) => {
     switch (timeframe) {
