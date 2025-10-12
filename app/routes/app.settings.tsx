@@ -191,9 +191,9 @@ export default function AppSettings() {
                     <Select
                       label="Privacy & Data Usage Level"
                       options={[
-                        { label: '🔒 Basic - Product data only (No customer tracking)', value: 'basic' },
-                        { label: '📊 Standard - Anonymous behavior patterns', value: 'standard' },
-                        { label: '🎯 Advanced - Full personalization (Best results)', value: 'advanced' }
+                        { label: '🔒 Basic - Product data only (no personal tracking)', value: 'basic' },
+                        { label: '📊 Standard - Session tracking (no customer ID)', value: 'standard' },
+                        { label: '🎯 Advanced - Full personalization (customer profiles)', value: 'advanced' }
                       ]}
                       value={formSettings.mlPrivacyLevel || "basic"}
                       onChange={(value) => updateSetting("mlPrivacyLevel", value)}
@@ -211,18 +211,18 @@ export default function AppSettings() {
                       
                       {formSettings.mlPrivacyLevel === 'basic' && (
                         <Text as="p" variant="bodyMd" tone="subdued">
-                          ℹ️ <strong>Basic mode:</strong> Uses product categories and order history only. No customer tracking. Anonymous and privacy-safe.
+                          ℹ️ <strong>Basic mode:</strong> Uses product order data and categories only. No session or customer tracking. Completely anonymous recommendations based on store-wide patterns.
                         </Text>
                       )}
                       {formSettings.mlPrivacyLevel === 'standard' && (
                         <Text as="p" variant="bodyMd" tone="subdued">
-                          ℹ️ <strong>Standard mode:</strong> Tracks anonymous shopping patterns (no personal info). Learns which products pair well together.
+                          ℹ️ <strong>Standard mode:</strong> Tracks anonymous shopping sessions (cart views, product interest) but no customer identity. Shows what products go well together based on session behavior.
                         </Text>
                       )}
                       {formSettings.mlPrivacyLevel === 'advanced' && (
                         <>
                           <Text as="p" variant="bodyMd" tone="subdued">
-                            ℹ️ <strong>Advanced mode:</strong> Full behavioral tracking for maximum personalization. Learns from individual customer preferences over time.
+                            ℹ️ <strong>Advanced mode:</strong> Full behavioral tracking with customer ID. Learns individual customer preferences and builds personalized recommendations for returning customers.
                           </Text>
                           <Banner tone="warning">
                             <Text as="p" variant="bodyMd">
