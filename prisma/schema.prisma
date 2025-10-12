@@ -487,3 +487,59 @@ model MLDataRetentionJob {
   @@map("ml_data_retention_jobs")
 }
 
+// 🎯 Purchase Attribution - Track recommendations that led to sales
+model RecommendationAttribution {
+  id                      String   @id @default(cuid())
+  shop                    String
+  productId               String
+  orderId                 String
+  orderNumber             Int?
+  orderValue              Float    // Total order value
+  customerId              String?
+  
+  // Attribution details
+  recommendationEventIds  Json     // Array of tracking event IDs that showed this recommendation
+  attributedRevenue       Float    // Revenue specifically from this product
+  conversionTimeMinutes   Int      // Time from recommendation to purchase
+  
+  // Metadata
+  createdAt               DateTime @default(now())
+  
+  @@index([shop, productId])
+  @@index([shop, orderId])
+  @@index([shop, createdAt(sort: Desc)])
+  @@map("recommendation_attributions")
+}
+
+// 📊 ML Product Performance - Daily aggregated metrics per product
+model MLProductPerformance {
+  id                String   @id @default(cuid())
+  shop              String
+  productId         String
+  
+  // Performance metrics (rolling 30 days)
+  impressions       Int      @default(0)
+  clicks            Int      @default(0)
+  purchases         Int      @default(0)
+  revenue           Float    @default(0)
+  
+  // Calculated scores
+  ctr               Float    @default(0) // Click-through rate
+  cvr               Float    @default(0) // Conversion rate
+  confidence        Float    @default(0.5) // Overall confidence score (0-1)
+  
+  // Status
+  isBlacklisted     Boolean  @default(false)
+  blacklistReason   String?  // "low_ctr" | "low_cvr" | "manual"
+  
+  // Timestamps
+  lastUpdated       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  
+  @@unique([shop, productId])
+  @@index([shop, confidence(sort: Desc)])
+  @@index([shop, isBlacklisted])
+  @@map("ml_product_performance")
+}
+
+

@@ -1,0 +1,240 @@
+import { type ActionFunctionArgs } from "@remix-run/node";
+import db from "~/db.server";
+import { authenticate } from "~/shopify.server";
+
+/**
+ * 🎯 PURCHASE ATTRIBUTION WEBHOOK
+ * 
+ * Purpose: Track which recommended products were actually purchased
+ * Triggered: Every time a customer completes an order
+ * 
+ * Process:
+ * 1. Receive order data from Shopify
+ * 2. Extract purchased product IDs
+ * 3. Look up recommendations shown in last 7 days for this customer
+ * 4. Match purchases to recommendations
+ * 5. Create attribution records (revenue tracking)
+ * 6. Update MLUserProfile with purchase data
+ */
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  try {
+    const { topic, shop, session, payload } = await authenticate.webhook(request);
+    
+    if (topic !== "ORDERS_CREATE") {
+      return new Response("Invalid topic", { status: 400 });
+    }
+    
+    console.log("📦 Order created webhook received:", { shop, orderId: payload.id });
+    
+    // Process the order for ML learning
+    await processOrderForAttribution(shop, payload);
+    
+    return new Response("OK", { status: 200 });
+  } catch (error) {
+    console.error("❌ Order webhook error:", error);
+    return new Response("Error", { status: 500 });
+  }
+};
+
+async function processOrderForAttribution(shop: string, order: any) {
+  try {
+    const customerId = order.customer?.id?.toString();
+    const orderNumber = order.order_number || order.number;
+    const orderValue = parseFloat(order.total_price || 0);
+    
+    // Extract purchased product IDs
+    const purchasedProductIds = order.line_items?.map((item: any) => {
+      const productId = item.product_id?.toString();
+      return productId;
+    }).filter(Boolean) || [];
+    
+    if (purchasedProductIds.length === 0) {
+      console.log("⚠️ No products in order, skipping attribution");
+      return;
+    }
+    
+    console.log(`🔍 Checking attribution for ${purchasedProductIds.length} products`);
+    
+    // Look up recommendations shown in last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    // Find recent tracking events for this customer/session
+    const recentEvents = await (db as any).trackingEvent?.findMany({
+      where: {
+        shop,
+        event: 'ml_recommendation_served',
+        createdAt: { gte: sevenDaysAgo },
+        ...(customerId ? { customerId } : {})
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+    
+    if (!recentEvents || recentEvents.length === 0) {
+      console.log("ℹ️ No recent recommendations found for attribution");
+      return;
+    }
+    
+    // Parse metadata to find recommended products
+    let attributedProducts: string[] = [];
+    let recommendationIds: string[] = [];
+    
+    for (const event of recentEvents) {
+      try {
+        const metadata = typeof event.metadata === 'string' 
+          ? JSON.parse(event.metadata) 
+          : event.metadata;
+        
+        const recommendedIds = metadata?.recommendationIds || [];
+        
+        // Check if any purchased products were in recommendations
+        const matches = purchasedProductIds.filter((pid: string) => 
+          recommendedIds.includes(pid)
+        );
+        
+        if (matches.length > 0) {
+          attributedProducts.push(...matches);
+          recommendationIds.push(event.id);
+        }
+      } catch (e) {
+        console.warn("Failed to parse event metadata:", e);
+      }
+    }
+    
+    // Remove duplicates
+    attributedProducts = [...new Set(attributedProducts)];
+    
+    if (attributedProducts.length === 0) {
+      console.log("ℹ️ No attributed products (customer bought different items)");
+      
+      // Still valuable: track what they bought INSTEAD
+      await trackMissedOpportunity(shop, purchasedProductIds, recentEvents[0]);
+      return;
+    }
+    
+    console.log(`✅ Attribution found! ${attributedProducts.length} products matched recommendations`);
+    
+    // Create attribution records
+    const attributionPromises = attributedProducts.map(productId => 
+      (db as any).recommendationAttribution?.create({
+        data: {
+          shop,
+          productId,
+          orderId: order.id?.toString(),
+          orderNumber,
+          orderValue,
+          customerId,
+          recommendationEventIds: recommendationIds,
+          attributedRevenue: calculateProductRevenue(order, productId),
+          conversionTimeMinutes: calculateConversionTime(recentEvents[0]),
+          createdAt: new Date()
+        }
+      }).catch((e: any) => console.warn("Failed to create attribution:", e))
+    );
+    
+    await Promise.all(attributionPromises);
+    
+    // Update user profile with purchase data
+    if (customerId) {
+      await updateUserProfilePurchase(shop, customerId, purchasedProductIds);
+    }
+    
+    console.log(`💰 Attribution complete: ${attributedProducts.length} products, $${orderValue}`);
+    
+  } catch (error) {
+    console.error("❌ Attribution processing error:", error);
+  }
+}
+
+async function trackMissedOpportunity(shop: string, purchasedIds: string[], lastRecommendationEvent: any) {
+  // Track what they bought that we DIDN'T recommend
+  // This is gold for learning!
+  try {
+    const metadata = typeof lastRecommendationEvent.metadata === 'string'
+      ? JSON.parse(lastRecommendationEvent.metadata)
+      : lastRecommendationEvent.metadata;
+    
+    const anchors = metadata?.anchors || [];
+    
+    // For each purchased product, create a "missed opportunity" signal
+    for (const productId of purchasedIds) {
+      await (db as any).mLProductSimilarity?.upsert({
+        where: {
+          shop_productId1_productId2: {
+            shop,
+            productId1: anchors[0] || 'unknown',
+            productId2: productId
+          }
+        },
+        create: {
+          shop,
+          productId1: anchors[0] || 'unknown',
+          productId2: productId,
+          overallScore: 0.5,
+          cooccurrenceCount: 1,
+          updatedAt: new Date()
+        },
+        update: {
+          cooccurrenceCount: { increment: 1 },
+          overallScore: { increment: 0.05 }, // Gradually learn this is a good pairing
+          updatedAt: new Date()
+        }
+      }).catch((e: any) => console.warn("Failed to update similarity:", e));
+    }
+  } catch (e) {
+    console.warn("Failed to track missed opportunity:", e);
+  }
+}
+
+function calculateProductRevenue(order: any, productId: string): number {
+  const lineItem = order.line_items?.find((item: any) => 
+    item.product_id?.toString() === productId
+  );
+  
+  if (!lineItem) return 0;
+  
+  return parseFloat(lineItem.price || 0) * (lineItem.quantity || 1);
+}
+
+function calculateConversionTime(recommendationEvent: any): number {
+  if (!recommendationEvent?.createdAt) return 0;
+  
+  const recommendedAt = new Date(recommendationEvent.createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - recommendedAt.getTime();
+  
+  return Math.floor(diffMs / 60000); // Convert to minutes
+}
+
+async function updateUserProfilePurchase(shop: string, customerId: string, productIds: string[]) {
+  try {
+    // Find or create user profile
+    const profiles = await (db as any).mLUserProfile?.findMany({
+      where: { shop, customerId }
+    });
+    
+    if (profiles && profiles.length > 0) {
+      // Update existing profile(s)
+      for (const profile of profiles) {
+        const existingPurchased = Array.isArray(profile.purchasedProducts) 
+          ? profile.purchasedProducts 
+          : [];
+        
+        const newPurchased = [...new Set([...existingPurchased, ...productIds])];
+        
+        await (db as any).mLUserProfile?.update({
+          where: { id: profile.id },
+          data: {
+            purchasedProducts: newPurchased,
+            lastActivity: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to update user profile:", e);
+  }
+}
