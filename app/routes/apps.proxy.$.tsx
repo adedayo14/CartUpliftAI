@@ -6,6 +6,19 @@ import db from "../db.server";
 import { authenticate, unauthenticated } from "../shopify.server";
 // import { generateBundlesFromOrders } from "../services/ml.server";
 
+/**
+ * 🚨 PRE-PURCHASE ATTRIBUTION SNAPSHOT
+ * 
+ * This version has ML recommendations working but NO feedback loop:
+ * - Recommendations are served ✅
+ * - Impressions/clicks tracked ✅
+ * - BUT: No purchase attribution ❌
+ * - BUT: No learning from conversions ❌
+ * - BUT: No auto-correction ❌
+ * 
+ * Next: Implement purchase attribution webhook + daily learning job
+ */
+
 // Lightweight in-memory cache for recommendations (per worker)
 // Keyed by shop + product/cart context + limit; TTL ~60s
 const RECS_TTL_MS = 60 * 1000;
