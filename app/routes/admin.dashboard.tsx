@@ -30,6 +30,7 @@ import {
 } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { getSettings } from "../models/settings.server";
+import prisma from "../db.server";
 import { getShopCurrency } from "../services/currency.server";
 import db from "../db.server";
 
@@ -79,6 +80,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Fetch comprehensive analytics data
   try {
+    // 🔍 CRITICAL: Verify session and shop exist
+    if (!session || !session.shop) {
+      console.error('❌ CRITICAL: No session or shop in loader');
+      console.error('Session:', session);
+      throw new Error('No authenticated session - user may need to reinstall app');
+    }
+
+    // 🔍 CRITICAL: Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      console.error('❌ DATABASE CONNECTION FAILED:', dbError);
+      throw new Error(`Database connection error: ${dbError instanceof Error ? dbError.message : 'Unknown DB error'}`);
+    }
+
     // Get real orders with detailed line items for the selected timeframe
     const ordersResponse = await admin.graphql(`
       #graphql
@@ -612,11 +628,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   } catch (error) {
     console.error('❌ DASHBOARD LOADER ERROR:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
+    
+    // 🔍 Detailed error categorization
+    let errorType = 'UNKNOWN';
+    let errorDetails = 'Unknown error';
+    
+    if (error instanceof Error) {
+      errorDetails = error.message;
+      
+      // Categorize error types
+      if (errorDetails.includes('Database connection') || errorDetails.includes('PrismaClient')) {
+        errorType = 'DATABASE';
+      } else if (errorDetails.includes('session') || errorDetails.includes('authenticate')) {
+        errorType = 'AUTHENTICATION';
+      } else if (errorDetails.includes('GraphQL') || errorDetails.includes('admin.graphql')) {
+        errorType = 'SHOPIFY_API';
+      } else if (errorDetails.includes('prisma') || errorDetails.includes('query')) {
+        errorType = 'DATABASE_QUERY';
+      }
+    }
+    
+    console.error('Error classification:', {
+      type: errorType,
+      message: errorDetails,
       stack: error instanceof Error ? error.stack : undefined,
       shop: session?.shop || 'NO SHOP',
-      timeframe
+      timeframe,
+      timestamp: new Date().toISOString(),
+      envCheck: {
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        hasShopifyApiKey: !!process.env.SHOPIFY_API_KEY,
+        nodeEnv: process.env.NODE_ENV
+      }
     });
     
     // Get currency for error fallback
@@ -697,6 +740,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         // ✅ Setup progress (fallback)
         setupProgress: 0,
         setupComplete: false,
+        
+        // 🔍 ERROR DEBUG INFO
+        errorType: errorType,
+        errorMessage: errorDetails,
         
         // Metadata
         timeframe: "30d",
@@ -1524,22 +1571,32 @@ export default function Dashboard() {
         <Banner tone="critical">
           <BlockStack gap="200">
             <Text variant="bodyMd" as="p" fontWeight="semibold">
-              ⚠️ Dashboard Error: Unable to load real store data
+              ⚠️ Dashboard Error: Unable to load store data
             </Text>
+            {(analytics as any).errorType && (
+              <Text variant="bodyMd" as="p">
+                Error Type: <strong>{(analytics as any).errorType}</strong>
+              </Text>
+            )}
+            {(analytics as any).errorMessage && (
+              <Text variant="bodyMd" as="p">
+                Details: {(analytics as any).errorMessage}
+              </Text>
+            )}
             <Text variant="bodyMd" as="p">
-              The dashboard is showing demo data because of a server error. Possible causes:
+              Common causes:
             </Text>
-            <Text variant="bodyMd" as="p">
-              • Database connection issue (check DATABASE_URL in Vercel)
+            <Text variant="bodySm" as="p">
+              • <strong>DATABASE</strong>: Check DATABASE_URL environment variable in Vercel
             </Text>
-            <Text variant="bodyMd" as="p">
-              • Missing Shopify API permissions
+            <Text variant="bodySm" as="p">
+              • <strong>AUTHENTICATION</strong>: Try reinstalling the app
             </Text>
-            <Text variant="bodyMd" as="p">
-              • Prisma schema mismatch
+            <Text variant="bodySm" as="p">
+              • <strong>SHOPIFY_API</strong>: Check API scopes and permissions
             </Text>
             <Text variant="bodyMd" as="p" fontWeight="semibold">
-              Check Vercel logs or browser console (F12) for details.
+              Check Vercel function logs or browser console (F12) for full details
             </Text>
           </BlockStack>
         </Banner>
