@@ -2033,7 +2033,8 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    if (path.includes('/api/cart-tracking')) {
+    // Handle both /api/track (frontend calls this) and /api/cart-tracking (legacy)
+    if (path.includes('/api/track') || path.includes('/api/cart-tracking')) {
       // Require valid app proxy signature, but treat as best-effort
       let shop: string | undefined;
       try {
