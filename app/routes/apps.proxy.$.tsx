@@ -2046,20 +2046,6 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       try {
-        // Respect analytics toggle: if disabled, accept but skip persistence
-        try {
-          const s = await getSettings(shop);
-          if (!s.enableAnalytics) {
-            return json({ success: true, skipped: 'analytics_disabled' }, {
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type",
-              },
-            });
-          }
-        } catch(_) { /* if settings fail, proceed to best-effort persist */ }
-
         const contentType = request.headers.get('content-type') || '';
         const data = contentType.includes('application/json')
           ? await request.json()

@@ -43,7 +43,7 @@ model Settings {
   enableDiscountCode      Boolean  @default(true)
   enableNotes             Boolean  @default(false)
   enableExpressCheckout   Boolean  @default(true)
-  enableAnalytics         Boolean  @default(false)
+  enableAnalytics         Boolean  @default(true)  // Analytics on by default - core feature
   // Dev-only fields for title case options
   enableRecommendationTitleCaps Boolean @default(false)
   // Dev-only toggle in dev schema; safe to keep for prod alignment
