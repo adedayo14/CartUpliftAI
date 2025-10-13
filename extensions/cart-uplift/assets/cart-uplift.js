@@ -30,6 +30,8 @@
   const CartAnalytics = {
     trackEvent: function(eventType, data = {}) {
       try {
+        console.log('📊 CartAnalytics.trackEvent called:', eventType, data);
+        
         const shop = window.Shopify?.shop || '';
         const sessionId = sessionStorage.getItem('cart_session_id') || `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         sessionStorage.setItem('cart_session_id', sessionId);
@@ -46,13 +48,25 @@
         if (data.source) formData.append('source', data.source);
         if (data.position !== undefined) formData.append('position', data.position.toString());
         
+        console.log('📊 Sending tracking to:', '/apps/cart-uplift/api/track');
+        
         // Send to tracking endpoint (fire and forget)
         fetch('/apps/cart-uplift/api/track', {
           method: 'POST',
           body: formData,
-        }).catch(err => console.warn('Analytics tracking failed:', err));
+        })
+        .then(response => {
+          console.log('📊 Tracking response:', response.status, response.statusText);
+          return response.json();
+        })
+        .then(result => {
+          console.log('📊 Tracking result:', result);
+        })
+        .catch(err => {
+          console.warn('📊 Analytics tracking failed:', err);
+        });
       } catch (error) {
-        console.warn('Analytics error:', error);
+        console.warn('📊 Analytics error:', error);
       }
     }
   };
@@ -3364,6 +3378,7 @@
             source: 'cart_drawer',
             position: position
           });
+          console.log('📊 Tracking recommendation click:', { selectedVariantId, productTitle, position });
           
           this.addToCart(selectedVariantId, 1);
         } else if (e.target.classList.contains('cartuplift-size-dropdown')) {
@@ -3395,13 +3410,21 @@
           const variantId = e.target.dataset.variantId;
           const productTitle = productLink.textContent;
           
+          // Track recommendation click
+          const position = Array.from(listItem.parentElement.children).indexOf(listItem);
+          CartAnalytics.trackEvent('click', {
+            productId: variantId,
+            productTitle: productTitle,
+            source: 'cart_drawer',
+            position: position
+          });
+          console.log('📊 Tracking click event:', { variantId, productTitle, position });
+          
           if (productHandle && variantId) {
             this.handleListProductAdd(productHandle, variantId, productTitle, button);
           } else {
             button.dataset.processing = 'false';
           }
-          
-          // Track product click
         } else if (e.target.classList.contains('cartuplift-grid-add-btn') || e.target.closest('.cartuplift-grid-add-btn')) {
           e.preventDefault();
           e.stopPropagation();
@@ -3421,6 +3444,15 @@
           const gridItem = button.closest('.cartuplift-grid-item');
           const productHandle = gridItem ? gridItem.dataset.productHandle : null;
           const productTitle = gridItem ? gridItem.dataset.title : `Product ${variantId}`;
+          
+          // Track recommendation click
+          CartAnalytics.trackEvent('click', {
+            productId: variantId,
+            productTitle: productTitle,
+            source: 'cart_drawer',
+            position: gridIndex
+          });
+          console.log('📊 Tracking grid click event:', { variantId, productTitle, gridIndex });
           
           // Check if we need to show variant selector or add directly
           if (productHandle && variantId) {
