@@ -2073,7 +2073,9 @@ export async function action({ request }: ActionFunctionArgs) {
         // Persist best-effort; don’t fail the request if DB unavailable
         const finalProductId = productId || 'cart_event';
         
-        await (db as any).trackingEvent?.create?.({
+        console.log('[Tracking] Attempting to save:', { shop, event, productId: finalProductId, source, position });
+        
+        const result = await (db as any).trackingEvent?.create?.({
           data: {
             shop,
             event,
@@ -2086,9 +2088,15 @@ export async function action({ request }: ActionFunctionArgs) {
             position: typeof position === 'number' && isFinite(position) ? position : null,
           }
         }).catch((err: unknown) => {
-          console.error('TrackingEvent save error:', err);
+          console.error('[Tracking] Save error:', err);
           return null;
         });
+        
+        if (result) {
+          console.log('[Tracking] ✅ Saved successfully:', result.id);
+        } else {
+          console.error('[Tracking] ❌ Save returned null - trackingEvent model may not exist');
+        }
 
         return json({ success: true }, {
           headers: {
