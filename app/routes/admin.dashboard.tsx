@@ -146,9 +146,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       ordersData = await ordersResponse.json();
       
-      // Check for permission errors
-      if (ordersData.errors && ordersData.errors[0]?.message?.includes('not approved to access')) {
-        console.warn('⚠️ App does not have order access yet - using tracking data only');
+      // Check for GraphQL errors
+      if (ordersData.errors) {
+        console.warn('⚠️ Error fetching orders:', ordersData.errors);
         hasOrderAccess = false;
         ordersData = null;
       }
@@ -186,10 +186,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const storeCurrency = orders.length > 0 ? 
       orders[0].node.totalPriceSet?.shopMoney?.currencyCode || shopCurrency.code : shopCurrency.code;
     
-    // ⚠️ Log if using limited data due to permissions
+    // ⚠️ Log if order fetch failed
     if (!hasOrderAccess) {
-      console.warn('⚠️ LIMITED DATA: App awaiting Shopify approval for order access');
-      console.warn('Dashboard will show tracking-based metrics only until approved');
+      console.warn('⚠️ Could not fetch order data - check API permissions or network');
     }
     
     const totalOrders = orders.length;
@@ -1507,7 +1506,7 @@ export default function Dashboard() {
                     <InlineStack gap="200" blockAlign="center">
                       <Text as="span">{analytics.attributedOrders > 0 ? '✅' : '⏳'}</Text>
                       <Text variant="bodyMd" as="p">
-                        First sales tracked from recommendations (2-3 days)
+                        Revenue tracking starts with next order from recommendations
                       </Text>
                     </InlineStack>
                   </BlockStack>
@@ -1517,10 +1516,10 @@ export default function Dashboard() {
               <Banner tone="info">
                 <BlockStack gap="200">
                   <Text variant="bodyMd" as="p">
-                    Your dashboard will activate as soon as customers interact with recommendations (usually within minutes of enabling the app).
+                    Your dashboard will activate as soon as customers interact with recommendations.
                   </Text>
                   <Text variant="bodyMd" as="p">
-                    The AI learns from each sale to improve recommendations over time.
+                    The AI learns from {analytics.totalOrders > 0 ? `${analytics.totalOrders} historic orders and ` : ''}each new sale to improve recommendations over time.
                   </Text>
                 </BlockStack>
               </Banner>
@@ -1566,18 +1565,18 @@ export default function Dashboard() {
     <Page>
       <TitleBar title="📊 Analytics & Performance Dashboard" />
       
-      {/* 🚨 ERROR WARNING BANNER */}
-      {analytics.shopName === 'demo-shop' && (
+      {/* ML TRAINING STATUS */}
+      {analytics.totalOrders > 0 && analytics.attributedOrders === 0 && (
         <Banner tone="info">
           <BlockStack gap="200">
             <Text variant="bodyMd" as="p" fontWeight="semibold">
-              ⏳ Waiting for Shopify Protected Data Approval
+              🤖 ML Model Training on {analytics.totalOrders} Historic Orders
             </Text>
             <Text variant="bodyMd" as="p">
-              Analytics will display once Shopify approves your protected customer data access request (typically 1-3 business days).
+              Your store has {analytics.totalOrders} orders from the last 60 days. The AI is using this data to learn product relationships and build personalized recommendations.
             </Text>
             <Text variant="bodySm" as="p" tone="subdued">
-              After approval, reinstall the app to grant the necessary permissions.
+              Revenue tracking will start as soon as customers purchase recommended products.
             </Text>
           </BlockStack>
         </Banner>
