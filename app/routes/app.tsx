@@ -9,6 +9,7 @@ import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
 import { SessionStatus } from "../components/SessionStatus";
 import { AppBridgeInitializer } from "../components/AppBridgeInitializer";
+import { AppBridgeRoutePropagator } from "../components/AppBridgeRoutePropagator";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -23,19 +24,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, search } = useLoaderData<typeof loader>();
+  const navSearch = search || "";
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey || "ba2c932cf6717c8fb6207fcc8111fe70"}>
       <AppBridgeInitializer apiKey={apiKey} />
+      <AppBridgeRoutePropagator />
       <SessionStatus />
       <NavMenu>
-        <Link to="/app" rel="home">
-          Home
+        <Link
+          to={{ pathname: "/app/dashboard", search: navSearch }}
+          rel="home"
+        >
+          Dashboard
         </Link>
-        <Link to="/app/dashboard">Dashboard</Link>
-        <Link to="/app/settings">Settings</Link>
-        <Link to="/app/privacy">Privacy Policy</Link>
+        <Link to={{ pathname: "/app/settings", search: navSearch }}>
+          Settings
+        </Link>
+        <Link to={{ pathname: "/app/privacy", search: navSearch }}>
+          Privacy Policy
+        </Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
