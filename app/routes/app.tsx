@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
+import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { useEffect } from "react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
@@ -23,25 +23,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function App() {
-  const { apiKey, search } = useLoaderData<typeof loader>();
+  const { apiKey } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey || "ba2c932cf6717c8fb6207fcc8111fe70"}>
       <AppBridgeInitializer apiKey={apiKey} />
       <SessionStatus />
       <NavMenu>
-        <a href={`/app${search}`} rel="home">
+        <Link to="/app" rel="home">
           Home
-        </a>
-        <a href={`/app/dashboard${search}`}>
-          Dashboard
-        </a>
-        <a href={`/app/settings${search}`}>
-          Settings
-        </a>
-        <a href={`/app/privacy${search}`}>
-          Privacy Policy
-        </a>
+        </Link>
+        <Link to="/app/dashboard">Dashboard</Link>
+        <Link to="/app/settings">Settings</Link>
+        <Link to="/app/privacy">Privacy Policy</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
