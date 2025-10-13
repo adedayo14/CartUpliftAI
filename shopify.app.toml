@@ -40,3 +40,18 @@ prefix = "apps"
 
 [pos]
 embedded = false
+
+[app_home]
+url = "/app"
+
+[[app_home.navigation]]
+label = "Dashboard"
+destination = "/app/dashboard"
+
+[[app_home.navigation]]
+label = "Settings"
+destination = "/app/settings"
+
+[[app_home.navigation]]
+label = "Privacy Policy"
+destination = "/app/privacy"
