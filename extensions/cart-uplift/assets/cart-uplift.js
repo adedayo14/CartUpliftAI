@@ -3,11 +3,14 @@
 
   // Version sentinel & live verification (cache-bust expectation)
   (function(){
-    const v = 'tracking-fix-2025-10-13';
+    const v = 'tracking-fix-2025-10-13-T1847Z-CACHE-BUST';
+    const timestamp = new Date().toISOString();
     if (window.CART_UPLIFT_ASSET_VERSION !== v) {
       window.CART_UPLIFT_ASSET_VERSION = v;
-      console.log('🚀 [CartUplift] TRACKING FIX VERSION LOADED: ' + v);
+      console.log('🚀🚀🚀 [CartUplift] TRACKING FIX VERSION LOADED: ' + v);
+      console.log('⏰ Loaded at: ' + timestamp);
       console.log('📊 This version includes complete tracking for ALL button types (carousel/grid/row)');
+      console.log('🔥 AGGRESSIVE CACHE BUST - If you see this, CDN updated successfully!');
     }
     // Runtime self-heal: remove legacy overlay nodes if stale HTML rendered by cached markup
     function selfHealGrid(){
