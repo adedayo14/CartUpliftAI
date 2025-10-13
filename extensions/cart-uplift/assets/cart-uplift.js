@@ -3,10 +3,11 @@
 
   // Version sentinel & live verification (cache-bust expectation)
   (function(){
-    const v = 'grid-2025-10-09-1';
+    const v = 'tracking-fix-2025-10-13';
     if (window.CART_UPLIFT_ASSET_VERSION !== v) {
       window.CART_UPLIFT_ASSET_VERSION = v;
-      console.log('[CartUplift] Loaded asset version ' + v + ' – latest initialization fallback build active.');
+      console.log('🚀 [CartUplift] TRACKING FIX VERSION LOADED: ' + v);
+      console.log('📊 This version includes complete tracking for ALL button types (carousel/grid/row)');
     }
     // Runtime self-heal: remove legacy overlay nodes if stale HTML rendered by cached markup
     function selfHealGrid(){
