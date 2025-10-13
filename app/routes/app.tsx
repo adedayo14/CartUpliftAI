@@ -33,8 +33,15 @@ export default function App() {
         <Link to={`/app${search}`} rel="home">
           Home
         </Link>
-        <Link to={`/app/dashboard${search}`}>📊 Dashboard</Link>
-        <Link to={`/app/settings${search}`}>⚙️ Settings</Link>
+        <Link to={`/app/dashboard${search}`} rel="dashboard">
+          Dashboard
+        </Link>
+        <Link to={`/app/settings${search}`} rel="settings">
+          Settings
+        </Link>
+        <Link to={`/app/privacy${search}`} rel="privacy">
+          Privacy Policy
+        </Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
