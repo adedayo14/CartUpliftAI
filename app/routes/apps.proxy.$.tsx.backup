@@ -2071,24 +2071,19 @@ export async function action({ request }: ActionFunctionArgs) {
           return json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
         // Persist best-effort; don’t fail the request if DB unavailable
-        const finalProductId = productId || 'cart_event';
-        
         await (db as any).trackingEvent?.create?.({
           data: {
             shop,
             event,
-            productId: finalProductId,
+            productId: productId ?? null,
             productTitle: productTitle ?? null,
-            sessionId: sessionId ?? null,
+            priceCents: typeof priceCents === 'number' && !isNaN(priceCents) ? priceCents : null,
             revenueCents: typeof revenueCents === 'number' && !isNaN(revenueCents) ? revenueCents : null,
-            orderId: orderId ?? null,
-            source: source ?? null,
-            position: typeof position === 'number' && isFinite(position) ? position : null,
+            sessionId: sessionId ?? null,
+            reason: reason ?? null,
+            slot: typeof slot === 'number' && isFinite(slot) ? slot : null,
           }
-        }).catch((err: unknown) => {
-          console.error('TrackingEvent save error:', err);
-          return null;
-        });
+        }).catch(() => null);
 
         return json({ success: true }, {
           headers: {
