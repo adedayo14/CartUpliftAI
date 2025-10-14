@@ -87,13 +87,14 @@ async function processOrderForAttribution(shop: string, order: any) {
     
     console.log("📅 Looking for recommendations since:", sevenDaysAgo.toISOString());
     
-    // Find recent tracking events for this customer/session
+    // Find recent tracking events for this shop (not filtering by customer since tracking may not have customer ID)
     const recentEvents = await (db as any).trackingEvent?.findMany({
       where: {
         shop,
         event: 'ml_recommendation_served',
-        createdAt: { gte: sevenDaysAgo },
-        ...(customerId ? { customerId } : {})
+        createdAt: { gte: sevenDaysAgo }
+        // Intentionally NOT filtering by customerId - tracking events may not have it
+        // We'll match based on product IDs instead
       },
       orderBy: { createdAt: 'desc' },
       take: 100
