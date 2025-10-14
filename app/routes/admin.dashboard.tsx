@@ -1268,7 +1268,8 @@ export default function Dashboard() {
     }; 
     
     const symbol = currencySymbols[analytics.currency] || analytics.currency + ' ';
-    return `${symbol}${amount.toFixed(2)}`;
+    const formattedAmount = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return `${symbol}${formattedAmount}`;
   };
 
   // Helper to calculate REAL change percentage between current and previous period
