@@ -1377,8 +1377,21 @@ export default function Dashboard() {
 
   // ✅ Cart Uplift metrics - ALL WITH REAL COMPARISONS
   // Compares current period vs previous period using actual Shopify data
+  // 📊 LOGICALLY ARRANGED: Top Row (Overall Performance) → Middle Row (Engagement & Conversion) → Bottom Row (Order Metrics)
   const allMetrics = [
-    // TOP REVENUE METRICS
+    // ========================================
+    // TOP ROW - OVERALL PERFORMANCE (Big Picture)
+    // ========================================
+    {
+      id: "total_revenue",
+      title: "Total Store Revenue",
+      value: formatCurrency(analytics.totalRevenue),
+      previousValue: formatCurrency(analytics.previousMetrics.totalRevenue),
+      changePercent: Math.abs(calculateChange(analytics.totalRevenue, analytics.previousMetrics.totalRevenue)),
+      changeDirection: analytics.totalRevenue >= analytics.previousMetrics.totalRevenue ? "up" : "down",
+      comparison: `vs. ${formatCurrency(analytics.previousMetrics.totalRevenue)} last period`,
+      icon: CashDollarIcon,
+    },
     {
       id: "upsell_revenue",
       title: "Additional Revenue Generated",
@@ -1402,6 +1415,19 @@ export default function Dashboard() {
       comparison: `vs. previous ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
       icon: CashDollarIcon,
     },
+    // ========================================
+    // MIDDLE ROW - ENGAGEMENT & CONVERSION (Funnel)
+    // ========================================
+    {
+      id: "recommendation_ctr",
+      title: "Average Click Rate",
+      value: `${analytics.topUpsells.length > 0 ? (analytics.topUpsells.filter((item: any) => item != null).reduce((sum: number, item: any) => sum + parseFloat(item.ctr || "0"), 0) / analytics.topUpsells.filter((item: any) => item != null).length).toFixed(1) : "0.0"}%`,
+      previousValue: "N/A",
+      changePercent: 0,
+      changeDirection: "neutral" as const,
+      comparison: `Average CTR across recommendations`,
+      icon: OrderIcon,
+    },
     {
       id: "recommendation_conversion",
       title: "Average Conversion Rate",
@@ -1412,7 +1438,32 @@ export default function Dashboard() {
       comparison: `Average conversion rate across recommendations`,
       icon: OrderIcon,
     },
-    // CORE BUSINESS METRICS
+    {
+      id: "cart_conversion",
+      title: "Overall Cart Conversion",
+      value: `${analytics.cartToCheckoutRate.toFixed(1)}%`,
+      previousValue: "N/A",
+      changePercent: 0,
+      changeDirection: "neutral" as const,
+      comparison: "Estimated from order patterns",
+      icon: OrderIcon,
+    },
+    // ========================================
+    // BOTTOM ROW - ORDER METRICS (Transaction Details)
+    // ========================================
+    {
+      id: "orders_with_upsells",
+      title: "Orders with Extra Items",
+      value: `${analytics.checkoutsCompleted > 0 && analytics.revenueFromUpsells > 0 ? Math.round((analytics.revenueFromUpsells / analytics.averageOrderValue) || 0) : 0}`,
+      previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.averageOrderValue > 0 ? Math.round((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.averageOrderValue) || 0) : 0}`,
+      changePercent: Math.abs(calculateChange(
+        analytics.revenueFromUpsells / (analytics.averageOrderValue || 1),
+        analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)
+      )),
+      changeDirection: (analytics.revenueFromUpsells / (analytics.averageOrderValue || 1)) >= (analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)) ? "up" : "down",
+      comparison: `vs. previous period`,
+      icon: OrderIcon,
+    },
     {
       id: "aov",
       title: "Average Order Value",
@@ -1432,50 +1483,6 @@ export default function Dashboard() {
       changeDirection: "neutral" as const,
       comparison: `Revenue per recommendation click`,
       icon: CashDollarIcon,
-    },
-    {
-      id: "orders_with_upsells",
-      title: "Orders with Extra Items",
-      value: `${analytics.checkoutsCompleted > 0 && analytics.revenueFromUpsells > 0 ? Math.round((analytics.revenueFromUpsells / analytics.averageOrderValue) || 0) : 0}`,
-      previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.averageOrderValue > 0 ? Math.round((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.averageOrderValue) || 0) : 0}`,
-      changePercent: Math.abs(calculateChange(
-        analytics.revenueFromUpsells / (analytics.averageOrderValue || 1),
-        analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)
-      )),
-      changeDirection: (analytics.revenueFromUpsells / (analytics.averageOrderValue || 1)) >= (analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)) ? "up" : "down",
-      comparison: `vs. previous period`,
-      icon: OrderIcon,
-    },
-    {
-      id: "recommendation_ctr",
-      title: "Average Click Rate",
-      value: `${analytics.topUpsells.length > 0 ? (analytics.topUpsells.filter((item: any) => item != null).reduce((sum: number, item: any) => sum + parseFloat(item.ctr || "0"), 0) / analytics.topUpsells.filter((item: any) => item != null).length).toFixed(1) : "0.0"}%`,
-      previousValue: "N/A",
-      changePercent: 0,
-      changeDirection: "neutral" as const,
-      comparison: `Average CTR across recommendations`,
-      icon: OrderIcon,
-    },
-    // TOTAL REVENUE METRICS
-    {
-      id: "total_revenue",
-      title: "Total Store Revenue",
-      value: formatCurrency(analytics.totalRevenue),
-      previousValue: formatCurrency(analytics.previousMetrics.totalRevenue),
-      changePercent: Math.abs(calculateChange(analytics.totalRevenue, analytics.previousMetrics.totalRevenue)),
-      changeDirection: analytics.totalRevenue >= analytics.previousMetrics.totalRevenue ? "up" : "down",
-      comparison: `vs. ${formatCurrency(analytics.previousMetrics.totalRevenue)} last period`,
-      icon: CashDollarIcon,
-    },
-    {
-      id: "cart_conversion",
-      title: "Overall Cart Conversion",
-      value: `${analytics.cartToCheckoutRate.toFixed(1)}%`,
-      previousValue: "N/A",
-      changePercent: 0,
-      changeDirection: "neutral" as const,
-      comparison: "Estimated from order patterns",
-      icon: OrderIcon,
     },
     // ✅ FREE SHIPPING BAR IMPACT METRICS (REAL DATA)
     ...(analytics.freeShippingEnabled ? [
