@@ -2047,13 +2047,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Handle both /api/track (frontend calls this) and /api/cart-tracking (legacy)
     if (path.includes('/api/track') || path.includes('/api/cart-tracking')) {
-      // Require valid app proxy signature, but treat as best-effort
       let shop: string | undefined;
       try {
         const { session } = await authenticate.public.appProxy(request);
         shop = session?.shop;
         if (!shop) throw new Error('No shop');
-  } catch (_e) {
+      } catch (authErr) {
+        console.warn('🔒 [Track] App proxy auth failed:', authErr);
         return json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
 
@@ -2070,53 +2070,53 @@ export async function action({ request }: ActionFunctionArgs) {
         const position = (data as any).position != null ? Number((data as any).position) : undefined;
         const sessionId = (data as any).sessionId ? String((data as any).sessionId) : undefined;
         const orderId = (data as any).orderId ? String((data as any).orderId) : undefined;
-        
-        // Revenue tracking
         const revenueRaw = (data as any).revenue ?? (data as any).revenueCents ?? (data as any).revenue_cents;
         const revenueCents = revenueRaw != null ? (typeof revenueRaw === 'number' ? revenueRaw : Number(revenueRaw)) : undefined;
 
         if (!event) {
-          return json({ success: false, error: 'Missing event' }, { status: 400 });
+          return json({ success: false, error: 'Missing event type' }, { status: 400 });
+        }
+        if (!['impression', 'click', 'add_to_cart', 'purchase', 'ml_recommendation_served'].includes(event)) {
+          return json({ success: true, ignored: true, reason: 'unknown_event' });
         }
 
-        if (!shop) {
-          return json({ success: false, error: 'Unauthorized' }, { status: 401 });
-        }
-        // Persist best-effort; don’t fail the request if DB unavailable
         const finalProductId = productId || 'cart_event';
-        
         console.log('[Tracking] Attempting to save:', { shop, event, productId: finalProductId, source, position });
-        
-        const result = await (db as any).trackingEvent?.create?.({
-          data: {
-            shop,
-            event,
-            productId: finalProductId,
-            productTitle: productTitle ?? null,
-            sessionId: sessionId ?? null,
-            revenueCents: typeof revenueCents === 'number' && !isNaN(revenueCents) ? revenueCents : null,
-            orderId: orderId ?? null,
-            source: source ?? null,
-            position: typeof position === 'number' && isFinite(position) ? position : null,
-          }
-        }).catch((err: unknown) => {
-          console.error('[Tracking] Save error:', err);
-          return null;
-        });
-        
-        if (result) {
-          console.log('[Tracking] ✅ Saved successfully:', result.id);
-        } else {
-          console.error('[Tracking] ❌ Save returned null - trackingEvent model may not exist');
-        }
 
-        return json({ success: true }, {
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
-        });
+        try {
+          const result = await (db as any).trackingEvent.create({
+            data: {
+              shop,
+              event,
+              productId: finalProductId,
+              productTitle: productTitle ?? null,
+              sessionId: sessionId ?? null,
+              revenueCents: typeof revenueCents === 'number' && !isNaN(revenueCents) ? revenueCents : null,
+              orderId: orderId ?? null,
+              source: source ?? null,
+              position: typeof position === 'number' && isFinite(position) ? position : null,
+            }
+          });
+          console.log('[Tracking] ✅ Saved successfully:', result.id);
+          return json({ success: true }, {
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+            },
+          });
+        } catch (dbErr) {
+          console.error('🛑 [Tracking] DB write failed (degraded mode):', dbErr);
+          return json({ success: true, degraded: true, reason: 'db_unreachable' }, {
+            status: 202,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+              "X-Tracking-Degraded": 'db_unreachable'
+            },
+          });
+        }
       } catch (e) {
         console.warn('cart-tracking error:', e);
         return json({ success: false }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -2130,7 +2130,8 @@ export async function action({ request }: ActionFunctionArgs) {
         const { session } = await authenticate.public.appProxy(request);
         shop = session?.shop;
         if (!shop) throw new Error('No shop');
-      } catch (_e) {
+      } catch (authErr) {
+        console.warn('🔒 [TrackRecs] App proxy auth failed:', authErr);
         return json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
 
@@ -2148,38 +2149,47 @@ export async function action({ request }: ActionFunctionArgs) {
           recommendedCount: recommendedProducts.length
         });
 
-        // Save the ml_recommendation_served event
-        await (db as any).trackingEvent.create({
-          data: {
-            shop,
-            event: 'ml_recommendation_served',
-            productId: anchorProducts[0] || '',
-            sessionId: sessionId || null,
-            customerId: customerId || null,
-            source: 'cart_drawer',
-            metadata: JSON.stringify({
-              anchors: anchorProducts,
-              recommendationCount: recommendedProducts.length,
-              recommendationIds: recommendedProducts, // 🎯 KEY: For purchase attribution
-              clientGenerated: true,
-              timestamp: new Date().toISOString()
-            }),
-            createdAt: new Date()
-          }
-        });
-
-        console.log('✅ [Client-side] ml_recommendation_served event saved successfully');
-
-        return json({ success: true }, {
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type"
-          }
-        });
-
-      } catch (error) {
-        console.error('❌ [Client-side] Failed to save ml_recommendation_served event:', error);
+        try {
+          await (db as any).trackingEvent.create({
+            data: {
+              shop,
+              event: 'ml_recommendation_served',
+              productId: anchorProducts[0] || '',
+              sessionId: sessionId || null,
+              customerId: customerId || null,
+              source: 'cart_drawer',
+              metadata: JSON.stringify({
+                anchors: anchorProducts,
+                recommendationCount: recommendedProducts.length,
+                recommendationIds: recommendedProducts,
+                clientGenerated: true,
+                timestamp: new Date().toISOString()
+              }),
+              createdAt: new Date()
+            }
+          });
+          console.log('✅ [Client-side] ml_recommendation_served event saved successfully');
+          return json({ success: true }, {
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type"
+            }
+          });
+        } catch (dbErr) {
+          console.error('🛑 [TrackRecs] DB write failed (degraded mode):', dbErr);
+          return json({ success: true, degraded: true, reason: 'db_unreachable' }, {
+            status: 202,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+              "X-Tracking-Degraded": 'db_unreachable'
+            }
+          });
+        }
+      } catch (parseErr) {
+        console.error('❌ [Client-side] Failed processing ml_recommendation_served payload:', parseErr);
         return json({ error: "Failed to save event" }, { status: 500 });
       }
     }
