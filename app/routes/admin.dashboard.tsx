@@ -1966,9 +1966,6 @@ export default function Dashboard() {
                   window.location.href = `${window.location.pathname}?${params.toString()}`;
                 }}
               />
-              <Text as="p" variant="bodyXs" tone="subdued" alignment="end">
-                💡 Use different timeframes to spot trends and patterns
-              </Text>
             </InlineStack>
           </InlineStack>
         </Card>
