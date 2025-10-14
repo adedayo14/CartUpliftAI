@@ -624,6 +624,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                           !hasAttributions ? 66 : 100;
 
     return json({
+      debug: {
+        hasOrderAccess,
+        ordersDataExists: !!ordersData,
+        ordersLength: orders.length,
+        timeframe,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        shop: session.shop
+      },
       analytics: {
         // Core metrics - ALL REAL DATA
         totalOrders,
@@ -747,6 +756,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
     
     return json({
+      debug: {
+        hasOrderAccess: false,
+        ordersDataExists: false,
+        ordersLength: 0,
+        timeframe: "30d",
+        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        endDate: new Date().toISOString(),
+        shop: session?.shop || 'unknown',
+        errorType,
+        errorMessage: errorDetails
+      },
       analytics: {
         // Core metrics
         totalOrders: 0,
@@ -832,12 +852,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function Dashboard() {
-  const { analytics, search } = useLoaderData<typeof loader>();
+  const { analytics, debug, search } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
   
+  // 🔍 CLIENT-SIDE DEBUG: Log loader data
+  useEffect(() => {
+    console.log('🔍 CLIENT DEBUG: Dashboard loaded with:', {
+      debug,
+      totalOrders: analytics.totalOrders,
+      totalRevenue: analytics.totalRevenue,
+      hasTopProducts: analytics.topProducts?.length > 0
+    });
+  }, [debug, analytics]);
   
-  // �📥 CSV EXPORT UTILITIES
+  // 📥 CSV EXPORT UTILITIES
   const downloadCSV = (filename: string, csvContent: string) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
