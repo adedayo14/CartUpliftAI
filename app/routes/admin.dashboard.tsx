@@ -710,23 +710,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // Convert to array and calculate uplift percentages
       orderUpliftBreakdown = Array.from(orderUpliftMap.values())
         .map(order => {
-          // Base value = what they would've spent without recommendations
-          const baseValue = order.totalValue - order.attributedValue;
+          // Fix: If attributedValue > totalValue, it means all items were recommended
+          // Cap attributedValue at totalValue to prevent overflow
+          const cappedAttributedValue = Math.min(order.attributedValue, order.totalValue);
           
-          // Uplift percentage = how much MORE they spent because of recommendations
-          const upliftPercentage = baseValue > 0 ? ((order.attributedValue / baseValue) * 100) : 0;
+          // Base value = what they would've spent without recommendations
+          const baseValue = order.totalValue - cappedAttributedValue;
+          
+          // Uplift percentage = how much of the order came from AI recommendations
+          // Calculate as % of total order value from recommendations
+          const upliftPercentage = order.totalValue > 0 ? ((cappedAttributedValue / order.totalValue) * 100) : 0;
           
           return {
             orderNumber: order.orderNumber,
             totalValue: order.totalValue,
-            baseValue: Math.max(0, baseValue), // Prevent negative values
-            attributedValue: order.attributedValue,
+            baseValue: Math.max(0, baseValue),
+            attributedValue: cappedAttributedValue, // Use capped value
             upliftPercentage,
             products: Array.from(order.products), // Convert Set to Array
             productCount: order.productCount
           };
         })
-        .filter(order => order.attributedValue > 0 && order.baseValue >= 0) // Only valid orders
+        .filter(order => order.attributedValue > 0 && order.totalValue > 0) // Only valid orders
         .sort((a, b) => b.upliftPercentage - a.upliftPercentage) // Sort by highest uplift %
         .slice(0, 10); // Top 10 orders by uplift impact
       
@@ -2364,19 +2369,19 @@ export default function Dashboard() {
               
               <DataTable
                 columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'text']}
-                headings={['Order', 'Customer Spent', 'Added from AI', 'Uplift', 'What They Added']}
+                headings={['Order', 'Customer Spent', 'Added from AI', 'AI Impact', 'What They Added']}
                 rows={(analytics as any).orderUpliftBreakdown.map((order: any) => [
                   `#${order.orderNumber}`,
                   formatCurrency(order.totalValue),
                   formatCurrency(order.attributedValue),
-                  `+${order.upliftPercentage.toFixed(0)}%`,
+                  `${order.upliftPercentage.toFixed(0)}%`,
                   `${order.productCount} item${order.productCount > 1 ? 's' : ''}: ${order.products.slice(0, 2).join(', ')}${order.products.length > 2 ? ` +${order.products.length - 2} more` : ''}`
                 ])}
               />
               
               <Box padding="300" background="bg-surface-secondary" borderRadius="200">
                 <Text as="p" variant="bodyXs" tone="subdued">
-                  💡 <strong>How to read this:</strong> "Customer Spent" is the total order value. "Added from AI" shows how much came from products they clicked on in recommendations. "Uplift" is the percentage increase from recommendations.
+                  💡 <strong>How to read this:</strong> "Customer Spent" is the total order value. "Added from AI" shows how much came from products they clicked on in recommendations. "AI Impact" shows what percentage of the order came from AI recommendations.
                 </Text>
               </Box>
             </BlockStack>
