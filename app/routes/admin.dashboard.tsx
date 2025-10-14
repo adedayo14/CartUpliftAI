@@ -402,34 +402,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         avgOrderValue: stats.orders > 0 ? (stats.revenue / stats.orders).toFixed(2) : '0.00'
       }));
     
-    // For product suggestions, calculate metrics from REAL order patterns
-  const topUpsells = topProducts.slice(0, 6).map((product) => {
-      // Calculate real impression estimate based on actual order frequency
-      const daysInPeriod = timeframe === "today" ? 1 : timeframe === "7d" ? 7 : timeframe === "30d" ? 30 : 365;
-      const dailyOrders = product.orders / daysInPeriod;
-      const estimatedDailyImpressions = Math.max(dailyOrders * 15, 10); // Conservative 15 views per order
-      const totalImpressions = Math.floor(estimatedDailyImpressions * daysInPeriod);
-      
-      // Calculate clicks based on actual product performance (higher revenue = more attractive)
-      const productPerformanceRatio = topProducts.length > 0 ? product.revenue / topProducts[0].revenue : 1;
-      const estimatedCTR = Math.max(0.05, 0.15 * productPerformanceRatio); // 5-15% based on performance
-      const clicks = Math.floor(totalImpressions * estimatedCTR);
-      
-      // Conversions are REAL (actual orders for this product)
-      const conversions = product.orders;
-      const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(1) : '0.0';
-      const ctr = totalImpressions > 0 ? ((clicks / totalImpressions) * 100).toFixed(1) : '0.0';
-      
-      return {
-        product: product.product,
-        impressions: totalImpressions,
-        clicks: clicks,
-        conversions: conversions,
-        conversionRate: conversionRate,
-        revenue: product.revenue.toFixed(2),
-        ctr: ctr
-      };
-    });
+    // NOTE: topUpsells will be populated later after fetching tracking data
+    // This placeholder will be replaced with real tracking + revenue data
+    const topUpsells: Array<any> = [];
 
     // ✅ SMART BUNDLE OPPORTUNITIES (REAL CO-OCCURRENCE ANALYSIS)
     const bundleOpportunities = [];
@@ -546,6 +521,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   } catch (trackingError) { 
     console.error('❌ [Tracking Debug] Error fetching tracking events:', trackingError);
   }
+
+    // ============================================
+    // 🎯 Merge Real Tracking Data with Revenue Data for Upsell Performance
+    // ============================================
+    // Build a map of product titles to their revenue from topProducts
+    const productRevenueMap = new Map<string, { revenue: number; orders: number }>();
+    topProducts.forEach((product) => {
+      productRevenueMap.set(product.product, {
+        revenue: product.revenue,
+        orders: product.orders
+      });
+    });
+
+    // Populate topUpsells with real tracking data merged with revenue
+    topUpsells.push(...topRecommended.slice(0, 10).map((tracked) => {
+      const revenueData = productRevenueMap.get(tracked.productTitle);
+      const orders = revenueData?.orders || 0;
+      const revenue = revenueData?.revenue || 0;
+      
+      // Calculate conversion rate: orders / clicks
+      const conversionRate = tracked.clicks > 0 ? ((orders / tracked.clicks) * 100).toFixed(1) : '0.0';
+      
+      return {
+        product: tracked.productTitle,
+        impressions: tracked.impressions,
+        clicks: tracked.clicks,
+        conversions: orders,
+        conversionRate: conversionRate,
+        revenue: revenue.toFixed(2),
+        ctr: tracked.ctr.toFixed(1)
+      };
+    }));
 
     // ============================================
     // 🎯 CRITICAL: Real Attribution Data (Phase 1 Implementation!)
@@ -2369,14 +2376,7 @@ export default function Dashboard() {
                     <Text as="h2" variant="headingMd">
                       🎯 Upsell Performance Analytics
                     </Text>
-                    <Badge tone="warning">Estimated Data</Badge>
                   </InlineStack>
-                  
-                  <Banner tone="warning">
-                    <Text as="p" variant="bodySm">
-                      ⚠️ <strong>Revenue shown is real from Shopify orders</strong>, but "Shown", "Clicked", and "Click Rate" are estimated based on order frequency. Enable tracking in your theme extension to see actual customer interaction data.
-                    </Text>
-                  </Banner>
                   
                   <DataTable
                     columnContentTypes={[
@@ -2389,9 +2389,9 @@ export default function Dashboard() {
                     ]}
                     headings={[
                       'Product',
-                      'Shown (est.)',
-                      'Clicked (est.)',
-                      'Click Rate (est.)',
+                      'Impressions',
+                      'Clicks',
+                      'Click Rate',
                       'Purchased',
                       'Revenue'
                     ]}
