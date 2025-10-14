@@ -1074,6 +1074,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Dashboard() {
   const { analytics, debug, search } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [showTopPerformersModal, setShowTopPerformersModal] = useState(false);
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
   const [webhookSetupState, setWebhookSetupState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [webhookMessage, setWebhookMessage] = useState('');
@@ -1973,6 +1974,9 @@ export default function Dashboard() {
           .cu-text-12 { font-size: 12px; }
           .cu-flex-1 { flex: 1; }
           .cu-divider-vertical { border-left: 1px solid var(--p-color-border); height: 24px; }
+          .clickable-card { cursor: pointer; transition: opacity 0.2s; }
+          .clickable-card:hover { opacity: 0.8; }
+          .no-underline { text-decoration: none; }
         `}
       </style>
       <BlockStack gap="500">
@@ -2200,17 +2204,27 @@ export default function Dashboard() {
               </Grid.Cell>
               
               <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    Top Performers
-                  </Text>
-                  <Text as="p" variant="headingLg" fontWeight="bold">
-                    {analytics.mlStatus.highPerformers || 0}
-                  </Text>
-                  <Text as="p" variant="bodyXs" tone="success">
-                    getting lots of clicks
-                  </Text>
-                </BlockStack>
+                <div 
+                  onClick={() => setShowTopPerformersModal(true)}
+                  className="clickable-card"
+                >
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Top Performers
+                    </Text>
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="p" variant="headingLg" fontWeight="bold">
+                        {analytics.mlStatus.highPerformers || 0}
+                      </Text>
+                      <Text as="p" variant="bodySm" tone="magic">
+                        👁️ View
+                      </Text>
+                    </InlineStack>
+                    <Text as="p" variant="bodyXs" tone="success">
+                      getting lots of clicks
+                    </Text>
+                  </BlockStack>
+                </div>
               </Grid.Cell>
               
               <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
@@ -2666,6 +2680,57 @@ export default function Dashboard() {
                 />
               ))}
             </BlockStack>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Top Performers Modal */}
+      <Modal
+        open={showTopPerformersModal}
+        onClose={() => setShowTopPerformersModal(false)}
+        title="🌟 Top Performing Products"
+        primaryAction={{
+          content: 'Close',
+          onAction: () => setShowTopPerformersModal(false),
+        }}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Text as="p" variant="bodyMd">
+              These products are getting the most clicks from customers. A product with 5%+ click rate is considered a high performer.
+            </Text>
+            
+            {analytics.topRecommended && analytics.topRecommended.length > 0 ? (
+              <DataTable
+                columnContentTypes={['text', 'numeric', 'numeric', 'numeric']}
+                headings={['Product', 'Views', 'Clicks', 'Click Rate']}
+                rows={analytics.topRecommended
+                  .filter((p: any) => p.ctr > 5) // Only high performers (5%+ CTR)
+                  .map((product: any) => [
+                    product.productTitle || product.productId,
+                    product.impressions.toLocaleString(),
+                    product.clicks.toLocaleString(),
+                    `${product.ctr.toFixed(1)}%`
+                  ])}
+              />
+            ) : (
+              <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  No high performers yet. Products need at least 5% click rate to appear here.
+                </Text>
+              </Box>
+            )}
+            
+            <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+              <BlockStack gap="200">
+                <Text as="p" variant="bodyMd" fontWeight="semibold">
+                  💡 What makes a top performer?
+                </Text>
+                <Text as="p" variant="bodyMd">
+                  Products with 5%+ click rate are getting noticed by customers. Consider featuring these products more prominently or creating bundles around them.
+                </Text>
+              </BlockStack>
+            </Box>
           </BlockStack>
         </Modal.Section>
       </Modal>
