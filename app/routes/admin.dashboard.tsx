@@ -871,6 +871,8 @@ export default function Dashboard() {
       });
       
       console.log('📥 Response status:', response.status);
+      console.log('📥 Response ok:', response.ok);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -880,8 +882,21 @@ export default function Dashboard() {
         return;
       }
       
-      const result = await response.json();
-      console.log('✅ Response data:', result);
+      const contentType = response.headers.get('content-type');
+      console.log('📦 Content-Type:', contentType);
+      
+      let result;
+      try {
+        result = await response.json();
+        console.log('✅ Response data:', result);
+      } catch (parseError) {
+        console.error('❌ JSON parse error:', parseError);
+        const text = await response.text();
+        console.error('❌ Response text:', text);
+        setWebhookSetupState('error');
+        setWebhookMessage('Invalid JSON response - check console');
+        return;
+      }
       
       if (result.success) {
         setWebhookSetupState('success');
