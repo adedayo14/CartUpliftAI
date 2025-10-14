@@ -844,11 +844,12 @@ export default function Dashboard() {
   
   // 🔍 CLIENT-SIDE DEBUG: Log loader data
   useEffect(() => {
-    console.log('🔍 CLIENT DEBUG: Dashboard loaded with:', {
+    console.log('🔍 CLIENT DEBUG v2: Dashboard loaded with:', {
       debug,
       totalOrders: analytics.totalOrders,
       totalRevenue: analytics.totalRevenue,
-      hasTopProducts: analytics.topProducts?.length > 0
+      hasTopProducts: analytics.topProducts?.length > 0,
+      version: 'webhook-fix-oct14-v2'
     });
   }, [debug, analytics]);
   
