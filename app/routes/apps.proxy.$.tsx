@@ -2137,12 +2137,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
       try {
         const body = await request.json();
+        console.log('🔍 [TrackRecs] Received payload:', JSON.stringify(body));
         const { sessionId, customerId, anchorProducts, recommendedProducts } = body;
 
         // Allow empty anchorProducts (when cart is empty) but require recommendedProducts
         if (!Array.isArray(anchorProducts) || !Array.isArray(recommendedProducts) || recommendedProducts.length === 0) {
-          console.warn('🔒 [TrackRecs] Invalid payload:', { anchorProducts, recommendedProducts });
-          return json({ error: "Missing required fields" }, { status: 400 });
+          console.warn('🔒 [TrackRecs] Invalid payload - anchorProducts:', typeof anchorProducts, anchorProducts);
+          console.warn('🔒 [TrackRecs] Invalid payload - recommendedProducts:', typeof recommendedProducts, recommendedProducts);
+          return json({ error: "Missing required fields", details: { anchorProducts: typeof anchorProducts, recommendedProducts: typeof recommendedProducts } }, { status: 400 });
         }
 
         console.log('📈 [Client-side] Saving ml_recommendation_served event', {
