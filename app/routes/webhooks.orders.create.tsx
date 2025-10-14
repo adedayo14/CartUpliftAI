@@ -46,6 +46,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return new Response("OK", { status: 200 });
   } catch (error) {
     const duration = Date.now() - startTime;
+
+    if (error instanceof Response) {
+      console.error(`❌ Order webhook error after ${duration}ms:`, {
+        status: error.status,
+        statusText: error.statusText,
+      });
+
+      if (error.status === 401) {
+        console.error("🚫 Webhook unauthorized details:", {
+          shopHeader: request.headers.get("X-Shopify-Shop-Domain"),
+          topicHeader: request.headers.get("X-Shopify-Topic"),
+          hmacPresent: request.headers.has("X-Shopify-Hmac-Sha256"),
+          apiSecretConfigured: Boolean(process.env.SHOPIFY_API_SECRET),
+        });
+      }
+
+      return error;
+    }
+
     console.error(`❌ Order webhook error after ${duration}ms:`, error);
     return new Response("Error", { status: 500 });
   }
