@@ -71,6 +71,13 @@ export class EnhancedRecommendationEngine {
       // Post-process: diversity, business rules, availability
       const processed = await this.postProcessRecommendations(recommendations);
       
+      // 🎯 Track ml_recommendation_served event for attribution
+      if (processed.length > 0) {
+        this.trackRecommendationsServed(cart, processed).catch(err => 
+          console.warn('Failed to track recommendations:', err)
+        );
+      }
+      
       // Cache result
       this.cache.set(cacheKey, processed, 'session');
       
@@ -79,6 +86,32 @@ export class EnhancedRecommendationEngine {
     } catch (error) {
       console.error('Enhanced recommendations failed:', error);
       return this.getFallbackRecommendations();
+    }
+  }
+  
+  /**
+   * Track ml_recommendation_served for purchase attribution
+   */
+  async trackRecommendationsServed(cart, recommendations) {
+    try {
+      const shop = window.Shopify?.shop || '';
+      const anchorProducts = cart?.items?.map(item => String(item.product_id)).filter(Boolean) || [];
+      const recommendedProducts = recommendations.map(rec => String(rec.id)).filter(Boolean);
+      
+      await fetch(`/apps/cart-uplift/api/track-recommendations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop,
+          sessionId: this.cartUplift.sessionId,
+          customerId: window.Shopify?.customerId || null,
+          anchorProducts,
+          recommendedProducts
+        })
+      });
+    } catch (error) {
+      // Silently fail - don't break recommendations
+      console.warn('Recommendation tracking failed:', error);
     }
   }
 
