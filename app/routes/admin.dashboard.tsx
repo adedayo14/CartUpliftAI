@@ -1430,7 +1430,7 @@ export default function Dashboard() {
       previousValue: "N/A",
       changePercent: 0,
       changeDirection: "neutral" as const,
-      comparison: `Average CTR across recommendations`,
+      comparison: `Avg across all recommendations`,
       icon: OrderIcon,
     },
     {
@@ -1440,7 +1440,7 @@ export default function Dashboard() {
       previousValue: "N/A",
       changePercent: 0,
       changeDirection: "neutral" as const,
-      comparison: `Average conversion rate across recommendations`,
+      comparison: `Avg across all recommendations`,
       icon: OrderIcon,
     },
     {
@@ -1450,7 +1450,7 @@ export default function Dashboard() {
       previousValue: "N/A",
       changePercent: 0,
       changeDirection: "neutral" as const,
-      comparison: "Estimated from order patterns",
+      comparison: "Est. from order patterns",
       icon: OrderIcon,
     },
     // ========================================
@@ -1486,7 +1486,7 @@ export default function Dashboard() {
       previousValue: "N/A",
       changePercent: 0,
       changeDirection: "neutral" as const,
-      comparison: `Revenue per recommendation click`,
+      comparison: `Revenue per click`,
       icon: CashDollarIcon,
     },
     // ✅ FREE SHIPPING BAR IMPACT METRICS (REAL DATA)
