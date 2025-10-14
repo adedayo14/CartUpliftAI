@@ -1927,16 +1927,22 @@ export default function Dashboard() {
       </style>
       <BlockStack gap="500">
         
-        {/* Header with Enhanced Time Filter */}
+        {/* Header with Time Filter */}
         <Card>
           <InlineStack gap="300" align="space-between" wrap={false}>
             <BlockStack gap="200">
-              <Text as="p" variant="bodyMd" tone="subdued">
-                {analytics.shopName} • {getTimeframeLabel(analytics.timeframe)}
-                {analytics.totalOrders > 0 && (
-                  <span> • {analytics.totalOrders} orders • {formatCurrency(analytics.totalRevenue)} revenue</span>
-                )}
+              <Text as="h1" variant="headingLg">
+                {analytics.shopName}
               </Text>
+              <InlineStack gap="200">
+                <Badge>{getTimeframeLabel(analytics.timeframe)}</Badge>
+                {analytics.totalOrders > 0 && (
+                  <>
+                    <Badge tone="info">{`${analytics.totalOrders.toLocaleString()} orders`}</Badge>
+                    <Badge tone="success">{formatCurrency(analytics.totalRevenue)}</Badge>
+                  </>
+                )}
+              </InlineStack>
             </BlockStack>
             <InlineStack gap="300" blockAlign="center">
               <Button variant="plain" onClick={exportFullDashboard}>
