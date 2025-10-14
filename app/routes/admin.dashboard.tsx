@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import {
   Page,
@@ -839,6 +839,7 @@ export default function Dashboard() {
   const { analytics, debug, search } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
+  const webhookFetcher = useFetcher();
   
   // 🔍 CLIENT-SIDE DEBUG: Log loader data
   useEffect(() => {
@@ -849,6 +850,10 @@ export default function Dashboard() {
       hasTopProducts: analytics.topProducts?.length > 0
     });
   }, [debug, analytics]);
+  
+  const setupWebhooks = () => {
+    webhookFetcher.submit({}, { method: 'POST', action: '/admin/setup-webhooks' });
+  };
   
   // 📥 CSV EXPORT UTILITIES
   const downloadCSV = (filename: string, csvContent: string) => {
@@ -1640,6 +1645,21 @@ export default function Dashboard() {
             <Text variant="bodySm" as="p" tone="subdued">
               Revenue tracking will start as soon as customers purchase recommended products.
             </Text>
+            <InlineStack gap="300">
+              <Button 
+                variant="primary" 
+                onClick={setupWebhooks}
+                loading={webhookFetcher.state !== 'idle'}
+              >
+                Setup Revenue Tracking
+              </Button>
+              {webhookFetcher.data?.success && (
+                <Text as="span" tone="success">✓ Webhooks configured</Text>
+              )}
+              {webhookFetcher.data?.success === false && (
+                <Text as="span" tone="critical">✗ Setup failed - check console</Text>
+              )}
+            </InlineStack>
           </BlockStack>
         </Banner>
       )}
