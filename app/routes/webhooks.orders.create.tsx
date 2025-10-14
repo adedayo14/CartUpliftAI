@@ -18,36 +18,61 @@ import { authenticate } from "~/shopify.server";
  */
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  const startTime = Date.now();
   try {
-    const { topic, shop, session, payload } = await authenticate.webhook(request);
+    console.log("🎯 Order webhook START:", new Date().toISOString());
+    
+    const { topic, shop, payload } = await authenticate.webhook(request);
+    
+    console.log("✅ Webhook authenticated:", { 
+      topic, 
+      shop, 
+      orderId: payload.id,
+      orderNumber: payload.order_number || payload.number,
+      lineItemCount: payload.line_items?.length || 0
+    });
     
     if (topic !== "ORDERS_CREATE") {
+      console.error("❌ Invalid topic:", topic);
       return new Response("Invalid topic", { status: 400 });
     }
-    
-    console.log("📦 Order created webhook received:", { shop, orderId: payload.id });
     
     // Process the order for ML learning
     await processOrderForAttribution(shop, payload);
     
+    const duration = Date.now() - startTime;
+    console.log(`✅ Order webhook complete in ${duration}ms`);
+    
     return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error("❌ Order webhook error:", error);
+    const duration = Date.now() - startTime;
+    console.error(`❌ Order webhook error after ${duration}ms:`, error);
     return new Response("Error", { status: 500 });
   }
 };
 
 async function processOrderForAttribution(shop: string, order: any) {
   try {
+    console.log("🔍 Processing attribution for order:", order.id);
+    
     const customerId = order.customer?.id?.toString();
     const orderNumber = order.order_number || order.number;
     const orderValue = parseFloat(order.total_price || 0);
+    
+    console.log("📊 Order details:", { 
+      customerId, 
+      orderNumber, 
+      orderValue,
+      lineItemCount: order.line_items?.length 
+    });
     
     // Extract purchased product IDs
     const purchasedProductIds = order.line_items?.map((item: any) => {
       const productId = item.product_id?.toString();
       return productId;
     }).filter(Boolean) || [];
+    
+    console.log("🛍️ Purchased products:", purchasedProductIds);
     
     if (purchasedProductIds.length === 0) {
       console.log("⚠️ No products in order, skipping attribution");
@@ -60,6 +85,8 @@ async function processOrderForAttribution(shop: string, order: any) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
+    console.log("📅 Looking for recommendations since:", sevenDaysAgo.toISOString());
+    
     // Find recent tracking events for this customer/session
     const recentEvents = await (db as any).trackingEvent?.findMany({
       where: {
@@ -71,6 +98,8 @@ async function processOrderForAttribution(shop: string, order: any) {
       orderBy: { createdAt: 'desc' },
       take: 100
     });
+    
+    console.log(`📦 Found ${recentEvents?.length || 0} recommendation events`);
     
     if (!recentEvents || recentEvents.length === 0) {
       console.log("ℹ️ No recent recommendations found for attribution");
@@ -89,12 +118,15 @@ async function processOrderForAttribution(shop: string, order: any) {
         
         const recommendedIds = metadata?.recommendationIds || [];
         
+        console.log(`📝 Event ${event.id}: ${recommendedIds.length} recommendations`);
+        
         // Check if any purchased products were in recommendations
         const matches = purchasedProductIds.filter((pid: string) => 
           recommendedIds.includes(pid)
         );
         
         if (matches.length > 0) {
+          console.log(`✅ MATCH! Products ${matches.join(', ')} were recommended`);
           attributedProducts.push(...matches);
           recommendationIds.push(event.id);
         }
@@ -105,6 +137,12 @@ async function processOrderForAttribution(shop: string, order: any) {
     
     // Remove duplicates
     attributedProducts = [...new Set(attributedProducts)];
+    
+    console.log(`🎯 Attribution summary:`, {
+      totalAttributed: attributedProducts.length,
+      attributedProducts,
+      recommendationEventIds: recommendationIds
+    });
     
     if (attributedProducts.length === 0) {
       console.log("ℹ️ No attributed products (customer bought different items)");
