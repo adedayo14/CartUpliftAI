@@ -1340,7 +1340,7 @@ export default function Dashboard() {
     },
     {
       id: "cart_uplift_impact",
-      title: "Suggested Product Revenue",
+      title: "Revenue from Recommendations",
       value: `${analytics.revenueFromUpsells > 0 && analytics.totalRevenue > 0 ? ((analytics.revenueFromUpsells / analytics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.totalRevenue > 0 ? ((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       changePercent: Math.abs(calculateChange(
@@ -1353,7 +1353,7 @@ export default function Dashboard() {
     },
     {
       id: "recommendation_conversion",
-      title: "Suggestion Success Rate",
+      title: "Average Conversion Rate",
       value: `${analytics.topUpsells.length > 0 ? (analytics.topUpsells.filter((item: any) => item != null).reduce((sum: number, item: any) => sum + parseFloat(item.conversionRate || "0"), 0) / analytics.topUpsells.filter((item: any) => item != null).length).toFixed(1) : "0.0"}%`,
       previousValue: "N/A",
       changePercent: 0,
@@ -1397,7 +1397,7 @@ export default function Dashboard() {
     },
     {
       id: "recommendation_ctr",
-      title: "Suggestion Click Rate",
+      title: "Average Click Rate",
       value: `${analytics.topUpsells.length > 0 ? (analytics.topUpsells.filter((item: any) => item != null).reduce((sum: number, item: any) => sum + parseFloat(item.ctr || "0"), 0) / analytics.topUpsells.filter((item: any) => item != null).length).toFixed(1) : "0.0"}%`,
       previousValue: "N/A",
       changePercent: 0,
