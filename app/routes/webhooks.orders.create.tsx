@@ -106,31 +106,45 @@ async function processOrderForAttribution(shop: string, order: any) {
     
     console.log("📅 Looking for recommendations since:", sevenDaysAgo.toISOString());
     
-    // Find recent tracking events for this shop (not filtering by customer since tracking may not have customer ID)
+    // Find recent tracking events for this shop - get BOTH served AND clicked events
     const recentEvents = await (db as any).trackingEvent?.findMany({
       where: {
         shop,
-        event: 'ml_recommendation_served',
+        event: { in: ['ml_recommendation_served', 'click'] },
         createdAt: { gte: sevenDaysAgo }
-        // Intentionally NOT filtering by customerId - tracking events may not have it
-        // We'll match based on product IDs instead
       },
       orderBy: { createdAt: 'desc' },
-      take: 100
+      take: 500 // Increased to get both impression and click events
     });
     
-    console.log(`📦 Found ${recentEvents?.length || 0} recommendation events`);
+    console.log(`📦 Found ${recentEvents?.length || 0} tracking events (served + clicks)`);
     
     if (!recentEvents || recentEvents.length === 0) {
       console.log("ℹ️ No recent recommendations found for attribution");
       return;
     }
     
-    // Parse metadata to find recommended products
+    // Separate served and clicked events
+    const servedEvents = recentEvents.filter((e: any) => e.event === 'ml_recommendation_served');
+    const clickEvents = recentEvents.filter((e: any) => e.event === 'click');
+    
+    console.log(`📊 Event breakdown: ${servedEvents.length} served, ${clickEvents.length} clicks`);
+    
+    // Build a set of clicked product IDs
+    const clickedProductIds = new Set(
+      clickEvents
+        .map((e: any) => e.productId)
+        .filter(Boolean)
+        .map(String) // Normalize to strings
+    );
+    
+    console.log(`👆 Clicked products: ${Array.from(clickedProductIds).slice(0, 5).join(', ')}${clickedProductIds.size > 5 ? '...' : ''}`);
+    
+    // Parse metadata to find recommended products that were ALSO clicked
     let attributedProducts: string[] = [];
     let recommendationIds: string[] = [];
     
-    for (const event of recentEvents) {
+    for (const event of servedEvents) {
       try {
         const metadata = typeof event.metadata === 'string' 
           ? JSON.parse(event.metadata) 
@@ -138,22 +152,31 @@ async function processOrderForAttribution(shop: string, order: any) {
         
         const recommendedIds = metadata?.recommendationIds || [];
         
-        console.log(`📝 Event ${event.id}:`);
+        console.log(`📝 Served Event ${event.id}:`);
         console.log(`   - Recommended IDs (${recommendedIds.length}): ${recommendedIds.slice(0, 3).join(', ')}...`);
-        console.log(`   - Purchased IDs: ${purchasedProductIds.join(', ')}`);
-        console.log(`   - ID types: recommended[0]=${typeof recommendedIds[0]}, purchased[0]=${typeof purchasedProductIds[0]}`);
         
-        // Check if any purchased products were in recommendations
-        const matches = purchasedProductIds.filter((pid: string) => 
-          recommendedIds.includes(pid) || recommendedIds.includes(Number(pid)) || recommendedIds.includes(String(pid))
-        );
+        // Check if any purchased products were:
+        // 1. In recommendations AND
+        // 2. Were clicked by customer AND
+        // 3. Were purchased
+        const matches = purchasedProductIds.filter((pid: string) => {
+          const wasRecommended = recommendedIds.includes(pid) || recommendedIds.includes(Number(pid)) || recommendedIds.includes(String(pid));
+          const wasClicked = clickedProductIds.has(String(pid));
+          return wasRecommended && wasClicked;
+        });
         
         if (matches.length > 0) {
-          console.log(`✅ MATCH! Products ${matches.join(', ')} were recommended`);
+          console.log(`✅ ATTRIBUTED! Products ${matches.join(', ')} were recommended, clicked, AND purchased`);
           attributedProducts.push(...matches);
           recommendationIds.push(event.id);
         } else {
-          console.log(`   No matches for this event`);
+          // Debug: Show what was missing
+          const recommended = purchasedProductIds.filter((pid: string) => 
+            recommendedIds.includes(pid) || recommendedIds.includes(Number(pid)) || recommendedIds.includes(String(pid))
+          );
+          if (recommended.length > 0) {
+            console.log(`   ⚠️ Products ${recommended.join(', ')} were recommended but NOT clicked`);
+          }
         }
       } catch (e) {
         console.warn("Failed to parse event metadata:", e);
@@ -164,38 +187,60 @@ async function processOrderForAttribution(shop: string, order: any) {
     attributedProducts = [...new Set(attributedProducts)];
     
     console.log(`🎯 Attribution summary:`, {
+      totalPurchased: purchasedProductIds.length,
+      totalRecommended: servedEvents.length,
+      totalClicked: clickedProductIds.size,
       totalAttributed: attributedProducts.length,
       attributedProducts,
       recommendationEventIds: recommendationIds
     });
     
     if (attributedProducts.length === 0) {
-      console.log("ℹ️ No attributed products (customer bought different items)");
+      console.log("ℹ️ No attributed products (recommendations were not clicked or different items purchased)");
       
       // Still valuable: track what they bought INSTEAD
-      await trackMissedOpportunity(shop, purchasedProductIds, recentEvents[0]);
+      await trackMissedOpportunity(shop, purchasedProductIds, servedEvents[0]);
       return;
     }
     
-    console.log(`✅ Attribution found! ${attributedProducts.length} products matched recommendations`);
+    console.log(`✅ Attribution found! ${attributedProducts.length} products: recommended → clicked → purchased`);
+    
+    // Calculate total attributed revenue for this order
+    const totalAttributedRevenue = attributedProducts.reduce((sum, productId) => 
+      sum + calculateProductRevenue(order, productId), 0
+    );
+    
+    // Calculate uplift percentage
+    const baseOrderValue = orderValue - totalAttributedRevenue;
+    const upliftPercentage = baseOrderValue > 0 ? ((totalAttributedRevenue / baseOrderValue) * 100) : 0;
+    
+    console.log(`💰 Order breakdown:`, {
+      totalOrderValue: orderValue,
+      baseValue: baseOrderValue,
+      attributedRevenue: totalAttributedRevenue,
+      upliftPercentage: `${upliftPercentage.toFixed(1)}%`,
+      message: `Customer would've spent £${baseOrderValue.toFixed(2)}, our recommendations added £${totalAttributedRevenue.toFixed(2)} (${upliftPercentage.toFixed(1)}% increase)`
+    });
     
     // Create attribution records
-    const attributionPromises = attributedProducts.map(productId => 
-      (db as any).recommendationAttribution?.create({
+    const attributionPromises = attributedProducts.map(productId => {
+      const productRevenue = calculateProductRevenue(order, productId);
+      
+      return (db as any).recommendationAttribution?.create({
         data: {
           shop,
           productId,
           orderId: order.id?.toString(),
           orderNumber,
-          orderValue,
+          orderValue, // Total order value
           customerId,
           recommendationEventIds: recommendationIds,
-          attributedRevenue: calculateProductRevenue(order, productId),
+          attributedRevenue: productRevenue, // Revenue from this specific product
           conversionTimeMinutes: calculateConversionTime(recentEvents[0]),
           createdAt: new Date()
         }
-      }).catch((e: any) => console.warn("Failed to create attribution:", e))
-    );
+      }).catch((e: any) => console.warn("Failed to create attribution:", e));
+    });
     
     await Promise.all(attributionPromises);
     

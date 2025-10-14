@@ -560,6 +560,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let attributedRevenue = 0;
     let attributedOrders = 0;
     let topAttributedProducts: Array<{ productId: string; productTitle: string; revenue: number; orders: number }> = [];
+    let orderUpliftBreakdown: Array<{ orderNumber: string; totalValue: number; baseValue: number; attributedValue: number; upliftPercentage: number; products: string[] }> = [];
     
     try {
       const attributions = await (db as any).recommendationAttribution?.findMany?.({
@@ -658,6 +659,43 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         })
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
+      
+      // Also build order-level uplift data (for "Order Breakdown" display)
+      const orderUpliftMap = new Map<string, { orderNumber: string; totalValue: number; attributedValue: number; products: string[] }>();
+      
+      for (const attr of attributions) {
+        const orderKey = attr.orderId;
+        if (!orderUpliftMap.has(orderKey)) {
+          orderUpliftMap.set(orderKey, {
+            orderNumber: attr.orderNumber || orderKey,
+            totalValue: attr.orderValue || 0,
+            attributedValue: 0,
+            products: []
+          });
+        }
+        const orderData = orderUpliftMap.get(orderKey)!;
+        orderData.attributedValue += attr.attributedRevenue || 0;
+        
+        // Get product title
+        const pid = attr.productId;
+        const numericId = pid.includes('/') ? pid.split('/').pop()! : pid;
+        const title = productTitlesMap.get(numericId) || productTitlesMap.get(pid) || `Product ${numericId}`;
+        orderData.products.push(title);
+      }
+      
+      // Convert to array and calculate uplift percentages
+      orderUpliftBreakdown = Array.from(orderUpliftMap.values())
+        .map(order => {
+          const baseValue = order.totalValue - order.attributedValue;
+          const upliftPercentage = baseValue > 0 ? ((order.attributedValue / baseValue) * 100) : 0;
+          return {
+            ...order,
+            baseValue,
+            upliftPercentage
+          };
+        })
+        .sort((a, b) => b.attributedValue - a.attributedValue)
+        .slice(0, 10); // Top 10 orders by attributed value
         
     } catch (error) {
       console.error('Error fetching attribution data:', error);
@@ -769,6 +807,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         appCost,
         roi,
         topAttributedProducts,
+        orderUpliftBreakdown, // Order-by-order uplift analysis
         
         // 🧠 NEW: ML System Status (REAL from MLProductPerformance & MLSystemHealth)
         mlStatus,
@@ -2238,6 +2277,41 @@ export default function Dashboard() {
               <Box padding="300" background="bg-surface-secondary" borderRadius="200">
                 <Text as="p" variant="bodyXs" tone="subdued">
                   💡 These products converted well when recommended by AI. Consider featuring them more prominently.
+                </Text>
+              </Box>
+            </BlockStack>
+          </Card>
+        )}
+        
+        {/* 📊 ORDER UPLIFT BREAKDOWN - Show impact per order */}
+        {(analytics as any).orderUpliftBreakdown && (analytics as any).orderUpliftBreakdown.length > 0 && (
+          <Card>
+            <BlockStack gap="400">
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">
+                  💰 Order Uplift Breakdown
+                </Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  See exactly how recommendations increased each order value
+                </Text>
+              </BlockStack>
+              
+              <DataTable
+                columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric', 'text']}
+                headings={['Order', 'Base Value', 'From Recs', 'Total', 'Uplift %', 'Products Added']}
+                rows={(analytics as any).orderUpliftBreakdown.map((order: any) => [
+                  `#${order.orderNumber}`,
+                  formatCurrency(order.baseValue),
+                  formatCurrency(order.attributedValue),
+                  formatCurrency(order.totalValue),
+                  `+${order.upliftPercentage.toFixed(1)}%`,
+                  order.products.join(', ')
+                ])}
+              />
+              
+              <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                <Text as="p" variant="bodyXs" tone="success">
+                  ✨ Example: Order #1234 with £100 base becomes £120 total (+20% from recommendations)
                 </Text>
               </Box>
             </BlockStack>
