@@ -102,6 +102,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     try {
       // Get real orders with detailed line items for the selected timeframe
+      console.log('🔍 DEBUG: Fetching orders with date range:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        timeframe,
+        shop: session.shop
+      });
+      
+      // Try fetching ALL orders first to test if query works
+      const testResponse = await admin.graphql(`
+        #graphql
+        query getAllOrders {
+          orders(first: 10) {
+            edges {
+              node {
+                id
+                name
+                createdAt
+              }
+            }
+          }
+        }
+      `);
+      
+      const testData: any = await testResponse.json();
+      console.log('🔍 DEBUG: Test query (all orders):', {
+        hasData: !!testData?.data,
+        orderCount: testData?.data?.orders?.edges?.length || 0,
+        firstOrder: testData?.data?.orders?.edges?.[0]?.node,
+        errors: testData?.errors
+      });
+      
+      // Now try the filtered query
       const ordersResponse = await admin.graphql(`
         #graphql
         query getRecentOrders($query: String!) {
@@ -146,9 +178,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       ordersData = await ordersResponse.json();
       
+      console.log('🔍 DEBUG: Orders response (filtered):', {
+        hasData: !!ordersData?.data,
+        hasOrders: !!ordersData?.data?.orders,
+        orderCount: ordersData?.data?.orders?.edges?.length || 0,
+        hasErrors: !!ordersData?.errors,
+        errors: ordersData?.errors
+      });
+      
       // Check for GraphQL errors
       if (ordersData.errors) {
-        console.warn('⚠️ Error fetching orders:', ordersData.errors);
+        console.warn('⚠️ Error fetching orders:', JSON.stringify(ordersData.errors, null, 2));
         hasOrderAccess = false;
         ordersData = null;
       }
@@ -181,6 +221,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const orders = (hasOrderAccess && ordersData?.data?.orders?.edges) ? ordersData.data.orders.edges : [];
     const shop = shopData.data?.shop;
     
+    console.log('🔍 DEBUG: Final order processing:', {
+      hasOrderAccess,
+      ordersLength: orders.length,
+      firstOrderId: orders[0]?.node?.id,
+      firstOrderName: orders[0]?.node?.name,
+      firstOrderTotal: orders[0]?.node?.totalPriceSet?.shopMoney?.amount
+    });
+    
     // Fetch shop currency
     const shopCurrency = await getShopCurrency(session.shop);
     const storeCurrency = orders.length > 0 ? 
@@ -192,6 +240,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
     
     const totalOrders = orders.length;
+    console.log('🔍 DEBUG: Total orders calculated:', totalOrders);
     const totalRevenue = orders.reduce((sum: number, order: any) => {
       return sum + parseFloat(order.node.totalPriceSet.shopMoney.amount);
     }, 0);
