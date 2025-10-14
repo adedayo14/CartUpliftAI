@@ -4179,6 +4179,13 @@
           options: product.options || []
         })).filter(item => item.variant_id); // Only include products with valid variants
         
+        // Track ml_recommendation_served for attribution (CRITICAL for revenue tracking)
+        if (this.recommendationEngine) {
+          this.recommendationEngine.trackRecommendationsServed(this.cart, this._allRecommendations).catch(err => 
+            console.warn('ML tracking failed (non-critical):', err)
+          );
+        }
+        
   // Build visible list from fixed master, filtered against cart
   this._recommendationsLocked = true;
   this.rebuildRecommendationsFromMaster();
