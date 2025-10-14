@@ -101,68 +101,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let hasOrderAccess = true;
     
     try {
-      // Get real orders with detailed line items for the selected timeframe
-      console.log('🔍 DEBUG: Fetching orders with date range:', {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        timeframe,
-        shop: session.shop
-      });
+      // Get real orders with detailed line items - NO date filter to start
+      console.log('🔍 DEBUG: Fetching ALL orders (no filter)');
       
-      // Try fetching ALL orders first to test if query works
-      const testResponse = await admin.graphql(`
-        #graphql
-        query getAllOrders {
-          orders(first: 10) {
-            edges {
-              node {
-                id
-                name
-                createdAt
-              }
-            }
-          }
-        }
-      `);
-      
-      const testData: any = await testResponse.json();
-      console.log('🔍 DEBUG: Test query (all orders):', {
-        hasData: !!testData?.data,
-        orderCount: testData?.data?.orders?.edges?.length || 0,
-        firstOrder: testData?.data?.orders?.edges?.[0]?.node,
-        errors: testData?.errors
-      });
-      
-      // Now try the filtered query
       const ordersResponse = await admin.graphql(`
         #graphql
-        query getRecentOrders($query: String!) {
-          orders(first: 250, query: $query) {
+        query getAllOrders {
+          orders(first: 250, reverse: true) {
             edges {
               node {
                 id
                 name
-              totalPriceSet {
-                shopMoney {
-                  amount
-                  currencyCode
+                totalPriceSet {
+                  shopMoney {
+                    amount
+                    currencyCode
+                  }
                 }
-              }
-              createdAt
-              processedAt
-              lineItems(first: 50) {
-                edges {
-                  node {
-                    id
-                    quantity
-                    originalTotalSet {
-                      shopMoney {
-                        amount
-                      }
-                    }
-                    product {
-                      title
+                createdAt
+                processedAt
+                lineItems(first: 50) {
+                  edges {
+                    node {
                       id
+                      quantity
+                      originalTotalSet {
+                        shopMoney {
+                          amount
+                        }
+                      }
+                      product {
+                        title
+                        id
+                      }
                     }
                   }
                 }
@@ -170,30 +141,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             }
           }
         }
-      `,{
-      variables: {
-        query: `created_at:>=${startDate.toISOString()} created_at:<=${endDate.toISOString()}`
-      }
-    });
+      `);
 
       ordersData = await ordersResponse.json();
       
-      console.log('🔍 DEBUG: Orders response (filtered):', {
+      console.log('🔍 DEBUG: Orders response:', {
         hasData: !!ordersData?.data,
         hasOrders: !!ordersData?.data?.orders,
         orderCount: ordersData?.data?.orders?.edges?.length || 0,
         hasErrors: !!ordersData?.errors,
-        errors: ordersData?.errors
+        errors: ordersData?.errors,
+        firstOrderDate: ordersData?.data?.orders?.edges?.[0]?.node?.createdAt
       });
       
       // Check for GraphQL errors
       if (ordersData.errors) {
-        console.warn('⚠️ Error fetching orders:', JSON.stringify(ordersData.errors, null, 2));
+        console.error('❌ GraphQL errors:', JSON.stringify(ordersData.errors, null, 2));
+        hasOrderAccess = false;
+        ordersData = null;
+      } else if (!ordersData?.data?.orders) {
+        console.error('❌ No orders data in response');
         hasOrderAccess = false;
         ordersData = null;
       }
     } catch (orderError) {
-      console.warn('⚠️ Could not fetch orders:', orderError);
+      console.error('❌ Exception fetching orders:', orderError);
       hasOrderAccess = false;
       ordersData = null;
     }
@@ -218,16 +190,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const settings = await getSettings(session.shop);
     
     // Handle order data - use empty array if no access
-    const orders = (hasOrderAccess && ordersData?.data?.orders?.edges) ? ordersData.data.orders.edges : [];
-    const shop = shopData.data?.shop;
+    const allOrders = (hasOrderAccess && ordersData?.data?.orders?.edges) ? ordersData.data.orders.edges : [];
+    
+    // Filter orders by date range on the server side
+    const orders = allOrders.filter((order: any) => {
+      const orderDate = new Date(order.node.createdAt);
+      return orderDate >= startDate && orderDate <= endDate;
+    });
     
     console.log('🔍 DEBUG: Final order processing:', {
       hasOrderAccess,
-      ordersLength: orders.length,
+      allOrdersLength: allOrders.length,
+      filteredOrdersLength: orders.length,
+      timeframe,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
       firstOrderId: orders[0]?.node?.id,
       firstOrderName: orders[0]?.node?.name,
-      firstOrderTotal: orders[0]?.node?.totalPriceSet?.shopMoney?.amount
+      firstOrderTotal: orders[0]?.node?.totalPriceSet?.shopMoney?.amount,
+      firstOrderDate: orders[0]?.node?.createdAt
     });
+    
+    const shop = shopData.data?.shop;
     
     // Fetch shop currency
     const shopCurrency = await getShopCurrency(session.shop);
