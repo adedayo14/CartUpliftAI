@@ -2030,26 +2030,6 @@ export default function Dashboard() {
           </BlockStack>
         </Card>
         
-        {/* � DATA TRACKING STATUS BANNER */}
-        <Banner tone="info">
-          <BlockStack gap="200">
-            <Text as="p" variant="bodyMd" fontWeight="semibold">
-              📊 Dashboard Data Sources
-            </Text>
-            <Text as="p" variant="bodySm">
-              <strong>Real Data (from Shopify):</strong> Orders, revenue, product performance, co-purchase patterns - all metrics shown are from your actual store data for the selected time period.
-            </Text>
-            <Text as="p" variant="bodySm">
-              <strong>AI Recommendation Tracking:</strong> Click/impression tracking and revenue attribution require the theme extension to be active. Revenue from AI Recommendations shows £0 because tracking is not yet recording customer interactions with recommended products.
-            </Text>
-            {analytics.recImpressions === 0 && analytics.totalOrders > 0 && (
-              <Text as="p" variant="bodySm" tone="critical">
-                ⚠️ No recommendation tracking data found. Verify that the Cart Uplift theme extension is enabled in your theme settings.
-              </Text>
-            )}
-          </BlockStack>
-        </Banner>
-        
         {/* �💡 QUICK WIN BANNER - Show best opportunity right now */}
         {analytics.freeShippingEnabled && analytics.freeShippingConversionRate < 15 && analytics.freeShippingConversionRate > 0 && (
           <Card>
