@@ -645,15 +645,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     };
     
     try {
+      // Use actual tracking data if MLProductPerformance isn't populated yet
       const mlPerformance = await (db as any).mLProductPerformance?.findMany?.({
         where: { shop: session.shop }
       }) ?? [];
       
-      mlStatus.productsAnalyzed = mlPerformance.length;
-      mlStatus.highPerformers = mlPerformance.filter((p: any) => p.confidence > 0.7).length;
-      mlStatus.blacklistedProducts = mlPerformance.filter((p: any) => p.isBlacklisted).length;
+      if (mlPerformance.length > 0) {
+        // Use ML tables if available
+        mlStatus.productsAnalyzed = mlPerformance.length;
+        mlStatus.highPerformers = mlPerformance.filter((p: any) => p.confidence > 0.7).length;
+        mlStatus.blacklistedProducts = mlPerformance.filter((p: any) => p.isBlacklisted).length;
+      } else {
+        // Fallback to tracking data
+        mlStatus.productsAnalyzed = topRecommended.length;
+        mlStatus.highPerformers = topRecommended.filter(p => p.ctr > 5).length; // 5% CTR = high performer
+      }
       
-      // Get latest system health job
+      // Get latest system health job OR use latest tracking event
       const latestJob = await (db as any).mLSystemHealth?.findFirst?.({
         where: { shop: session.shop },
         orderBy: { completedAt: 'desc' }
@@ -661,6 +669,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       
       if (latestJob?.completedAt) {
         mlStatus.lastUpdated = latestJob.completedAt;
+      } else if (topRecommended.length > 0 || recSummary.totalImpressions > 0) {
+        // Use most recent tracking event as last updated
+        const latestTracking = await (db as any).trackingEvent?.findFirst?.({
+          where: { shop: session.shop },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (latestTracking?.createdAt) {
+          mlStatus.lastUpdated = latestTracking.createdAt;
+        }
       }
       
       // Calculate performance trend from recent CTR data
