@@ -118,17 +118,22 @@ async function processOrderForAttribution(shop: string, order: any) {
         
         const recommendedIds = metadata?.recommendationIds || [];
         
-        console.log(`📝 Event ${event.id}: ${recommendedIds.length} recommendations`);
+        console.log(`📝 Event ${event.id}:`);
+        console.log(`   - Recommended IDs (${recommendedIds.length}): ${recommendedIds.slice(0, 3).join(', ')}...`);
+        console.log(`   - Purchased IDs: ${purchasedProductIds.join(', ')}`);
+        console.log(`   - ID types: recommended[0]=${typeof recommendedIds[0]}, purchased[0]=${typeof purchasedProductIds[0]}`);
         
         // Check if any purchased products were in recommendations
         const matches = purchasedProductIds.filter((pid: string) => 
-          recommendedIds.includes(pid)
+          recommendedIds.includes(pid) || recommendedIds.includes(Number(pid)) || recommendedIds.includes(String(pid))
         );
         
         if (matches.length > 0) {
           console.log(`✅ MATCH! Products ${matches.join(', ')} were recommended`);
           attributedProducts.push(...matches);
           recommendationIds.push(event.id);
+        } else {
+          console.log(`   No matches for this event`);
         }
       } catch (e) {
         console.warn("Failed to parse event metadata:", e);
