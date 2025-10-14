@@ -2139,7 +2139,9 @@ export async function action({ request }: ActionFunctionArgs) {
         const body = await request.json();
         const { sessionId, customerId, anchorProducts, recommendedProducts } = body;
 
-        if (!anchorProducts || !recommendedProducts) {
+        // Allow empty anchorProducts (when cart is empty) but require recommendedProducts
+        if (!Array.isArray(anchorProducts) || !Array.isArray(recommendedProducts) || recommendedProducts.length === 0) {
+          console.warn('🔒 [TrackRecs] Invalid payload:', { anchorProducts, recommendedProducts });
           return json({ error: "Missing required fields" }, { status: 400 });
         }
 
