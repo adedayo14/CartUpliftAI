@@ -2604,61 +2604,57 @@ export default function Dashboard() {
               </Card>
             </BlockStack>
           </Layout.Section>
-
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
-              {/* Smart Bundle Opportunities */}
-              <Card>
-                <BlockStack gap="400">
-                  <InlineStack gap="200" align="space-between">
-                    <InlineStack gap="200" align="center">
-                      <Icon source={MagicIcon} tone="warning" />
-                      <Text variant="headingMd" as="h3">Smart Bundle Opportunities</Text>
-                    </InlineStack>
-                    <Button size="micro" variant="primary">AI Powered</Button>
-                  </InlineStack>
-                  
-                  <BlockStack gap="300">
-                    {analytics.bundleOpportunities && analytics.bundleOpportunities.length > 0 ? (
-                      analytics.bundleOpportunities.map((bundle: any, index: number) => (
-                        <div key={index} className="cu-flex cu-items-center cu-gap-16 cu-p-12 cu-bg-card cu-rounded-8 cu-border">
-                          <div className="cu-flex cu-items-center cu-gap-8 cu-min-w-120">
-                            <div className="cu-w-30 cu-h-30 cu-rounded-4 cu-grad-primary cu-center cu-text-white cu-fw-600 cu-text-12">
-                              {bundle.product1.title.charAt(0)}
-                            </div>
-                            <span className="cu-fw-600 cu-text-gray-666">+</span>
-                            <div className="cu-w-30 cu-h-30 cu-rounded-4 cu-grad-primary cu-center cu-text-white cu-fw-600 cu-text-12">
-                              {bundle.product2.title.charAt(0)}
-                            </div>
-                          </div>
-                          <div className="cu-flex-1">
-                            <Text variant="bodyMd" as="p" fontWeight="semibold">
-                              {bundle.product1.title} + {bundle.product2.title}
-                            </Text>
-                            <Text variant="bodySm" as="p" tone="subdued">
-                              Bought together {bundle.coOccurrenceRate}% of the time
-                            </Text>
-                          </div>
-                          <Button size="slim" variant="secondary">Create Bundle</Button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="cu-p-20 cu-text-center cu-bg-card cu-rounded-8 cu-border">
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Not enough order data yet. Need at least 10 orders with multiple products to identify bundle opportunities.
-                        </Text>
-                      </div>
-                    )}
-                  </BlockStack>
-                  
-                  <Text variant="bodySm" as="p" tone="subdued">
-                    📊 AI analyzes your sales data to identify high-frequency product combinations.
-                  </Text>
-                </BlockStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
         </Layout>
+
+        {/* Smart Bundle Opportunities - Full Width Row */}
+        <Card>
+          <BlockStack gap="400">
+            <InlineStack gap="200" align="space-between">
+              <InlineStack gap="200" align="center">
+                <Icon source={MagicIcon} tone="warning" />
+                <Text variant="headingMd" as="h3">Smart Bundle Opportunities</Text>
+              </InlineStack>
+              <Button size="micro" variant="primary">AI Powered</Button>
+            </InlineStack>
+            
+            <BlockStack gap="300">
+              {analytics.bundleOpportunities && analytics.bundleOpportunities.length > 0 ? (
+                analytics.bundleOpportunities.map((bundle: any, index: number) => (
+                  <div key={index} className="cu-flex cu-items-center cu-gap-16 cu-p-12 cu-bg-card cu-rounded-8 cu-border">
+                    <div className="cu-flex cu-items-center cu-gap-8 cu-min-w-120">
+                      <div className="cu-w-30 cu-h-30 cu-rounded-4 cu-grad-primary cu-center cu-text-white cu-fw-600 cu-text-12">
+                        {bundle.product1.title.charAt(0)}
+                      </div>
+                      <span className="cu-fw-600 cu-text-gray-666">+</span>
+                      <div className="cu-w-30 cu-h-30 cu-rounded-4 cu-grad-primary cu-center cu-text-white cu-fw-600 cu-text-12">
+                        {bundle.product2.title.charAt(0)}
+                      </div>
+                    </div>
+                    <div className="cu-flex-1">
+                      <Text variant="bodyMd" as="p" fontWeight="semibold">
+                        {bundle.product1.title} + {bundle.product2.title}
+                      </Text>
+                      <Text variant="bodySm" as="p" tone="subdued">
+                        Bought together {bundle.coOccurrenceRate}% of the time
+                      </Text>
+                    </div>
+                    <Button size="slim" variant="secondary">Create Bundle</Button>
+                  </div>
+                ))
+              ) : (
+                <div className="cu-p-20 cu-text-center cu-bg-card cu-rounded-8 cu-border">
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    Not enough order data yet. Need at least 10 orders with multiple products to identify bundle opportunities.
+                  </Text>
+                </div>
+              )}
+            </BlockStack>
+            
+            <Text variant="bodySm" as="p" tone="subdued">
+              📊 AI analyzes your sales data to identify high-frequency product combinations.
+            </Text>
+          </BlockStack>
+        </Card>
       </BlockStack>
 
       {/* Customize Cards Modal */}
