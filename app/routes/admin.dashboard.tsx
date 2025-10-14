@@ -509,7 +509,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         .map(([productId, v]) => ({ productId, productTitle: v.title || productId, impressions: v.imp, clicks: v.clk, ctr: v.imp > 0 ? (v.clk / v.imp) * 100 : 0, revenueCents: v.rev }))
         .sort((a,b) => (b.clicks - a.clicks) || (b.impressions - a.impressions))
         .slice(0, 10);
-  } catch (_error) { void 0; }
+  } catch (trackingError) { 
+    console.error('❌ [Tracking Debug] Error fetching tracking events:', trackingError);
+  }
 
     // ============================================
     // 🎯 CRITICAL: Real Attribution Data (Phase 1 Implementation!)
