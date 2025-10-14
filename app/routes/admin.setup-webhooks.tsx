@@ -12,17 +12,11 @@ export async function action({ request }: ActionFunctionArgs) {
     const existingWebhooks = await admin.graphql(
       `#graphql
       query {
-        webhookSubscriptions(first: 50) {
+        webhookSubscriptions(first: 50, topics: ORDERS_CREATE) {
           edges {
             node {
               id
               topic
-              endpoint {
-                __typename
-                ... on WebhookHttpEndpoint {
-                  callbackUrl
-                }
-              }
             }
           }
         }
@@ -43,8 +37,7 @@ export async function action({ request }: ActionFunctionArgs) {
         message: 'Webhook already registered',
         webhooks: webhooks.map((e: any) => ({
           id: e.node.id,
-          topic: e.node.topic,
-          callbackUrl: e.node.endpoint?.callbackUrl
+          topic: e.node.topic
         }))
       });
     }
