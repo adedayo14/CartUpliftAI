@@ -1054,6 +1054,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
             }
             
             // Track ML recommendation event (if privacy allows)
+            console.log('🔍 [ML Tracking Check]', {
+              enableBehaviorTracking,
+              mlPrivacyLevel,
+              willTrack: enableBehaviorTracking && mlPrivacyLevel !== 'basic',
+              hasDb: Boolean((db as any)?.trackingEvent?.create),
+              recommendationCount: finalRecommendations.length
+            });
+            
             if (enableBehaviorTracking && mlPrivacyLevel !== 'basic') {
               try {
                 console.log('📈 Tracking ML recommendation event');
@@ -1079,10 +1087,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
                       createdAt: new Date()
                     }
                   }).catch((err: any) => console.warn('Tracking failed:', err));
+                  
+                  console.log('✅ ML recommendation event saved');
                 }
               } catch (trackingError) {
                 console.warn('📊 ML event tracking failed:', trackingError);
               }
+            } else {
+              console.log('⚠️ ML tracking skipped - conditions not met');
             }
             
           } catch (mlError) {
