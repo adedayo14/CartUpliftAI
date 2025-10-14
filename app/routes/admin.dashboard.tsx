@@ -1000,7 +1000,7 @@ export default function Dashboard() {
       'MXN': '$',
       'SGD': 'S$',
       'HKD': 'HK$',
-    };
+    }; 
     
     const symbol = currencySymbols[analytics.currency] || analytics.currency + ' ';
     return `${symbol}${amount.toFixed(2)}`;
@@ -1638,7 +1638,10 @@ export default function Dashboard() {
                 ]}
                 value={analytics.timeframe}
                 onChange={(value) => {
-                  window.location.href = `/app/dashboard?timeframe=${value}`;
+                  const params = new URLSearchParams(window.location.search);
+                  params.set('timeframe', value);
+                  // Preserve embedded app routing params like host/shop while switching filters
+                  window.location.href = `${window.location.pathname}?${params.toString()}`;
                 }}
               />
               <Text as="p" variant="bodyXs" tone="subdued" alignment="end">
