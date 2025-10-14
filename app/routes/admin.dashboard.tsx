@@ -459,6 +459,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const events = await (db as any).trackingEvent?.findMany?.({
         where: { shop: session.shop, createdAt: { gte: startDate, lte: endDate } }
       }) ?? [];
+      
+      // Check for ML recommendation events (used for attribution)
+      const mlEvents = events.filter((e: any) => e.event === 'ml_recommendation_served');
+      console.log(`📊 [Tracking Debug] Total events: ${events.length}, ML recommendation events: ${mlEvents.length}`);
+      
+      if (mlEvents.length > 0) {
+        const sample = mlEvents[0];
+        console.log(`📋 [Tracking Debug] Sample ML event:`, {
+          id: sample.id,
+          event: sample.event,
+          productId: sample.productId,
+          metadata: typeof sample.metadata === 'string' ? JSON.parse(sample.metadata) : sample.metadata,
+          createdAt: sample.createdAt
+        });
+      }
+      
       const impressions = events.filter((e: any) => e.event === 'impression').length;
       const clicks = events.filter((e: any) => e.event === 'click').length;
       recSummary.totalImpressions = impressions;
@@ -510,10 +526,42 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
       }) ?? [];
       
+      console.log(`🔍 [Attribution Debug] Found ${attributions.length} attribution records for ${session.shop}`);
+      
+      if (attributions.length > 0) {
+        console.log(`📊 [Attribution Debug] Sample record:`, {
+          productId: attributions[0].productId,
+          orderId: attributions[0].orderId,
+          orderNumber: attributions[0].orderNumber,
+          attributedRevenue: attributions[0].attributedRevenue,
+          createdAt: attributions[0].createdAt
+        });
+      } else {
+        // Check if we have ANY attribution records at all
+        const allAttributions = await (db as any).recommendationAttribution?.findMany?.({
+          where: { shop: session.shop },
+          take: 5
+        }) ?? [];
+        
+        console.log(`⚠️ [Attribution Debug] No attributions in date range. Total count: ${allAttributions.length}`);
+        
+        if (allAttributions.length > 0) {
+          console.log(`📋 [Attribution Debug] Latest attribution:`, {
+            productId: allAttributions[0].productId,
+            orderId: allAttributions[0].orderId,
+            orderNumber: allAttributions[0].orderNumber,
+            attributedRevenue: allAttributions[0].attributedRevenue,
+            createdAt: allAttributions[0].createdAt
+          });
+        }
+      }
+      
       // Calculate total attributed revenue (already in currency, not cents)
       attributedRevenue = attributions.reduce((sum: number, a: any) => 
         sum + (a.attributedRevenue || 0), 0
       );
+      
+      console.log(`💰 [Attribution Debug] Total attributed revenue: ${attributedRevenue}`);
       
       // Count unique orders with attributed sales
       const uniqueOrderIds = new Set(attributions.map((a: any) => a.orderId));
