@@ -603,6 +603,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const uniqueOrderIds = new Set(attributions.map((a: any) => a.orderId));
       attributedOrders = uniqueOrderIds.size;
       
+      // Build product ID to title map from orders
+      const productTitlesMap = new Map<string, string>();
+      orders.forEach((order: any) => {
+        order.node.lineItems?.edges?.forEach((lineItem: any) => {
+          const productGid = lineItem.node.product?.id; // gid://shopify/Product/123
+          const variantGid = lineItem.node.variant?.id; // gid://shopify/ProductVariant/456
+          const productTitle = lineItem.node.product?.title;
+          
+          if (productTitle) {
+            if (productGid) {
+              const productId = productGid.split('/').pop();
+              productTitlesMap.set(productId!, productTitle);
+            }
+            if (variantGid) {
+              const variantId = variantGid.split('/').pop();
+              productTitlesMap.set(variantId!, productTitle);
+            }
+          }
+        });
+      });
+      
       // Group by product to find top performers
       const productMap = new Map<string, { revenue: number; orders: Set<string>; title: string }>();
       for (const attr of attributions) {
@@ -613,19 +634,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         const p = productMap.get(pid)!;
         p.revenue += attr.attributedRevenue || 0;
         p.orders.add(attr.orderId);
-        // Try to find product title from order data
-        if (!p.title) {
-          p.title = `Product ${pid.split('/').pop()}`;
-        }
       }
       
       topAttributedProducts = Array.from(productMap.entries())
-        .map(([productId, data]) => ({
-          productId,
-          productTitle: data.title,
-          revenue: data.revenue,
-          orders: data.orders.size
-        }))
+        .map(([productId, data]) => {
+          // Try to find title from our map (works for both product IDs and variant IDs)
+          const numericId = productId.includes('/') ? productId.split('/').pop()! : productId;
+          const title = productTitlesMap.get(numericId) || productTitlesMap.get(productId) || `Product ${numericId}`;
+          
+          return {
+            productId,
+            productTitle: title,
+            revenue: data.revenue,
+            orders: data.orders.size
+          };
+        })
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
         
