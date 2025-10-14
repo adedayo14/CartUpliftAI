@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import {
   Page,
@@ -839,7 +839,8 @@ export default function Dashboard() {
   const { analytics, debug, search } = useLoaderData<typeof loader>();
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
-  const webhookFetcher = useFetcher();
+  const [webhookSetupState, setWebhookSetupState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [webhookMessage, setWebhookMessage] = useState('');
   
   // 🔍 CLIENT-SIDE DEBUG: Log loader data
   useEffect(() => {
@@ -851,8 +852,34 @@ export default function Dashboard() {
     });
   }, [debug, analytics]);
   
-  const setupWebhooks = () => {
-    webhookFetcher.submit({}, { method: 'POST', action: '/admin/setup-webhooks' });
+  const setupWebhooks = async () => {
+    setWebhookSetupState('loading');
+    setWebhookMessage('');
+    
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const response = await fetch(`/admin/setup-webhooks?${urlParams.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setWebhookSetupState('success');
+        setWebhookMessage(result.message || 'Webhooks configured successfully');
+      } else {
+        setWebhookSetupState('error');
+        setWebhookMessage(result.error || 'Failed to setup webhooks');
+        console.error('Webhook setup failed:', result);
+      }
+    } catch (error) {
+      setWebhookSetupState('error');
+      setWebhookMessage('Network error - check console');
+      console.error('Webhook setup error:', error);
+    }
   };
   
   // 📥 CSV EXPORT UTILITIES
@@ -1649,15 +1676,15 @@ export default function Dashboard() {
               <Button 
                 variant="primary" 
                 onClick={setupWebhooks}
-                loading={webhookFetcher.state !== 'idle'}
+                loading={webhookSetupState === 'loading'}
               >
                 Setup Revenue Tracking
               </Button>
-              {webhookFetcher.data?.success && (
-                <Text as="span" tone="success">✓ Webhooks configured</Text>
+              {webhookSetupState === 'success' && (
+                <Text as="span" tone="success">✓ {webhookMessage}</Text>
               )}
-              {webhookFetcher.data?.success === false && (
-                <Text as="span" tone="critical">✗ Setup failed - check console</Text>
+              {webhookSetupState === 'error' && (
+                <Text as="span" tone="critical">✗ {webhookMessage}</Text>
               )}
             </InlineStack>
           </BlockStack>
