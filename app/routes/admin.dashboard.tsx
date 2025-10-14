@@ -853,19 +853,34 @@ export default function Dashboard() {
   }, [debug, analytics]);
   
   const setupWebhooks = async () => {
+    console.log('🔧 Starting webhook setup...');
     setWebhookSetupState('loading');
     setWebhookMessage('');
     
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const response = await fetch(`/admin/setup-webhooks?${urlParams.toString()}`, {
+      const url = `/admin/setup-webhooks?${urlParams.toString()}`;
+      console.log('📡 Fetching:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
       
+      console.log('📥 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response not OK:', response.status, errorText);
+        setWebhookSetupState('error');
+        setWebhookMessage(`HTTP ${response.status} - Check console`);
+        return;
+      }
+      
       const result = await response.json();
+      console.log('✅ Response data:', result);
       
       if (result.success) {
         setWebhookSetupState('success');
@@ -878,7 +893,7 @@ export default function Dashboard() {
     } catch (error) {
       setWebhookSetupState('error');
       setWebhookMessage('Network error - check console');
-      console.error('Webhook setup error:', error);
+      console.error('🚨 Webhook setup error:', error);
     }
   };
   
