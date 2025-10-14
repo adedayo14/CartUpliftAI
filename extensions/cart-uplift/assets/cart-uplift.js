@@ -6010,13 +6010,67 @@
 
         // Dedupe and top-up to desired count if needed
         const unique = this.deduplicateAndScore(recommendations);
-        return await this.ensureMinCount(unique);
+        const final = await this.ensureMinCount(unique);
+        
+        // Track ml_recommendation_served for attribution
+        this.trackRecommendationsServed(cart, final).catch(err => 
+          console.warn('ML tracking failed (non-critical):', err)
+        );
+        
+        return final;
         
       } catch (error) {
         console.error('🤖 Smart recommendations failed:', error);
         const shopifyRecs = await this.getShopifyRecommendations();
         const unique = this.deduplicateAndScore(shopifyRecs);
-        return await this.ensureMinCount(unique);
+        const final = await this.ensureMinCount(unique);
+        
+        // Track ml_recommendation_served for attribution
+        this.trackRecommendationsServed(this.cartUplift.cart, final).catch(err => 
+          console.warn('ML tracking failed (non-critical):', err)
+        );
+        
+        return final;
+      }
+    }
+    
+    async trackRecommendationsServed(cart, recommendations) {
+      try {
+        if (!recommendations || recommendations.length === 0) return;
+        
+        const anchorProducts = (cart?.items || []).map(item => {
+          const id = item.product_id || item.id;
+          return id ? String(id) : null;
+        }).filter(Boolean);
+        
+        const recommendedProducts = recommendations.map(rec => {
+          const id = rec.id || rec.productId;
+          return id ? String(id).replace('gid://shopify/Product/', '') : null;
+        }).filter(Boolean);
+        
+        if (recommendedProducts.length === 0) return;
+        
+        const trackingData = {
+          shop: window.Shopify?.shop || '',
+          sessionId: this.cartUplift.sessionId || '',
+          customerId: window.Shopify?.customer?.id || null,
+          anchorProducts,
+          recommendedProducts
+        };
+        
+        console.log('📈 Tracking ml_recommendation_served:', trackingData);
+        
+        const response = await fetch(`/apps/cart-uplift/api/track-recommendations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(trackingData)
+        });
+        
+        if (response.ok) {
+          console.log('✅ ML tracking saved successfully');
+        }
+      } catch (error) {
+        console.warn('⚠️ ML tracking error:', error);
       }
     }
 
