@@ -5978,6 +5978,10 @@
           console.log('🎯 Manual recommendations loaded:', manualRecs.length, 'products');
           if (manualRecs.length > 0) {
             console.log('✅ Returning', manualRecs.length, 'manual products');
+            // Track ml_recommendation_served for attribution
+            this.trackRecommendationsServed(cart, manualRecs).catch(err => 
+              console.warn('ML tracking failed (non-critical):', err)
+            );
             return manualRecs;
           }
         }
@@ -5986,7 +5990,12 @@
         
         // Empty cart strategy
         if (!cart || !cart.items || cart.items.length === 0) {
-          return await this.getPopularProducts();
+          const popularRecs = await this.getPopularProducts();
+          // Track ml_recommendation_served for attribution
+          this.trackRecommendationsServed(cart, popularRecs).catch(err => 
+            console.warn('ML tracking failed (non-critical):', err)
+          );
+          return popularRecs;
         }
         
         // Get smart recommendations based on mode
