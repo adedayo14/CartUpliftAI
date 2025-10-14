@@ -673,41 +673,62 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         .slice(0, 10);
       
       // Also build order-level uplift data (for "Order Breakdown" display)
-      const orderUpliftMap = new Map<string, { orderNumber: string; totalValue: number; attributedValue: number; products: string[] }>();
+      // Key insight: Multiple products from same order share the same orderValue
+      // We need to group by order FIRST, then calculate once per order
+      const orderUpliftMap = new Map<string, { 
+        orderNumber: string; 
+        totalValue: number; 
+        attributedValue: number; 
+        products: Set<string>;
+        productCount: number;
+      }>();
       
       for (const attr of attributions) {
         const orderKey = attr.orderId;
         if (!orderUpliftMap.has(orderKey)) {
           orderUpliftMap.set(orderKey, {
             orderNumber: attr.orderNumber || orderKey,
-            totalValue: attr.orderValue || 0,
+            totalValue: attr.orderValue || 0, // This is the SAME for all products in this order
             attributedValue: 0,
-            products: []
+            products: new Set(),
+            productCount: 0
           });
         }
         const orderData = orderUpliftMap.get(orderKey)!;
-        orderData.attributedValue += attr.attributedRevenue || 0;
         
-        // Get product title
+        // Add attributed revenue for this product
+        orderData.attributedValue += attr.attributedRevenue || 0;
+        orderData.productCount++;
+        
+        // Get product title (deduplicate with Set)
         const pid = attr.productId;
         const numericId = pid.includes('/') ? pid.split('/').pop()! : pid;
         const title = productTitlesMap.get(numericId) || productTitlesMap.get(pid) || `Product ${numericId}`;
-        orderData.products.push(title);
+        orderData.products.add(title);
       }
       
       // Convert to array and calculate uplift percentages
       orderUpliftBreakdown = Array.from(orderUpliftMap.values())
         .map(order => {
+          // Base value = what they would've spent without recommendations
           const baseValue = order.totalValue - order.attributedValue;
+          
+          // Uplift percentage = how much MORE they spent because of recommendations
           const upliftPercentage = baseValue > 0 ? ((order.attributedValue / baseValue) * 100) : 0;
+          
           return {
-            ...order,
-            baseValue,
-            upliftPercentage
+            orderNumber: order.orderNumber,
+            totalValue: order.totalValue,
+            baseValue: Math.max(0, baseValue), // Prevent negative values
+            attributedValue: order.attributedValue,
+            upliftPercentage,
+            products: Array.from(order.products), // Convert Set to Array
+            productCount: order.productCount
           };
         })
-        .sort((a, b) => b.attributedValue - a.attributedValue)
-        .slice(0, 10); // Top 10 orders by attributed value
+        .filter(order => order.attributedValue > 0 && order.baseValue >= 0) // Only valid orders
+        .sort((a, b) => b.upliftPercentage - a.upliftPercentage) // Sort by highest uplift %
+        .slice(0, 10); // Top 10 orders by uplift impact
       
       // Enrich topRecommended with revenue from attribution data
       if (topRecommended.length > 0) {
@@ -2313,29 +2334,28 @@ export default function Dashboard() {
             <BlockStack gap="400">
               <BlockStack gap="200">
                 <Text as="h2" variant="headingMd">
-                  💰 Order Uplift Breakdown
+                  💰 Biggest Wins from Recommendations
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  See exactly how recommendations increased each order value
+                  Orders where recommendations had the biggest impact
                 </Text>
               </BlockStack>
               
               <DataTable
-                columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric', 'text']}
-                headings={['Order', 'Base Value', 'From Recs', 'Total', 'Uplift %', 'Products Added']}
+                columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'text']}
+                headings={['Order', 'Customer Spent', 'Added from AI', 'Uplift', 'What They Added']}
                 rows={(analytics as any).orderUpliftBreakdown.map((order: any) => [
                   `#${order.orderNumber}`,
-                  formatCurrency(order.baseValue),
-                  formatCurrency(order.attributedValue),
                   formatCurrency(order.totalValue),
-                  `+${order.upliftPercentage.toFixed(1)}%`,
-                  order.products.join(', ')
+                  formatCurrency(order.attributedValue),
+                  `+${order.upliftPercentage.toFixed(0)}%`,
+                  `${order.productCount} item${order.productCount > 1 ? 's' : ''}: ${order.products.slice(0, 2).join(', ')}${order.products.length > 2 ? ` +${order.products.length - 2} more` : ''}`
                 ])}
               />
               
               <Box padding="300" background="bg-surface-secondary" borderRadius="200">
-                <Text as="p" variant="bodyXs" tone="success">
-                  ✨ Example: Order #1234 with £100 base becomes £120 total (+20% from recommendations)
+                <Text as="p" variant="bodyXs" tone="subdued">
+                  💡 <strong>How to read this:</strong> "Customer Spent" is the total order value. "Added from AI" shows how much came from products they clicked on in recommendations. "Uplift" is the percentage increase from recommendations.
                 </Text>
               </Box>
             </BlockStack>
