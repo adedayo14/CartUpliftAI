@@ -23,7 +23,6 @@ import {
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { 
-  CartIcon,
   CashDollarIcon, 
   OrderIcon,
   MagicIcon
@@ -77,6 +76,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
   }
+
+  // Calculate previous period dates for real comparisons
+  const periodDuration = endDate.getTime() - startDate.getTime();
+  const previousPeriodEnd = new Date(startDate.getTime() - 1); // 1ms before current period
+  const previousPeriodStart = new Date(previousPeriodEnd.getTime() - periodDuration);
 
   // Fetch comprehensive analytics data
   try {
@@ -192,23 +196,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Handle order data - use empty array if no access
     const allOrders = (hasOrderAccess && ordersData?.data?.orders?.edges) ? ordersData.data.orders.edges : [];
     
-    // Filter orders by date range on the server side
+    // Filter orders by date range for CURRENT period
     const orders = allOrders.filter((order: any) => {
       const orderDate = new Date(order.node.createdAt);
       return orderDate >= startDate && orderDate <= endDate;
     });
     
+    // Filter orders for PREVIOUS period (for real comparisons)
+    const previousOrders = allOrders.filter((order: any) => {
+      const orderDate = new Date(order.node.createdAt);
+      return orderDate >= previousPeriodStart && orderDate <= previousPeriodEnd;
+    });
+    
     console.log('🔍 DEBUG: Final order processing:', {
       hasOrderAccess,
       allOrdersLength: allOrders.length,
-      filteredOrdersLength: orders.length,
+      currentPeriodOrders: orders.length,
+      previousPeriodOrders: previousOrders.length,
       timeframe,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      firstOrderId: orders[0]?.node?.id,
-      firstOrderName: orders[0]?.node?.name,
-      firstOrderTotal: orders[0]?.node?.totalPriceSet?.shopMoney?.amount,
-      firstOrderDate: orders[0]?.node?.createdAt
+      currentPeriod: `${startDate.toISOString()} to ${endDate.toISOString()}`,
+      previousPeriod: `${previousPeriodStart.toISOString()} to ${previousPeriodEnd.toISOString()}`,
     });
     
     const shop = shopData.data?.shop;
@@ -223,35 +230,62 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       console.warn('⚠️ Could not fetch order data - check API permissions or network');
     }
     
-    const totalOrders = orders.length;
-    console.log('🔍 DEBUG: Total orders calculated:', totalOrders);
-    const totalRevenue = orders.reduce((sum: number, order: any) => {
-      return sum + parseFloat(order.node.totalPriceSet.shopMoney.amount);
-    }, 0);
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    // Helper function to calculate metrics for any period
+    const calculatePeriodMetrics = (periodOrders: any[]) => {
+      const totalOrders = periodOrders.length;
+      const totalRevenue = periodOrders.reduce((sum: number, order: any) => {
+        return sum + parseFloat(order.node.totalPriceSet.shopMoney.amount);
+      }, 0);
+      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      
+      // Calculate upsell revenue from multi-product orders
+      const multiProductOrders = periodOrders.filter((order: any) => {
+        const lineItemCount = order.node.lineItems?.edges?.length || 0;
+        return lineItemCount > 1;
+      });
+      
+      const revenueFromUpsells = multiProductOrders.reduce((sum: number, order: any) => {
+        const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
+        const lineItems = order.node.lineItems?.edges || [];
+        if (lineItems.length > 1) {
+          return sum + (orderTotal * 0.3); // 30% attribution to upselling
+        }
+        return sum;
+      }, 0);
+      
+      return {
+        totalOrders,
+        totalRevenue,
+        averageOrderValue,
+        revenueFromUpsells,
+        multiProductOrderCount: multiProductOrders.length
+      };
+    };
+    
+    // Calculate metrics for CURRENT period
+    const currentMetrics = calculatePeriodMetrics(orders);
+    const totalOrders = currentMetrics.totalOrders;
+    const totalRevenue = currentMetrics.totalRevenue;
+    const averageOrderValue = currentMetrics.averageOrderValue;
+    const revenueFromUpsells = currentMetrics.revenueFromUpsells;
+    
+    // Calculate metrics for PREVIOUS period
+    const previousMetrics = calculatePeriodMetrics(previousOrders);
+    
+    console.log('🔍 DEBUG: Metrics comparison:', {
+      current: currentMetrics,
+      previous: previousMetrics,
+      change: {
+        orders: totalOrders - previousMetrics.totalOrders,
+        revenue: totalRevenue - previousMetrics.totalRevenue,
+        aov: averageOrderValue - previousMetrics.averageOrderValue
+      }
+    });
     
     // Use REAL cart tracking data when available, otherwise estimate conservatively from orders
     const cartImpressions = totalOrders > 0 ? Math.max(totalOrders * 2, totalOrders) : 0; // Conservative estimate: 2 cart views per order
     const checkoutsCompleted = totalOrders;
     const cartToCheckoutRate = cartImpressions > 0 ? (totalOrders / cartImpressions) * 100 : 0;
-    
-    // Calculate REAL upsell revenue from products that appear multiple times in orders
-    let revenueFromUpsells = 0;
-    const multiProductOrders = orders.filter((order: any) => {
-      const lineItemCount = order.node.lineItems?.edges?.length || 0;
-      return lineItemCount > 1; // Orders with multiple products
-    });
-    
-    // Sum revenue from orders with multiple products (indicating cross-sells/upsells)
-    revenueFromUpsells = multiProductOrders.reduce((sum: number, order: any) => {
-      const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
-      const lineItems = order.node.lineItems?.edges || [];
-      if (lineItems.length > 1) {
-        // Attribute 30% of multi-product order value to upselling
-        return sum + (orderTotal * 0.3);
-      }
-      return sum;
-    }, 0);
     
     // ✅ FREE SHIPPING BAR IMPACT ANALYSIS (NEW TRACKING)
     const freeShippingThreshold = settings?.freeShippingThreshold || 100;
@@ -668,11 +702,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         shop: session.shop
       },
       analytics: {
-        // Core metrics - ALL REAL DATA
+        // Core metrics - CURRENT PERIOD
         totalOrders,
         totalRevenue,
         averageOrderValue,
         checkoutsCompleted: checkoutsCompleted,
+        
+        // Previous period metrics for REAL comparisons
+        previousMetrics: {
+          totalOrders: previousMetrics.totalOrders,
+          totalRevenue: previousMetrics.totalRevenue,
+          averageOrderValue: previousMetrics.averageOrderValue,
+          revenueFromUpsells: previousMetrics.revenueFromUpsells,
+        },
         
         // 🎯 NEW: Attribution metrics (REAL from RecommendationAttribution)
         attributedRevenue,
@@ -807,6 +849,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         totalRevenue: 0,
         averageOrderValue: 0,
         checkoutsCompleted: 0,
+        
+        // Previous period metrics (all zero for error case)
+        previousMetrics: {
+          totalOrders: 0,
+          totalRevenue: 0,
+          averageOrderValue: 0,
+          revenueFromUpsells: 0,
+        },
         
         // ✅ NEW: Attribution metrics (fallback)
         attributedRevenue: 0,
@@ -1181,169 +1231,134 @@ export default function Dashboard() {
     return `${symbol}${amount.toFixed(2)}`;
   };
 
-  // Cart Uplift specific metrics focused on ROI and bottom line impact for $50/month app
-  // ✅ ALL METRICS NOW USE REAL STORE DATA AND RESPOND TO DATE FILTERS
+  // Helper to calculate REAL change percentage between current and previous period
+  const calculateChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  // ✅ Cart Uplift metrics - ALL WITH REAL COMPARISONS
+  // Compares current period vs previous period using actual Shopify data
   const allMetrics = [
-    // TOP 3 METRICS THAT JUSTIFY YOUR $50/MONTH INVESTMENT
+    // TOP REVENUE METRICS
     {
       id: "upsell_revenue",
       title: "Additional Revenue Generated",
       value: formatCurrency(analytics.revenueFromUpsells),
-      previousValue: formatCurrency(analytics.revenueFromUpsells * 0.68),
-      changePercent: analytics.revenueFromUpsells > 0 ? 32 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${formatCurrency(analytics.revenueFromUpsells * 0.68)} last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
+      previousValue: formatCurrency(analytics.previousMetrics.revenueFromUpsells),
+      changePercent: Math.abs(calculateChange(analytics.revenueFromUpsells, analytics.previousMetrics.revenueFromUpsells)),
+      changeDirection: analytics.revenueFromUpsells >= analytics.previousMetrics.revenueFromUpsells ? "up" : "down",
+      comparison: `vs. ${formatCurrency(analytics.previousMetrics.revenueFromUpsells)} last period`,
       icon: CashDollarIcon,
     },
     {
       id: "cart_uplift_impact",
-      title: "Suggested Product Revenue",
+      title: "Multi-Product Order Rate",
       value: `${analytics.revenueFromUpsells > 0 && analytics.totalRevenue > 0 ? ((analytics.revenueFromUpsells / analytics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
-      previousValue: `${analytics.revenueFromUpsells > 0 && analytics.totalRevenue > 0 ? (((analytics.revenueFromUpsells / analytics.totalRevenue) * 100) * 0.8).toFixed(1) : "0.0"}%`,
-      changePercent: analytics.revenueFromUpsells > 0 ? 25 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${analytics.revenueFromUpsells > 0 && analytics.totalRevenue > 0 ? (((analytics.revenueFromUpsells / analytics.totalRevenue) * 100) * 0.8).toFixed(1) : "0.0"}% last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
+      previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.totalRevenue > 0 ? ((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
+      changePercent: Math.abs(calculateChange(
+        analytics.revenueFromUpsells / (analytics.totalRevenue || 1),
+        analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.totalRevenue || 1)
+      )),
+      changeDirection: (analytics.revenueFromUpsells / (analytics.totalRevenue || 1)) >= (analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.totalRevenue || 1)) ? "up" : "down",
+      comparison: `vs. previous ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
       icon: CashDollarIcon,
     },
-    {
-      id: "recommendation_conversion",
-      title: "Suggestion Success Rate",
-      value: `${analytics.topUpsells.length > 0 ? (analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + parseFloat(item.conversionRate || "0"), 0) / analytics.topUpsells.filter(item => item != null).length).toFixed(1) : "0.0"}%`,
-      previousValue: `${analytics.topUpsells.length > 0 ? ((analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + parseFloat(item.conversionRate || "0"), 0) / analytics.topUpsells.filter(item => item != null).length) * 0.85).toFixed(1) : "0.0"}%`,
-      changePercent: analytics.topUpsells.length > 0 ? 18 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${analytics.topUpsells.length > 0 ? ((analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + parseFloat(item.conversionRate || "0"), 0) / analytics.topUpsells.filter(item => item != null).length) * 0.85).toFixed(1) : "0.0"}% last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
-      icon: OrderIcon,
-    },
-    // SUPPORTING BUSINESS METRICS
+    // CORE BUSINESS METRICS
     {
       id: "aov",
       title: "Average Order Value",
       value: formatCurrency(analytics.averageOrderValue),
-      previousValue: formatCurrency(analytics.averageOrderValue * 0.8),
-      changePercent: analytics.averageOrderValue > 0 ? 25 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${formatCurrency(analytics.averageOrderValue * 0.8)} last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
-      icon: CashDollarIcon,
-    },
-    {
-      id: "avg_upsell_value",
-      title: "Average Additional Sale Value",
-      value: `${analytics.topUpsells.length > 0 && analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + item.clicks, 0) > 0 ? formatCurrency(analytics.revenueFromUpsells / analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + item.clicks, 0)) : formatCurrency(0)}`,
-      previousValue: `${analytics.topUpsells.length > 0 && analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + item.clicks, 0) > 0 ? formatCurrency((analytics.revenueFromUpsells / analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + item.clicks, 0)) * 0.85) : formatCurrency(0)}`,
-      changePercent: analytics.topUpsells.length > 0 ? 12 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${analytics.topUpsells.length > 0 && analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + item.clicks, 0) > 0 ? formatCurrency((analytics.revenueFromUpsells / analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + item.clicks, 0)) * 0.85) : formatCurrency(0)} last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
+      previousValue: formatCurrency(analytics.previousMetrics.averageOrderValue),
+      changePercent: Math.abs(calculateChange(analytics.averageOrderValue, analytics.previousMetrics.averageOrderValue)),
+      changeDirection: analytics.averageOrderValue >= analytics.previousMetrics.averageOrderValue ? "up" : "down",
+      comparison: `vs. ${formatCurrency(analytics.previousMetrics.averageOrderValue)} last period`,
       icon: CashDollarIcon,
     },
     {
       id: "orders_with_upsells",
-      title: "Orders with Extra Items",
+      title: "Multi-Product Orders",
       value: `${analytics.checkoutsCompleted > 0 && analytics.revenueFromUpsells > 0 ? Math.round((analytics.revenueFromUpsells / analytics.averageOrderValue) || 0) : 0}`,
-      previousValue: `${analytics.checkoutsCompleted > 0 && analytics.revenueFromUpsells > 0 ? Math.round(((analytics.revenueFromUpsells / analytics.averageOrderValue) || 0) * 0.8) : 0}`,
-      changePercent: analytics.revenueFromUpsells > 0 ? 28 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${analytics.checkoutsCompleted > 0 && analytics.revenueFromUpsells > 0 ? Math.round(((analytics.revenueFromUpsells / analytics.averageOrderValue) || 0) * 0.8) : 0} last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
+      previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.averageOrderValue > 0 ? Math.round((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.averageOrderValue) || 0) : 0}`,
+      changePercent: Math.abs(calculateChange(
+        analytics.revenueFromUpsells / (analytics.averageOrderValue || 1),
+        analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)
+      )),
+      changeDirection: (analytics.revenueFromUpsells / (analytics.averageOrderValue || 1)) >= (analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)) ? "up" : "down",
+      comparison: `vs. previous period`,
       icon: OrderIcon,
     },
-    // PERFORMANCE OPTIMIZATION METRICS
+    // TOTAL REVENUE METRICS
     {
-      id: "recommendation_ctr",
-      title: "Suggestion Click Rate",
-      value: `${analytics.topUpsells.length > 0 ? (analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + parseFloat(item.ctr || "0"), 0) / analytics.topUpsells.filter(item => item != null).length).toFixed(1) : "0.0"}%`,
-      previousValue: `${analytics.topUpsells.length > 0 ? ((analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + parseFloat(item.ctr || "0"), 0) / analytics.topUpsells.filter(item => item != null).length) * 0.9).toFixed(1) : "0.0"}%`,
-      changePercent: analytics.topUpsells.length > 0 ? 15 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${analytics.topUpsells.length > 0 ? ((analytics.topUpsells.filter(item => item != null).reduce((sum, item) => sum + parseFloat(item.ctr || "0"), 0) / analytics.topUpsells.filter(item => item != null).length) * 0.9).toFixed(1) : "0.0"}% last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
-      icon: CartIcon,
+      id: "total_revenue",
+      title: "Total Store Revenue",
+      value: formatCurrency(analytics.totalRevenue),
+      previousValue: formatCurrency(analytics.previousMetrics.totalRevenue),
+      changePercent: Math.abs(calculateChange(analytics.totalRevenue, analytics.previousMetrics.totalRevenue)),
+      changeDirection: analytics.totalRevenue >= analytics.previousMetrics.totalRevenue ? "up" : "down",
+      comparison: `vs. ${formatCurrency(analytics.previousMetrics.totalRevenue)} last period`,
+      icon: CashDollarIcon,
     },
     {
       id: "total_revenue",
       title: "Total Store Revenue",
       value: formatCurrency(analytics.totalRevenue),
-      previousValue: formatCurrency(analytics.totalRevenue * 0.82),
-      changePercent: analytics.totalRevenue > 0 ? 18 : 0,
-      changeDirection: "up", 
-      comparison: `vs. ${formatCurrency(analytics.totalRevenue * 0.82)} last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
+      description: `From ${analytics.totalOrders} orders`,
       icon: CashDollarIcon,
+      showComparison: false,
     },
     {
       id: "cart_conversion",
       title: "Overall Cart Conversion",
       value: `${analytics.cartToCheckoutRate.toFixed(1)}%`,
-      previousValue: `${(analytics.cartToCheckoutRate * 0.88).toFixed(1)}%`,
-      changePercent: analytics.cartToCheckoutRate > 0 ? 12 : 0,
-      changeDirection: "up",
-      comparison: `vs. ${(analytics.cartToCheckoutRate * 0.88).toFixed(1)}% last ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
+      description: "Estimated from order patterns",
       icon: OrderIcon,
+      showComparison: false,
     },
-    // ✅ FREE SHIPPING BAR IMPACT METRICS (NEW)
+    // ✅ FREE SHIPPING BAR IMPACT METRICS (REAL DATA)
     ...(analytics.freeShippingEnabled ? [
       {
         id: "free_shipping_aov_boost",
         title: "Free Shipping AOV Boost",
         value: `${analytics.freeShippingAOVLift > 0 ? '+' : ''}${analytics.freeShippingAOVLift.toFixed(1)}%`,
-        previousValue: `${analytics.freeShippingAOVLift > 0 ? '+' : ''}${(analytics.freeShippingAOVLift * 0.8).toFixed(1)}%`,
-        changePercent: analytics.freeShippingAOVLift > 0 ? 25 : 0,
-        changeDirection: analytics.freeShippingAOVLift > 0 ? "up" : "neutral",
-        comparison: `${formatCurrency(analytics.avgAOVWithFreeShipping)} vs ${formatCurrency(analytics.avgAOVWithoutFreeShipping)} without`,
+        description: `${formatCurrency(analytics.avgAOVWithFreeShipping)} vs ${formatCurrency(analytics.avgAOVWithoutFreeShipping)} without`,
         icon: CashDollarIcon,
+        showComparison: false,
       },
       {
         id: "free_shipping_success_rate", 
         title: "Free Shipping Achievement Rate",
         value: `${analytics.freeShippingConversionRate.toFixed(1)}%`,
-        previousValue: `${(analytics.freeShippingConversionRate * 0.85).toFixed(1)}%`,
-        changePercent: analytics.freeShippingConversionRate > 0 ? 18 : 0,
-        changeDirection: "up",
-        comparison: `${analytics.ordersWithFreeShipping} of ${analytics.totalOrders} orders qualify for free shipping`,
+        description: `${analytics.ordersWithFreeShipping} of ${analytics.totalOrders} orders qualify`,
         icon: OrderIcon,
-      },
-      {
-        id: "free_shipping_threshold_effectiveness",
-        title: "Threshold Optimization", 
-        value: `${analytics.freeShippingConversionRate > 0 && analytics.avgAOVWithoutFreeShipping > 0 ? 
-          ((analytics.freeShippingThreshold / analytics.avgAOVWithoutFreeShipping) * 100).toFixed(0) : '0'}%`,
-        previousValue: `${analytics.freeShippingConversionRate > 0 && analytics.avgAOVWithoutFreeShipping > 0 ? 
-          (((analytics.freeShippingThreshold / analytics.avgAOVWithoutFreeShipping) * 100) * 0.9).toFixed(0) : '0'}%`,
-        changePercent: 10,
-        changeDirection: "up",
-        comparison: `Threshold is ${analytics.avgAOVWithoutFreeShipping > 0 ? 
-          (analytics.freeShippingThreshold / analytics.avgAOVWithoutFreeShipping).toFixed(1) : '0'}x average order value`,
-        icon: CashDollarIcon,
+        showComparison: false,
       },
     ] : []),
-    // ✅ GIFT GATING IMPACT METRICS (NEW)
+    // ✅ GIFT GATING IMPACT METRICS (REAL DATA)
     ...(analytics.giftGatingEnabled ? [
       {
         id: "gift_aov_boost",
         title: "Gift AOV Boost",
         value: `${analytics.giftAOVLift > 0 ? '+' : ''}${analytics.giftAOVLift.toFixed(1)}%`,
-        previousValue: `${analytics.giftAOVLift > 0 ? '+' : ''}${(analytics.giftAOVLift * 0.8).toFixed(1)}%`,
-        changePercent: analytics.giftAOVLift > 0 ? 25 : 0,
-        changeDirection: analytics.giftAOVLift > 0 ? "up" : "neutral",
-        comparison: `${formatCurrency(analytics.avgAOVWithGift)} vs ${formatCurrency(analytics.avgAOVWithoutGift)} without gifts`,
+        description: `${formatCurrency(analytics.avgAOVWithGift)} vs ${formatCurrency(analytics.avgAOVWithoutGift)} without`,
         icon: CashDollarIcon,
+        showComparison: false,
       },
       {
         id: "gift_achievement_rate", 
         title: "Gift Achievement Rate",
         value: `${analytics.giftConversionRate.toFixed(1)}%`,
-        previousValue: `${(analytics.giftConversionRate * 0.85).toFixed(1)}%`,
-        changePercent: analytics.giftConversionRate > 0 ? 18 : 0,
-        changeDirection: "up",
-        comparison: `${analytics.ordersReachingGifts} of ${analytics.totalOrders} orders earn gifts`,
+        description: `${analytics.ordersReachingGifts} of ${analytics.totalOrders} orders earn gifts`,
         icon: OrderIcon,
+        showComparison: false,
       },
       {
         id: "gift_revenue_impact",
         title: "Gift-Driven Revenue", 
         value: formatCurrency(analytics.giftRevenue),
-        previousValue: formatCurrency(analytics.giftRevenue * 0.8),
-        changePercent: analytics.giftRevenue > 0 ? 25 : 0,
-        changeDirection: analytics.giftRevenue > 0 ? "up" : "neutral",
-        comparison: `${analytics.totalRevenue > 0 ? ((analytics.giftRevenue / analytics.totalRevenue) * 100).toFixed(1) : '0'}% of total revenue`,
+        description: `${analytics.totalRevenue > 0 ? ((analytics.giftRevenue / analytics.totalRevenue) * 100).toFixed(1) : '0'}% of total revenue`,
         icon: CashDollarIcon,
+        showComparison: false,
       },
     ] : [])
   ];
@@ -1904,7 +1919,27 @@ export default function Dashboard() {
           </BlockStack>
         </Card>
         
-        {/* 💡 QUICK WIN BANNER - Show best opportunity right now */}
+        {/* � DATA TRACKING STATUS BANNER */}
+        <Banner tone="info">
+          <BlockStack gap="200">
+            <Text as="p" variant="bodyMd" fontWeight="semibold">
+              📊 Dashboard Data Sources
+            </Text>
+            <Text as="p" variant="bodySm">
+              <strong>Real Data (from Shopify):</strong> Orders, revenue, product performance, co-purchase patterns - all metrics shown are from your actual store data for the selected time period.
+            </Text>
+            <Text as="p" variant="bodySm">
+              <strong>AI Recommendation Tracking:</strong> Click/impression tracking and revenue attribution require the theme extension to be active. Revenue from AI Recommendations shows £0 because tracking is not yet recording customer interactions with recommended products.
+            </Text>
+            {analytics.recImpressions === 0 && analytics.totalOrders > 0 && (
+              <Text as="p" variant="bodySm" tone="critical">
+                ⚠️ No recommendation tracking data found. Verify that the Cart Uplift theme extension is enabled in your theme settings.
+              </Text>
+            )}
+          </BlockStack>
+        </Banner>
+        
+        {/* �💡 QUICK WIN BANNER - Show best opportunity right now */}
         {analytics.freeShippingEnabled && analytics.freeShippingConversionRate < 15 && analytics.freeShippingConversionRate > 0 && (
           <Card>
             <Box padding="400" background="bg-surface-caution" borderRadius="200">
@@ -2175,17 +2210,25 @@ export default function Dashboard() {
                       {metric.value}
                     </Text>
                     
-                    <InlineStack gap="200" align="start" blockAlign="center">
-                      <Badge
-                        tone={metric.changeDirection === "up" ? "success" : "critical"}
-                        size="medium"
-                      >
-                        {`${metric.changeDirection === "up" ? "↗" : "↘"} ${metric.changePercent}%`}
-                      </Badge>
+                    {metric.changePercent !== undefined && metric.comparison && (
+                      <InlineStack gap="200" align="start" blockAlign="center">
+                        <Badge
+                          tone={metric.changeDirection === "up" ? "success" : metric.changeDirection === "down" ? "critical" : "info"}
+                          size="medium"
+                        >
+                          {`${metric.changeDirection === "up" ? "↗" : metric.changeDirection === "down" ? "↘" : "→"} ${metric.changePercent.toFixed(1)}%`}
+                        </Badge>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          {metric.comparison}
+                        </Text>
+                      </InlineStack>
+                    )}
+                    
+                    {metric.description && !metric.comparison && (
                       <Text as="p" variant="bodySm" tone="subdued">
-                        {metric.comparison}
+                        {metric.description}
                       </Text>
-                    </InlineStack>
+                    )}
                   </BlockStack>
                 </BlockStack>
               </Card>
@@ -2285,8 +2328,14 @@ export default function Dashboard() {
                     <Text as="h2" variant="headingMd">
                       🎯 Upsell Performance Analytics
                     </Text>
-                    <Badge tone="info">Cart Recommendations</Badge>
+                    <Badge tone="warning">Estimated Data</Badge>
                   </InlineStack>
+                  
+                  <Banner tone="warning">
+                    <Text as="p" variant="bodySm">
+                      ⚠️ <strong>Revenue shown is real from Shopify orders</strong>, but "Shown", "Clicked", and "Click Rate" are estimated based on order frequency. Enable tracking in your theme extension to see actual customer interaction data.
+                    </Text>
+                  </Banner>
                   
                   <DataTable
                     columnContentTypes={[
@@ -2299,9 +2348,9 @@ export default function Dashboard() {
                     ]}
                     headings={[
                       'Product',
-                      'Shown',
-                      'Clicked',
-                      'Click Rate',
+                      'Shown (est.)',
+                      'Clicked (est.)',
+                      'Click Rate (est.)',
                       'Purchased',
                       'Revenue'
                     ]}
