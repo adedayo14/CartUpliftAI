@@ -1989,6 +1989,18 @@ export default function Dashboard() {
           .clickable-card { cursor: pointer; transition: opacity 0.2s; }
           .clickable-card:hover { opacity: 0.8; }
           .no-underline { text-decoration: none; }
+          
+          /* Consistent metric card heights */
+          .metric-card-wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+          }
+          .metric-card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+          }
         `}
       </style>
       <BlockStack gap="500">
@@ -2406,48 +2418,52 @@ export default function Dashboard() {
         <Grid>
           {keyMetrics.map((metric, index) => (
             <Grid.Cell key={index} columnSpan={{xs: 6, sm: 6, md: 4, lg: 4, xl: 4}}>
-              <Card padding="400">
-                <BlockStack gap="300">
-                  <InlineStack gap="300" align="space-between" blockAlign="center">
-                    <Text as="h3" variant="headingSm" tone="subdued">
-                      {metric.title}
-                    </Text>
-                    <Box
-                      padding="300"
-                      background="bg-surface"
-                      borderRadius="200"
-                    >
-                      <Icon source={metric.icon} tone="subdued" />
-                    </Box>
-                  </InlineStack>
-                  
-                  <BlockStack gap="200">
-                    <Text as="p" variant="heading2xl" fontWeight="bold">
-                      {metric.value}
-                    </Text>
-                    
-                    {metric.changePercent !== undefined && metric.comparison && (
-                      <InlineStack gap="200" align="start" blockAlign="center">
-                        <Badge
-                          tone={metric.changeDirection === "up" ? "success" : metric.changeDirection === "down" ? "critical" : "info"}
-                          size="medium"
-                        >
-                          {`${metric.changeDirection === "up" ? "↗" : metric.changeDirection === "down" ? "↘" : "→"} ${metric.changePercent.toFixed(1)}%`}
-                        </Badge>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          {metric.comparison}
+              <div className="metric-card-wrapper">
+                <Card padding="400">
+                  <div className="metric-card-content">
+                    <BlockStack gap="300">
+                      <InlineStack gap="300" align="space-between" blockAlign="center">
+                        <Text as="h3" variant="headingSm" tone="subdued">
+                          {metric.title}
                         </Text>
+                        <Box
+                          padding="300"
+                          background="bg-surface"
+                          borderRadius="200"
+                        >
+                          <Icon source={metric.icon} tone="subdued" />
+                        </Box>
                       </InlineStack>
-                    )}
-                    
-                    {metric.description && !metric.comparison && (
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        {metric.description}
-                      </Text>
-                    )}
-                  </BlockStack>
-                </BlockStack>
-              </Card>
+                      
+                      <BlockStack gap="200">
+                        <Text as="p" variant="heading2xl" fontWeight="bold">
+                          {metric.value}
+                        </Text>
+                        
+                        {metric.changePercent !== undefined && metric.comparison && (
+                          <InlineStack gap="200" align="start" blockAlign="center">
+                            <Badge
+                              tone={metric.changeDirection === "up" ? "success" : metric.changeDirection === "down" ? "critical" : "info"}
+                              size="medium"
+                            >
+                              {`${metric.changeDirection === "up" ? "↗" : metric.changeDirection === "down" ? "↘" : "→"} ${metric.changePercent.toFixed(1)}%`}
+                            </Badge>
+                            <Text as="p" variant="bodySm" tone="subdued">
+                              {metric.comparison}
+                            </Text>
+                          </InlineStack>
+                        )}
+                        
+                        {metric.description && !metric.comparison && (
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            {metric.description}
+                          </Text>
+                        )}
+                      </BlockStack>
+                    </BlockStack>
+                  </div>
+                </Card>
+              </div>
             </Grid.Cell>
           ))}
         </Grid>
