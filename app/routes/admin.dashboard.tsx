@@ -2152,10 +2152,10 @@ export default function Dashboard() {
             <InlineStack align="space-between" blockAlign="start">
               <BlockStack gap="200">
                 <Text as="h2" variant="headingMd">
-                  AI Learning Status
+                  🤖 Recommendation Intelligence
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Your AI analyzes purchase patterns and improves recommendations over time
+                  Your AI learns from customer behavior to show better product suggestions
                 </Text>
               </BlockStack>
               <Button variant="plain" size="micro" onClick={exportMLStatus}>
@@ -2167,45 +2167,46 @@ export default function Dashboard() {
               <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
                 <BlockStack gap="200">
                   <Text as="p" variant="bodySm" tone="subdued">
-                    Products Analyzed
+                    Products Being Recommended
                   </Text>
                   <Text as="p" variant="headingLg" fontWeight="bold">
                     {analytics.mlStatus.productsAnalyzed || 0}
                   </Text>
+                  <Text as="p" variant="bodyXs" tone="subdued">
+                    items in rotation
+                  </Text>
                 </BlockStack>
               </Grid.Cell>
               
               <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
                 <BlockStack gap="200">
                   <Text as="p" variant="bodySm" tone="subdued">
-                    High Performers
+                    Top Performers
                   </Text>
                   <Text as="p" variant="headingLg" fontWeight="bold">
                     {analytics.mlStatus.highPerformers || 0}
                   </Text>
-                  <Badge tone="success" size="small">
-                    {analytics.mlStatus.productsAnalyzed > 0
-                      ? `${((analytics.mlStatus.highPerformers / analytics.mlStatus.productsAnalyzed) * 100).toFixed(0)}% confidence`
-                      : '0% confidence'}
-                  </Badge>
+                  <Text as="p" variant="bodyXs" tone="success">
+                    getting lots of clicks
+                  </Text>
                 </BlockStack>
               </Grid.Cell>
               
               <Grid.Cell columnSpan={{xs: 6, sm: 3, md: 3, lg: 3, xl: 3}}>
                 <BlockStack gap="200">
                   <Text as="p" variant="bodySm" tone="subdued">
-                    Performance Trend
+                    AI Status
                   </Text>
                   <Text as="p" variant="headingLg" fontWeight="bold">
-                    {analytics.mlStatus.performanceChange > 0 ? '+' : ''}
-                    {analytics.mlStatus.performanceChange.toFixed(1)}%
+                    {analytics.mlStatus.performanceChange > 5 ? '📈 Learning' : 
+                     analytics.mlStatus.performanceChange < -5 ? '📉 Adjusting' : 
+                     '✅ Active'}
                   </Text>
-                  <Badge 
-                    tone={analytics.mlStatus.performanceChange > 0 ? "success" : "info"}
-                    size="small"
-                  >
-                    {analytics.mlStatus.performanceChange > 0 ? 'Improving' : 'Stable'}
-                  </Badge>
+                  <Text as="p" variant="bodyXs" tone="subdued">
+                    {analytics.mlStatus.performanceChange > 5 ? 'improving with data' : 
+                     analytics.mlStatus.performanceChange < -5 ? 'testing new combos' : 
+                     'running smoothly'}
+                  </Text>
                 </BlockStack>
               </Grid.Cell>
               
@@ -2234,14 +2235,25 @@ export default function Dashboard() {
               </Grid.Cell>
             </Grid>
             
+            <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+              <BlockStack gap="200">
+                <Text as="p" variant="bodyMd" fontWeight="semibold">
+                  💡 How This Works
+                </Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  The AI tracks which products customers click on and buy. <strong>Products Being Recommended</strong> shows how many different items are in your recommendation pool. <strong>Top Performers</strong> are products with high click rates (above 5%). The AI automatically shows high performers more often and tests new combinations to maximize sales.
+                </Text>
+              </BlockStack>
+            </Box>
+            
             {analytics.mlStatus.blacklistedProducts > 0 && (
               <Box padding="400" background="bg-surface-caution" borderRadius="200">
                 <InlineStack gap="200" blockAlign="center">
                   <Text as="p" variant="bodySm" fontWeight="semibold">
-                    ⚠️ {analytics.mlStatus.blacklistedProducts} products excluded
+                    ⚠️ {analytics.mlStatus.blacklistedProducts} products paused
                   </Text>
                   <Text as="p" variant="bodySm" tone="subdued">
-                    — Poor performance detected, not showing in recommendations
+                    — These had low engagement, so the AI stopped recommending them
                   </Text>
                 </InlineStack>
               </Box>
@@ -2250,7 +2262,7 @@ export default function Dashboard() {
             {analytics.mlStatus.productsAnalyzed === 0 && (
               <Box padding="400" background="bg-surface-secondary" borderRadius="200">
                 <Text as="p" variant="bodySm" tone="subdued">
-                  💡 Your AI will start learning once you have order data. The more orders, the better the recommendations become.
+                  💡 Your AI will start learning once customers interact with recommendations. The more clicks and purchases, the smarter it gets!
                 </Text>
               </Box>
             )}
