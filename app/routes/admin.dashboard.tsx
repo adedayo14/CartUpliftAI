@@ -508,6 +508,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       for (const e of events) {
         const pid = e.productId as string | null;
         if (!pid) continue;
+        
+        // Filter out non-product tracking events (cart_event, empty_cart, etc.)
+        if (pid.includes('_') || pid === 'undefined' || pid === 'null') continue;
+        
         const rec = byProduct[pid] || (byProduct[pid] = { title: e.productTitle || '', imp: 0, clk: 0, rev: 0 });
         if (e.event === 'impression') rec.imp++;
         else if (e.event === 'click') rec.clk++;
@@ -515,7 +519,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         if (e.productTitle && !rec.title) rec.title = e.productTitle;
       }
       topRecommended = Object.entries(byProduct)
-        .map(([productId, v]) => ({ productId, productTitle: v.title || productId, impressions: v.imp, clicks: v.clk, ctr: v.imp > 0 ? (v.clk / v.imp) * 100 : 0, revenueCents: v.rev }))
+        .filter(([productId]) => productId && !productId.includes('_')) // Extra safety filter
+        .map(([productId, v]) => ({ 
+          productId, 
+          productTitle: v.title || productId, 
+          impressions: v.imp, 
+          clicks: v.clk, 
+          ctr: v.imp > 0 ? (v.clk / v.imp) * 100 : 0, 
+          revenueCents: v.rev 
+        }))
         .sort((a,b) => (b.clicks - a.clicks) || (b.impressions - a.impressions))
         .slice(0, 10);
   } catch (trackingError) { 
@@ -696,6 +708,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         })
         .sort((a, b) => b.attributedValue - a.attributedValue)
         .slice(0, 10); // Top 10 orders by attributed value
+      
+      // Enrich topRecommended with revenue from attribution data
+      if (topRecommended.length > 0) {
+        topRecommended = topRecommended.map(rec => {
+          // Find attribution revenue for this product
+          const attribution = topAttributedProducts.find(p => 
+            p.productId === rec.productId || 
+            p.productTitle === rec.productTitle ||
+            p.productId.includes(rec.productId)
+          );
+          
+          return {
+            ...rec,
+            revenueCents: attribution ? Math.round(attribution.revenue * 100) : rec.revenueCents
+          };
+        });
+      }
         
     } catch (error) {
       console.error('Error fetching attribution data:', error);
