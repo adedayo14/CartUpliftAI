@@ -570,34 +570,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // ============================================
     // 🎯 Merge Real Tracking Data with Revenue Data for Upsell Performance
     // ============================================
-    // Build a map of product titles to their revenue from topProducts
-    const productRevenueMap = new Map<string, { revenue: number; orders: number }>();
-    topProducts.forEach((product) => {
-      productRevenueMap.set(product.product, {
-        revenue: product.revenue,
-        orders: product.orders
-      });
-    });
-
-    // Populate topUpsells with real tracking data merged with revenue
-    topUpsells.push(...topRecommended.slice(0, 10).map((tracked) => {
-      const revenueData = productRevenueMap.get(tracked.productTitle);
-      const orders = revenueData?.orders || 0;
-      const revenue = revenueData?.revenue || 0;
-      
-      // Calculate conversion rate: orders / clicks
-      const conversionRate = tracked.clicks > 0 ? ((orders / tracked.clicks) * 100).toFixed(1) : '0.0';
-      
-      return {
-        product: tracked.productTitle,
-        impressions: tracked.impressions,
-        clicks: tracked.clicks,
-        conversions: orders,
-        conversionRate: conversionRate,
-        revenue: revenue.toFixed(2),
-        ctr: tracked.ctr.toFixed(1)
-      };
-    }));
+    // NOTE: topUpsells will be populated after we fetch attribution data below
 
     // ============================================
     // 🎯 CRITICAL: Real Attribution Data (Phase 1 Implementation!)
@@ -813,6 +786,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           };
         });
       }
+      
+      // ============================================
+      // 🎯 Build topUpsells with CORRECT attribution data (not total store orders)
+      // ============================================
+      // Create a map of attributed products by title for quick lookup
+      const attributedProductMap = new Map<string, { revenue: number; orders: number }>();
+      topAttributedProducts.forEach((product) => {
+        attributedProductMap.set(product.productTitle, {
+          revenue: product.revenue,
+          orders: product.orders
+        });
+      });
+      
+      // Populate topUpsells with real tracking data merged with ATTRIBUTED revenue
+      topUpsells.push(...topRecommended.slice(0, 10).map((tracked) => {
+        const attributedData = attributedProductMap.get(tracked.productTitle);
+        const orders = attributedData?.orders || 0;
+        const revenue = attributedData?.revenue || 0;
+        
+        // ✅ CORRECT: Calculate conversion rate using ATTRIBUTED orders (not total store orders)
+        // Conversion rate = (attributed orders / clicks) * 100
+        const conversionRate = tracked.clicks > 0 ? ((orders / tracked.clicks) * 100).toFixed(1) : '0.0';
+        
+        return {
+          product: tracked.productTitle,
+          impressions: tracked.impressions,
+          clicks: tracked.clicks,
+          conversions: orders, // ✅ Shows attributed orders, not all store orders
+          conversionRate: conversionRate, // ✅ Shows realistic % (e.g., 100%, not 3000%)
+          revenue: revenue.toFixed(2), // ✅ Shows attributed revenue, not total product revenue
+          ctr: tracked.ctr.toFixed(1)
+        };
+      }));
         
     } catch (error) {
       console.error('Error fetching attribution data:', error);
