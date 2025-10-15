@@ -236,6 +236,16 @@
           var __giftVariantId = {{ block.settings.gift_product.selected_or_first_available_variant.id | json }};
           var __giftVariantTitle = {{ block.settings.gift_product.selected_or_first_available_variant.title | json }};
           var __giftVariantPrice = {{ block.settings.gift_product.selected_or_first_available_variant.price | json }}; // cents
+          console.log('🎁 GIFT PRODUCT CONFIGURED:', {
+            productId: __giftProductId,
+            handle: __giftProductHandle,
+            title: __giftProductTitle,
+            variantId: __giftVariantId,
+            variantTitle: __giftVariantTitle,
+            price: __giftVariantPrice,
+            threshold: {{ block.settings.gift_threshold | json }},
+            incentiveType: {{ block.settings.incentive_type | json }}
+          });
           {% else %}
           var __giftProductId = null;
           var __giftProductHandle = null;
@@ -243,6 +253,7 @@
           var __giftVariantId = null;
           var __giftVariantTitle = null;
           var __giftVariantPrice = null;
+          console.log('⚠️ NO GIFT PRODUCT SELECTED in theme editor');
           {% endif %}
 
           if ((type === 'gifts' || type === 'combined') && Number(giftAmount)) {
@@ -259,6 +270,17 @@
             };
             window.CartUpliftSettings.enableGiftGating = true;
             window.CartUpliftSettings.giftThresholds = JSON.stringify([threshold]);
+            console.log('✅ GIFT THRESHOLD CONFIGURED:', {
+              enableGiftGating: true,
+              threshold: threshold,
+              thresholdsJSON: window.CartUpliftSettings.giftThresholds
+            });
+          } else {
+            console.log('❌ GIFT THRESHOLD NOT CONFIGURED:', {
+              incentiveType: type,
+              giftAmount: giftAmount,
+              reason: type !== 'gifts' && type !== 'combined' ? 'Wrong incentive type' : 'No gift amount'
+            });
           }
         } catch (_) {}
       } catch (e) {
