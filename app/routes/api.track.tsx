@@ -32,6 +32,30 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Missing productId for product event" }, { status: 400 });
       }
 
+      // 🛡️ DEDUPLICATION: Check if this exact event already exists for this session
+      // Only allow 1 impression and 1 click per product per session
+      if (eventType === "impression" || eventType === "click") {
+        const existingEvent = await (db as any).trackingEvent.findFirst({
+          where: {
+            shop,
+            event: eventType,
+            productId,
+            sessionId: sessionId || undefined,
+          },
+        });
+
+        if (existingEvent) {
+          console.log(`🛡️ Deduplication: ${eventType} for product ${productId} already tracked in session ${sessionId}`);
+          return json({ success: true, deduplicated: true }, {
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+            },
+          });
+        }
+      }
+
       // Build metadata to store variant/product relationship
       const metadata: any = {};
       if (variantId) metadata.variantId = variantId;
@@ -50,6 +74,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           createdAt: new Date(),
         },
       });
+
+      console.log(`✅ Tracked ${eventType} for product ${productId} in session ${sessionId}`);
 
       return json({ success: true }, {
         headers: {

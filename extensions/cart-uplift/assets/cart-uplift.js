@@ -33,6 +33,9 @@
 
   // Real analytics tracking with backend persistence
   const CartAnalytics = {
+    // Track which events have been fired in this session (client-side deduplication)
+    trackedEvents: new Set(),
+    
     trackEvent: function(eventType, data = {}) {
       try {
         console.log('📊 CartAnalytics.trackEvent called:', eventType, data);
@@ -40,6 +43,18 @@
         const shop = window.Shopify?.shop || '';
         const sessionId = sessionStorage.getItem('cart_session_id') || `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         sessionStorage.setItem('cart_session_id', sessionId);
+        
+        // 🛡️ CLIENT-SIDE DEDUPLICATION: Prevent duplicate impressions/clicks in same session
+        if (eventType === 'impression' || eventType === 'click') {
+          const dedupeKey = `${eventType}_${data.productId}_${sessionId}`;
+          
+          if (this.trackedEvents.has(dedupeKey)) {
+            console.log(`🛡️ Skipping duplicate ${eventType} for product ${data.productId} (already tracked in this session)`);
+            return;
+          }
+          
+          this.trackedEvents.add(dedupeKey);
+        }
         
         const formData = new FormData();
         formData.append('eventType', eventType);
