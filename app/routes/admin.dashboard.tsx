@@ -323,8 +323,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const cartToCheckoutRate = cartImpressions > 0 ? (totalOrders / cartImpressions) * 100 : 0;
     
     // ✅ FREE SHIPPING BAR IMPACT ANALYSIS (NEW TRACKING)
-    const freeShippingThreshold = settings?.freeShippingThreshold || 100;
-    const isFreeShippingEnabled = settings?.enableFreeShipping || false;
+    const freeShippingThreshold = settings?.freeShippingThreshold || 0;
+    // Auto-detect if free shipping is enabled based on threshold or explicit setting
+    const isFreeShippingEnabled = (settings?.enableFreeShipping || freeShippingThreshold > 0);
     
     let ordersWithFreeShipping = 0;
     let ordersWithoutFreeShipping = 0;
@@ -360,8 +361,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       : 0;
     
     // ✅ GIFT THRESHOLD IMPACT ANALYSIS (NEW TRACKING)
-    const isGiftGatingEnabled = settings?.enableGiftGating || false;
     let giftThresholds: Array<{ threshold: number; productId: string; productTitle: string }> = [];
+    
+    // Parse gift thresholds first to determine if gift gating is enabled
+    if (settings?.giftThresholds) {
+      try {
+        giftThresholds = JSON.parse(settings.giftThresholds);
+      } catch (e) {
+        console.error('Error parsing gift thresholds:', e);
+      }
+    }
+    
+    // Auto-detect if gift gating is enabled based on thresholds or explicit setting
+    const isGiftGatingEnabled = settings?.enableGiftGating || giftThresholds.length > 0;
+    
     let ordersReachingGifts = 0;
     let ordersNotReachingGifts = 0;
     let avgAOVWithGift = 0;
@@ -370,16 +383,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let nonGiftRevenue = 0;
     let giftThresholdBreakdown: Array<{ threshold: number; ordersReached: number; percentReached: number }> = [];
     
-    if (isGiftGatingEnabled && settings?.giftThresholds) {
-      try {
-        giftThresholds = JSON.parse(settings.giftThresholds);
-        
-        // Find the lowest gift threshold (first milestone)
-        const lowestThreshold = giftThresholds.length > 0 
-          ? Math.min(...giftThresholds.map(g => g.threshold)) 
-          : 0;
-        
-        if (lowestThreshold > 0) {
+    if (isGiftGatingEnabled && giftThresholds.length > 0) {
+      // Find the lowest gift threshold (first milestone)
+      const lowestThreshold = Math.min(...giftThresholds.map(g => g.threshold));
+      
+      if (lowestThreshold > 0) {
           orders.forEach((order: any) => {
             const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
             if (orderTotal >= lowestThreshold) {
@@ -406,10 +414,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             };
           });
         }
-      } catch (e) {
-        console.error('Error parsing gift thresholds:', e);
-      }
     }
+    
+    // Calculate gift conversion metrics
+    const giftConversionRate = totalOrders > 0 ? (ordersReachingGifts / totalOrders) * 100 : 0;
+    const giftAOVLift = avgAOVWithoutGift > 0 ? 
+      ((avgAOVWithGift - avgAOVWithoutGift) / avgAOVWithoutGift) * 100 : 0;
     
     // Calculate average amount added to reach gift threshold
     const lowestGiftThreshold = giftThresholds.length > 0 
@@ -418,10 +428,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const avgAmountAddedForGift = lowestGiftThreshold > 0 && avgAOVWithGift > lowestGiftThreshold
       ? avgAOVWithGift - lowestGiftThreshold
       : 0;
-    
-    const giftConversionRate = totalOrders > 0 ? (ordersReachingGifts / totalOrders) * 100 : 0;
-    const giftAOVLift = avgAOVWithoutGift > 0 ? 
-      ((avgAOVWithGift - avgAOVWithoutGift) / avgAOVWithoutGift) * 100 : 0;
     
     // Calculate product performance from real order line items
     const productStats = new Map();
