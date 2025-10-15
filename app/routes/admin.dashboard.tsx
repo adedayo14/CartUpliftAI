@@ -26,8 +26,7 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { 
   CashDollarIcon, 
   OrderIcon,
-  MagicIcon,
-  ChartVerticalIcon
+  MagicIcon
 } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { getSettings } from "../models/settings.server";
@@ -1523,7 +1522,7 @@ export default function Dashboard() {
       )),
       changeDirection: (analytics.attributedRevenue / (analytics.totalRevenue || 1)) >= (analytics.previousMetrics.attributedRevenue / (analytics.previousMetrics.totalRevenue || 1)) ? "up" : "down",
       comparison: `vs. previous ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
-      icon: ChartVerticalIcon,
+      icon: OrderIcon,
     },
     // ========================================
     // MIDDLE ROW - ENGAGEMENT & CONVERSION (Funnel)
