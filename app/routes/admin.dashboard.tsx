@@ -26,7 +26,9 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { 
   CashDollarIcon, 
   OrderIcon,
-  MagicIcon
+  MagicIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { getSettings } from "../models/settings.server";
@@ -1201,6 +1203,31 @@ export default function Dashboard() {
   const [webhookMessage, setWebhookMessage] = useState('');
   const [selectedOrderProducts, setSelectedOrderProducts] = useState<{orderNumber: string; products: string[]; totalValue: number; attributedValue: number; upliftPercentage: number} | null>(null);
   
+  // Collapsible sections state
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("dashboard-collapsed-sections");
+      if (saved) {
+        return new Set(JSON.parse(saved));
+      }
+    }
+    return new Set<string>();
+  });
+  
+  // Toggle section collapsed state
+  const toggleSection = (sectionId: string) => {
+    const newCollapsed = new Set(collapsedSections);
+    if (newCollapsed.has(sectionId)) {
+      newCollapsed.delete(sectionId);
+    } else {
+      newCollapsed.add(sectionId);
+    }
+    setCollapsedSections(newCollapsed);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dashboard-collapsed-sections", JSON.stringify(Array.from(newCollapsed)));
+    }
+  };
+  
   // Open product details modal
   const showOrderProducts = (orderNumber: string, products: string[], totalValue: number, attributedValue: number, upliftPercentage: number) => {
     setSelectedOrderProducts({ orderNumber, products, totalValue, attributedValue, upliftPercentage });
@@ -2131,6 +2158,7 @@ export default function Dashboard() {
           .clickable-card { cursor: pointer; transition: opacity 0.2s; }
           .clickable-card:hover { opacity: 0.8; }
           .no-underline { text-decoration: none; }
+          .collapsible-header { cursor: pointer; }
           
           /* Consistent metric card heights */
           .metric-card-wrapper {
@@ -2474,36 +2502,54 @@ export default function Dashboard() {
         {analytics.topAttributedProducts && analytics.topAttributedProducts.length > 0 && (
           <Card>
             <BlockStack gap="400">
-              <InlineStack align="space-between" blockAlign="start">
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Top Sales Generators
-                  </Text>
+              <div 
+                onClick={() => toggleSection('top-sales-generators')}
+                className="collapsible-header"
+              >
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text as="h2" variant="headingMd">
+                      Top Sales Generators
+                    </Text>
+                    <Button 
+                      icon={collapsedSections.has('top-sales-generators') ? ChevronDownIcon : ChevronUpIcon}
+                      variant="plain"
+                      size="micro"
+                      onClick={() => toggleSection('top-sales-generators')}
+                    />
+                  </InlineStack>
+                  {!collapsedSections.has('top-sales-generators') && (
+                    <Button variant="plain" size="micro" onClick={() => exportTopProducts()}>
+                      Export
+                    </Button>
+                  )}
+                </InlineStack>
+              </div>
+              
+              {!collapsedSections.has('top-sales-generators') && (
+                <>
                   <Text as="p" variant="bodySm" tone="subdued">
                     Products that made the most money from AI recommendations
                   </Text>
-                </BlockStack>
-                <Button variant="plain" size="micro" onClick={exportTopProducts}>
-                  Export
-                </Button>
-              </InlineStack>
+                  
+                  <DataTable
+                    columnContentTypes={['text', 'numeric', 'numeric', 'numeric']}
+                    headings={['Product', 'Orders', 'Sales', 'Avg per Order']}
+                    rows={analytics.topAttributedProducts.map((product: any) => [
+                      product.productTitle || `Product ${product.productId}`,
+                      product.orders.toString(),
+                      formatCurrency(product.revenue),
+                      formatCurrency(product.revenue / product.orders)
+                    ])}
+                  />
               
-              <DataTable
-                columnContentTypes={['text', 'numeric', 'numeric', 'numeric']}
-                headings={['Product', 'Orders', 'Sales', 'Avg per Order']}
-                rows={analytics.topAttributedProducts.map((product: any) => [
-                  product.productTitle || `Product ${product.productId}`,
-                  product.orders.toString(),
-                  formatCurrency(product.revenue),
-                  formatCurrency(product.revenue / product.orders)
-                ])}
-              />
-              
-              <Box padding="300" background="bg-surface-secondary" borderRadius="200">
-                <Text as="p" variant="bodyXs" tone="subdued">
-                  💡 These products converted well when recommended by AI. Consider featuring them more prominently.
-                </Text>
-              </Box>
+                  <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                    <Text as="p" variant="bodyXs" tone="subdued">
+                      💡 These products converted well when recommended by AI. Consider featuring them more prominently.
+                    </Text>
+                  </Box>
+                </>
+              )}
             </BlockStack>
           </Card>
         )}
@@ -2512,14 +2558,30 @@ export default function Dashboard() {
         {(analytics as any).orderUpliftBreakdown && (analytics as any).orderUpliftBreakdown.length > 0 && (
           <Card>
             <BlockStack gap="400">
-              <BlockStack gap="200">
-                <Text as="h2" variant="headingMd">
-                  💰 Biggest Wins from Recommendations
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Orders where recommendations had the biggest impact
-                </Text>
-              </BlockStack>
+              <div 
+                onClick={() => toggleSection('biggest-wins')}
+                className="collapsible-header"
+              >
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text as="h2" variant="headingMd">
+                      💰 Biggest Wins from Recommendations
+                    </Text>
+                    <Button 
+                      icon={collapsedSections.has('biggest-wins') ? ChevronDownIcon : ChevronUpIcon}
+                      variant="plain"
+                      size="micro"
+                      onClick={() => toggleSection('biggest-wins')}
+                    />
+                  </InlineStack>
+                </InlineStack>
+              </div>
+              
+              {!collapsedSections.has('biggest-wins') && (
+                <>
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Orders where recommendations had the biggest impact
+                  </Text>
               
               {/* Cleaner table with modal for product details */}
               <BlockStack gap="0">
@@ -2586,6 +2648,8 @@ export default function Dashboard() {
                   </Box>
                 ))}
               </BlockStack>
+                </>
+              )}
             </BlockStack>
           </Card>
         )}
@@ -2629,19 +2693,39 @@ export default function Dashboard() {
         {/* Key Metrics Grid with Comparison */}
         <Card>
           <BlockStack gap="300">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">Dashboard Metrics</Text>
-              <Button variant="tertiary" size="slim" onClick={() => setShowCustomizeModal(true)}>
-                Customize Cards
-              </Button>
-            </InlineStack>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Showing {keyMetrics.length} of {allMetrics.length} available metrics
-            </Text>
+            <div 
+              onClick={() => toggleSection('dashboard-metrics')}
+              className="collapsible-header"
+            >
+              <InlineStack align="space-between" blockAlign="center">
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="h2" variant="headingMd">Dashboard Metrics</Text>
+                  <Button 
+                    icon={collapsedSections.has('dashboard-metrics') ? ChevronDownIcon : ChevronUpIcon}
+                    variant="plain"
+                    size="micro"
+                    onClick={() => toggleSection('dashboard-metrics')}
+                  />
+                </InlineStack>
+                {!collapsedSections.has('dashboard-metrics') && (
+                  <Button variant="tertiary" size="slim" onClick={() => setShowCustomizeModal(true)}>
+                    Customize Cards
+                  </Button>
+                )}
+              </InlineStack>
+            </div>
+            {!collapsedSections.has('dashboard-metrics') && (
+              <>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Showing {keyMetrics.length} of {allMetrics.length} available metrics
+                </Text>
+              </>
+            )}
           </BlockStack>
         </Card>
         
-        <Grid>
+        {!collapsedSections.has('dashboard-metrics') && (
+          <Grid>
           {keyMetrics.map((metric, index) => (
             <Grid.Cell key={index} columnSpan={{xs: 6, sm: 6, md: 4, lg: 4, xl: 4}}>
               <div className="metric-card-wrapper">
@@ -2693,14 +2777,29 @@ export default function Dashboard() {
             </Grid.Cell>
           ))}
         </Grid>
+        )}
 
         {/* Smart Insights Section */}
         <Card>
           <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              💡 Smart Insights
-            </Text>
-            <Grid>
+            <div 
+              onClick={() => toggleSection('smart-insights')}
+              className="collapsible-header"
+            >
+              <InlineStack gap="200" blockAlign="center">
+                <Text as="h2" variant="headingMd">
+                  💡 Smart Insights
+                </Text>
+                <Button 
+                  icon={collapsedSections.has('smart-insights') ? ChevronDownIcon : ChevronUpIcon}
+                  variant="plain"
+                  size="micro"
+                  onClick={() => toggleSection('smart-insights')}
+                />
+              </InlineStack>
+            </div>
+            {!collapsedSections.has('smart-insights') && (
+              <Grid>
               {behavioralInsights.map((insight, index) => (
                 <Grid.Cell key={index} columnSpan={{xs: 6, sm: 6, md: 6, lg: 6, xl: 6}}>
                   <Card padding="400">
@@ -2743,6 +2842,7 @@ export default function Dashboard() {
                 </Grid.Cell>
               ))}
             </Grid>
+            )}
           </BlockStack>
         </Card>
 
@@ -2753,95 +2853,159 @@ export default function Dashboard() {
               {/* Product Performance Tables */}
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack gap="200" align="space-between">
-                    <Text as="h2" variant="headingMd">
-                      🏆 Top Performing Products
-                    </Text>
-                    <Badge tone="success">Sales Data</Badge>
-                  </InlineStack>
+                  <div 
+                    onClick={() => toggleSection('top-performing-products')}
+                    className="collapsible-header"
+                  >
+                    <InlineStack gap="200" blockAlign="center" align="space-between">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="h2" variant="headingMd">
+                          🏆 Top Performing Products
+                        </Text>
+                        <Button 
+                          icon={collapsedSections.has('top-performing-products') ? ChevronDownIcon : ChevronUpIcon}
+                          variant="plain"
+                          size="micro"
+                          onClick={() => toggleSection('top-performing-products')}
+                        />
+                      </InlineStack>
+                      {!collapsedSections.has('top-performing-products') && (
+                        <Badge tone="success">Sales Data</Badge>
+                      )}
+                    </InlineStack>
+                  </div>
                   
-                  <DataTable
-                    columnContentTypes={[
-                      'text',
-                      'numeric',
-                      'numeric', 
-                      'numeric',
-                      'numeric',
-                    ]}
-                    headings={[
-                      'Product',
-                      'Orders',
-                      'Quantity Sold',
-                      'Revenue',
-                      'Avg Order Value'
-                    ]}
-                    rows={topProductRows}
-                  />
+                  {!collapsedSections.has('top-performing-products') && (
+                    <DataTable
+                      columnContentTypes={[
+                        'text',
+                        'numeric',
+                        'numeric', 
+                        'numeric',
+                        'numeric',
+                      ]}
+                      headings={[
+                        'Product',
+                        'Orders',
+                        'Quantity Sold',
+                        'Revenue',
+                        'Avg Order Value'
+                      ]}
+                      rows={topProductRows}
+                    />
+                  )}
                 </BlockStack>
               </Card>
 
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack gap="200" align="space-between">
-                    <Text as="h2" variant="headingMd">
-                      🎯 Upsell Performance Analytics
-                    </Text>
-                  </InlineStack>
+                  <div 
+                    onClick={() => toggleSection('upsell-performance')}
+                    className="collapsible-header"
+                  >
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="h2" variant="headingMd">
+                        🎯 Upsell Performance Analytics
+                      </Text>
+                      <Button 
+                        icon={collapsedSections.has('upsell-performance') ? ChevronDownIcon : ChevronUpIcon}
+                        variant="plain"
+                        size="micro"
+                        onClick={() => toggleSection('upsell-performance')}
+                      />
+                    </InlineStack>
+                  </div>
                   
-                  <DataTable
-                    columnContentTypes={[
-                      'text',
-                      'numeric',
-                      'numeric', 
-                      'numeric',
-                      'numeric',
-                      'numeric',
-                    ]}
-                    headings={[
-                      'Product',
-                      'Impressions',
-                      'Clicks',
-                      'Click Rate',
-                      'Purchased',
-                      'Revenue'
-                    ]}
-                    rows={upsellTableRows}
-                  />
+                  {!collapsedSections.has('upsell-performance') && (
+                    <DataTable
+                      columnContentTypes={[
+                        'text',
+                        'numeric',
+                        'numeric', 
+                        'numeric',
+                        'numeric',
+                        'numeric',
+                      ]}
+                      headings={[
+                        'Product',
+                        'Impressions',
+                        'Clicks',
+                        'Click Rate',
+                        'Purchased',
+                        'Revenue'
+                      ]}
+                      rows={upsellTableRows}
+                    />
+                  )}
                 </BlockStack>
               </Card>
 
               {/* Recommendation CTR trend */}
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack gap="200" align="space-between">
-                    <Text as="h2" variant="headingMd">📈 Recommendation Performance Over Time</Text>
-                    <Badge tone="attention">Daily trend</Badge>
-                  </InlineStack>
-                  <DataTable
-                    columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric' ]}
-                    headings={[ 'Date', 'Shown', 'Clicked', 'Click Rate' ]}
-                    rows={recCTRRows}
-                  />
+                  <div 
+                    onClick={() => toggleSection('performance-over-time')}
+                    className="collapsible-header"
+                  >
+                    <InlineStack gap="200" blockAlign="center" align="space-between">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="h2" variant="headingMd">📈 Recommendation Performance Over Time</Text>
+                        <Button 
+                          icon={collapsedSections.has('performance-over-time') ? ChevronDownIcon : ChevronUpIcon}
+                          variant="plain"
+                          size="micro"
+                          onClick={() => toggleSection('performance-over-time')}
+                        />
+                      </InlineStack>
+                      {!collapsedSections.has('performance-over-time') && (
+                        <Badge tone="attention">Daily trend</Badge>
+                      )}
+                    </InlineStack>
+                  </div>
+                  {!collapsedSections.has('performance-over-time') && (
+                    <DataTable
+                      columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric' ]}
+                      headings={[ 'Date', 'Shown', 'Clicked', 'Click Rate' ]}
+                      rows={recCTRRows}
+                    />
+                  )}
                 </BlockStack>
               </Card>
 
               {/* Top recommended items */}
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack gap="200" align="space-between">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Text as="h2" variant="headingMd">🔝 Most Popular Recommendations</Text>
-                      <Button variant="plain" size="micro" onClick={exportRecommendations}>
-                        Export
-                      </Button>
+                  <div 
+                    onClick={() => toggleSection('popular-recommendations')}
+                    className="collapsible-header"
+                  >
+                    <InlineStack gap="200" blockAlign="center" align="space-between">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="h2" variant="headingMd">🔝 Most Popular Recommendations</Text>
+                        <Button 
+                          icon={collapsedSections.has('popular-recommendations') ? ChevronDownIcon : ChevronUpIcon}
+                          variant="plain"
+                          size="micro"
+                          onClick={() => toggleSection('popular-recommendations')}
+                        />
+                      </InlineStack>
+                      {!collapsedSections.has('popular-recommendations') && (
+                        <>
+                          <Button variant="plain" size="micro" onClick={() => exportRecommendations()}>
+                            Export
+                          </Button>
+                          <Badge tone="success">By customer interest</Badge>
+                        </>
+                      )}
                     </InlineStack>
-                    <Badge tone="success">By customer interest</Badge>
-                  </InlineStack>
-                  <DataTable
-                    columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric', 'numeric' ]}
-                    headings={[ 'Product', 'Shown', 'Clicked', 'Click Rate', 'Revenue' ]}
-                    rows={topRecommendedRows}
-                  />
+                  </div>
+                  {!collapsedSections.has('popular-recommendations') && (
+                    <DataTable
+                      columnContentTypes={[ 'text', 'numeric', 'numeric', 'numeric', 'numeric' ]}
+                      headings={[ 'Product', 'Shown', 'Clicked', 'Click Rate', 'Revenue' ]}
+                      rows={topRecommendedRows}
+                    />
+                  )}
                 </BlockStack>
               </Card>
             </BlockStack>
@@ -2851,15 +3015,30 @@ export default function Dashboard() {
         {/* Smart Bundle Opportunities - Full Width Row */}
         <Card>
           <BlockStack gap="400">
-            <InlineStack gap="200" align="space-between">
-              <InlineStack gap="200" align="center">
-                <Icon source={MagicIcon} tone="warning" />
-                <Text variant="headingMd" as="h3">Smart Bundle Opportunities</Text>
+            <div 
+              onClick={() => toggleSection('bundle-opportunities')}
+              className="collapsible-header"
+            >
+              <InlineStack gap="200" blockAlign="center" align="space-between">
+                <InlineStack gap="200" blockAlign="center">
+                  <Icon source={MagicIcon} tone="warning" />
+                  <Text variant="headingMd" as="h3">Smart Bundle Opportunities</Text>
+                  <Button 
+                    icon={collapsedSections.has('bundle-opportunities') ? ChevronDownIcon : ChevronUpIcon}
+                    variant="plain"
+                    size="micro"
+                    onClick={() => toggleSection('bundle-opportunities')}
+                  />
+                </InlineStack>
+                {!collapsedSections.has('bundle-opportunities') && (
+                  <Button size="micro" variant="primary">AI Powered</Button>
+                )}
               </InlineStack>
-              <Button size="micro" variant="primary">AI Powered</Button>
-            </InlineStack>
+            </div>
             
-            <BlockStack gap="300">
+            {!collapsedSections.has('bundle-opportunities') && (
+              <>
+                <BlockStack gap="300">
               {analytics.bundleOpportunities && analytics.bundleOpportunities.length > 0 ? (
                 analytics.bundleOpportunities.map((bundle: any, index: number) => (
                   <div key={index} className="cu-flex cu-items-center cu-gap-16 cu-p-12 cu-bg-card cu-rounded-8 cu-border">
@@ -2895,6 +3074,8 @@ export default function Dashboard() {
             <Text variant="bodySm" as="p" tone="subdued">
               📊 AI analyzes your sales data to identify high-frequency product combinations.
             </Text>
+              </>
+            )}
           </BlockStack>
         </Card>
       </BlockStack>
