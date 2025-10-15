@@ -138,6 +138,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                         title
                         id
                       }
+                      variant {
+                        id
+                        title
+                      }
                     }
                   }
                 }
@@ -682,15 +686,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           const productGid = lineItem.node.product?.id; // gid://shopify/Product/123
           const variantGid = lineItem.node.variant?.id; // gid://shopify/ProductVariant/456
           const productTitle = lineItem.node.product?.title;
+          const variantTitle = lineItem.node.variant?.title;
           
-          if (productTitle) {
+          // Full title includes variant if it exists (e.g., "Snow Boots - Black")
+          const fullTitle = variantTitle && variantTitle !== 'Default Title' 
+            ? `${productTitle} - ${variantTitle}` 
+            : productTitle;
+          
+          if (fullTitle) {
+            // Map both product ID and variant ID to the title
             if (productGid) {
               const productId = productGid.split('/').pop();
-              productTitlesMap.set(productId!, productTitle);
+              productTitlesMap.set(productId!, fullTitle);
             }
             if (variantGid) {
               const variantId = variantGid.split('/').pop();
-              productTitlesMap.set(variantId!, productTitle);
+              productTitlesMap.set(variantId!, fullTitle);
             }
           }
         });

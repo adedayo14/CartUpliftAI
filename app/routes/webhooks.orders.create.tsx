@@ -218,7 +218,8 @@ async function processOrderForAttribution(shop: string, order: any) {
     });
     
     // Parse metadata to find recommended products that were ALSO clicked
-    let attributedProducts: string[] = [];
+    // 🎯 KEY: Only attribute by PRODUCT ID to avoid duplicates (not variants)
+    const attributedProductIds = new Set<string>(); // Use Set to prevent duplicates
     let recommendationIds: string[] = [];
     
     for (const event of servedEvents) {
@@ -232,21 +233,20 @@ async function processOrderForAttribution(shop: string, order: any) {
         console.log(`📝 Served Event ${event.id}:`);
         console.log(`   - Recommended IDs (${recommendedIds.length}): ${recommendedIds.slice(0, 3).join(', ')}...`);
         
-        // Check if any purchased products were:
-        // 1. In recommendations (check both product IDs and variant IDs) AND
-        // 2. Were clicked by customer (check both product IDs and variant IDs) AND
-        // 3. Were purchased
-        const matches: string[] = [];
-        
-        // Check product IDs
+        // Check each purchased PRODUCT to see if it was recommended AND clicked
+        // We only attribute by product ID, never by variant ID (to avoid duplicates)
         for (const productId of uniqueProductIds) {
+          // Skip if already attributed
+          if (attributedProductIds.has(productId)) continue;
+          
+          // Was this product recommended?
           const wasRecommended = recommendedIds.includes(productId) || 
                                 recommendedIds.includes(Number(productId)) || 
                                 recommendedIds.includes(String(productId));
           
           if (!wasRecommended) continue;
           
-          // Check if THIS product ID was clicked directly, or if any of its variants were clicked
+          // Was this product (or any of its variants) clicked?
           let wasClicked = clickedProductIds.has(productId);
           
           if (!wasClicked && productToVariantsMap.has(productId)) {
@@ -255,55 +255,12 @@ async function processOrderForAttribution(shop: string, order: any) {
             wasClicked = variants.some(vid => clickedVariantIds.has(vid));
           }
           
-          console.log(`   🔍 Product ${productId}: recommended=true, clicked=${wasClicked}`);
+          console.log(`   🔍 Product ${productId}: recommended=${wasRecommended}, clicked=${wasClicked}`);
           
           if (wasClicked) {
-            matches.push(productId);
-          }
-        }
-        
-        // Also check variant IDs that were purchased
-        for (const variantId of uniqueVariantIds) {
-          // Was this variant's parent product recommended?
-          const parentProductId = variantToProductMap.get(variantId);
-          
-          const wasRecommended = recommendedIds.includes(variantId) || 
-                                recommendedIds.includes(Number(variantId)) ||
-                                (parentProductId && (
-                                  recommendedIds.includes(parentProductId) ||
-                                  recommendedIds.includes(Number(parentProductId))
-                                ));
-          
-          if (!wasRecommended) continue;
-          
-          // Check if this variant was clicked, or if its parent product was clicked
-          let wasClicked = clickedVariantIds.has(variantId) || clickedProductIds.has(variantId);
-          
-          if (!wasClicked && parentProductId) {
-            wasClicked = clickedProductIds.has(parentProductId);
-          }
-          
-          console.log(`   🔍 Variant ${variantId} (product ${parentProductId}): recommended=true, clicked=${wasClicked}`);
-          
-          if (wasClicked && !matches.includes(variantId)) {
-            matches.push(variantId);
-          }
-        }
-        
-        if (matches.length > 0) {
-          console.log(`✅ ATTRIBUTED! Products/Variants ${matches.join(', ')} were recommended, clicked, AND purchased`);
-          attributedProducts.push(...matches);
-          recommendationIds.push(event.id);
-        } else {
-          // Debug: Show what was missing
-          const recommended = [...uniqueProductIds, ...uniqueVariantIds].filter((id: string) => 
-            recommendedIds.includes(id) || 
-            recommendedIds.includes(Number(id)) || 
-            recommendedIds.includes(String(id)) ||
-            (variantToProductMap.has(id) && recommendedIds.includes(variantToProductMap.get(id)!))
-          );
-          if (recommended.length > 0) {
-            console.log(`   ⚠️ Items ${recommended.slice(0, 3).join(', ')} were recommended but NOT clicked`);
+            attributedProductIds.add(productId);
+            recommendationIds.push(event.id);
+            console.log(`   ✅ ATTRIBUTED: Product ${productId}`);
           }
         }
       } catch (e) {
@@ -311,8 +268,8 @@ async function processOrderForAttribution(shop: string, order: any) {
       }
     }
     
-    // Remove duplicates
-    attributedProducts = [...new Set(attributedProducts)];
+    // Convert Set to Array for processing
+    const attributedProducts = Array.from(attributedProductIds);
     
     console.log(`🎯 Attribution summary:`, {
       totalProducts: uniqueProductIds.length,
@@ -321,7 +278,7 @@ async function processOrderForAttribution(shop: string, order: any) {
       totalClicked: clickedProductIds.size + clickedVariantIds.size,
       totalAttributed: attributedProducts.length,
       attributedProducts,
-      recommendationEventIds: recommendationIds
+      recommendationEventIds: [...new Set(recommendationIds)] // Remove duplicate event IDs
     });
     
     if (attributedProducts.length === 0) {
