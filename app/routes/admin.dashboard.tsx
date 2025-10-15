@@ -327,6 +327,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // ✅ FREE SHIPPING THRESHOLD TRACKING - Simple percentage calculation
     const freeShippingThreshold = settings?.freeShippingThreshold || 0;
     
+    console.log('🚢 FREE SHIPPING THRESHOLD:', {
+      threshold: freeShippingThreshold,
+      totalOrders: orders.length
+    });
+    
     let ordersWithFreeShipping = 0;
     let ordersWithoutFreeShipping = 0;
     let avgAOVWithFreeShipping = 0;
@@ -340,10 +345,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       if (orderTotal >= freeShippingThreshold) {
         ordersWithFreeShipping += 1;
         freeShippingRevenue += orderTotal;
+        // Log first reaching order
+        if (ordersWithFreeShipping === 1) {
+          console.log(`✅ First order reaching free shipping: ${order.node.name} - £${orderTotal.toFixed(2)}`);
+        }
       } else {
         ordersWithoutFreeShipping += 1;
         nonFreeShippingRevenue += orderTotal;
       }
+    });
+    
+    console.log('🚢 FREE SHIPPING RESULTS:', {
+      ordersWithFreeShipping,
+      ordersWithoutFreeShipping,
+      freeShippingRate: `${((ordersWithFreeShipping / totalOrders) * 100).toFixed(1)}%`
     });
     
     avgAOVWithFreeShipping = ordersWithFreeShipping > 0 ? freeShippingRevenue / ordersWithFreeShipping : 0;
@@ -384,16 +399,33 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // Find the lowest gift threshold (first milestone)
       const lowestThreshold = Math.min(...giftThresholds.map(g => g.threshold));
       
+      console.log('🎁 GIFT THRESHOLD CALCULATION:', {
+        lowestThreshold,
+        totalOrders: orders.length,
+        giftThresholds: giftThresholds.map(g => `£${g.threshold} - ${g.productTitle}`)
+      });
+      
       if (lowestThreshold > 0) {
           orders.forEach((order: any) => {
             const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
             if (orderTotal >= lowestThreshold) {
               ordersReachingGifts += 1;
               giftRevenue += orderTotal;
+              console.log(`✅ Order ${order.node.name}: £${orderTotal.toFixed(2)} >= £${lowestThreshold} (REACHED)`);
             } else {
               ordersNotReachingGifts += 1;
               nonGiftRevenue += orderTotal;
+              // Only log first 3 to avoid spam
+              if (ordersNotReachingGifts <= 3) {
+                console.log(`❌ Order ${order.node.name}: £${orderTotal.toFixed(2)} < £${lowestThreshold} (not reached)`);
+              }
             }
+          });
+          
+          console.log('🎁 GIFT RESULTS:', {
+            ordersReachingGifts,
+            ordersNotReachingGifts,
+            giftConversionRate: `${((ordersReachingGifts / orders.length) * 100).toFixed(1)}%`
           });
           
           avgAOVWithGift = ordersReachingGifts > 0 ? giftRevenue / ordersReachingGifts : 0;
