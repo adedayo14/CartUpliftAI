@@ -86,14 +86,25 @@ async function processOrderForAttribution(shop: string, order: any) {
     });
     
     // Extract purchased product IDs AND variant IDs (for matching with tracking)
-    const purchasedProductIds = order.line_items?.flatMap((item: any) => {
+    // Also build a map of variant→product for attribution matching
+    const purchasedProductIds: string[] = [];
+    const variantToProductMap = new Map<string, string>();
+    
+    order.line_items?.forEach((item: any) => {
       const productId = item.product_id?.toString();
       const variantId = item.variant_id?.toString();
-      // Return both product ID and variant ID for better matching
-      return [productId, variantId].filter(Boolean);
-    }) || [];
+      
+      if (productId) purchasedProductIds.push(productId);
+      if (variantId) {
+        purchasedProductIds.push(variantId);
+        if (productId) {
+          variantToProductMap.set(variantId, productId);
+        }
+      }
+    });
     
     console.log("🛍️ Purchased products:", purchasedProductIds);
+    console.log("🔗 Variant→Product map:", Array.from(variantToProductMap.entries()).slice(0, 3));
     
     if (purchasedProductIds.length === 0) {
       console.log("⚠️ No products in order, skipping attribution");
@@ -164,7 +175,15 @@ async function processOrderForAttribution(shop: string, order: any) {
         // 3. Were purchased
         const matches = purchasedProductIds.filter((pid: string) => {
           const wasRecommended = recommendedIds.includes(pid) || recommendedIds.includes(Number(pid)) || recommendedIds.includes(String(pid));
-          const wasClicked = clickedProductIds.has(String(pid));
+          
+          // Check if this item or its variant/product pair was clicked
+          let wasClicked = clickedProductIds.has(String(pid));
+          
+          // If this is a variant ID and it wasn't clicked directly, check if its product ID was clicked
+          if (!wasClicked && variantToProductMap.has(pid)) {
+            const productId = variantToProductMap.get(pid)!;
+            wasClicked = clickedProductIds.has(productId);
+          }
           
           if (wasRecommended) {
             console.log(`   🔍 Product ${pid}: recommended=true, clicked=${wasClicked}`);
