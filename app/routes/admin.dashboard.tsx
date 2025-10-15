@@ -2487,19 +2487,22 @@ export default function Dashboard() {
                 {/* Table Header */}
                 <Box background="bg-surface-secondary" padding="300" borderRadius="200">
                   <InlineStack gap="400" align="space-between">
-                    <Box width="15%">
+                    <Box width="12%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Order</Text>
                     </Box>
-                    <Box width="22%">
+                    <Box width="10%">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">Items</Text>
+                    </Box>
+                    <Box width="20%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Customer Spent</Text>
                     </Box>
-                    <Box width="22%">
+                    <Box width="20%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Added from AI</Text>
                     </Box>
-                    <Box width="18%">
+                    <Box width="16%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">AI Impact</Text>
                     </Box>
-                    <Box width="23%">
+                    <Box width="22%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Products</Text>
                     </Box>
                   </InlineStack>
@@ -2513,33 +2516,42 @@ export default function Dashboard() {
                     {/* Main Row */}
                     <Box padding="300">
                       <InlineStack gap="400" align="space-between" blockAlign="center">
-                        <Box width="15%">
+                        <Box width="12%">
                           <Text as="span" variant="bodyMd" fontWeight="medium">
                             #{order.orderNumber}
                           </Text>
                         </Box>
-                        <Box width="22%">
-                          <Text as="span" variant="bodyMd">
-                            {formatCurrency(order.totalValue)}
-                          </Text>
-                        </Box>
-                        <Box width="22%">
-                          <Text as="span" variant="bodyMd" fontWeight="semibold">
-                            {formatCurrency(order.attributedValue)}
-                          </Text>
-                        </Box>
-                        <Box width="18%">
-                          <Badge tone={order.upliftPercentage >= 50 ? "success" : order.upliftPercentage >= 30 ? "attention" : "info"}>
-                            {`${order.upliftPercentage.toFixed(0)}%`}
-                          </Badge>
-                        </Box>
-                        <Box width="23%">
+                        <Box width="10%">
                           <Button
                             variant="plain"
                             size="slim"
                             onClick={() => showOrderProducts(order.orderNumber, order.products, order.totalValue, order.attributedValue, order.upliftPercentage)}
                           >
-                            {order.productCount} item{order.productCount > 1 ? 's' : ''} →
+                            {order.productCount} →
+                          </Button>
+                        </Box>
+                        <Box width="20%">
+                          <Text as="span" variant="bodyMd">
+                            {formatCurrency(order.totalValue)}
+                          </Text>
+                        </Box>
+                        <Box width="20%">
+                          <Text as="span" variant="bodyMd" fontWeight="semibold">
+                            {formatCurrency(order.attributedValue)}
+                          </Text>
+                        </Box>
+                        <Box width="16%">
+                          <Badge tone={order.upliftPercentage >= 50 ? "success" : order.upliftPercentage >= 30 ? "attention" : "info"}>
+                            {`${order.upliftPercentage.toFixed(0)}%`}
+                          </Badge>
+                        </Box>
+                        <Box width="22%">
+                          <Button
+                            variant="plain"
+                            size="slim"
+                            onClick={() => showOrderProducts(order.orderNumber, order.products, order.totalValue, order.attributedValue, order.upliftPercentage)}
+                          >
+                            View products →
                           </Button>
                         </Box>
                       </InlineStack>
