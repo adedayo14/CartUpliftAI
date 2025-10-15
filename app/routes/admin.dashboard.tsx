@@ -238,26 +238,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }, 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
       
-      // Calculate upsell revenue from multi-product orders
+      // Count multi-product orders (potential upsells)
       const multiProductOrders = periodOrders.filter((order: any) => {
         const lineItemCount = order.node.lineItems?.edges?.length || 0;
         return lineItemCount > 1;
       });
       
-      const revenueFromUpsells = multiProductOrders.reduce((sum: number, order: any) => {
-        const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
-        const lineItems = order.node.lineItems?.edges || [];
-        if (lineItems.length > 1) {
-          return sum + (orderTotal * 0.3); // 30% attribution to upselling
-        }
-        return sum;
-      }, 0);
+      // ❌ REMOVED: No more 30% rule-of-thumb attribution
+      // We now use ONLY real tracked revenue from RecommendationAttribution table
+      // This will be calculated separately from attribution data
       
       return {
         totalOrders,
         totalRevenue,
         averageOrderValue,
-        revenueFromUpsells,
         multiProductOrderCount: multiProductOrders.length
       };
     };
@@ -267,7 +261,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const totalOrders = currentMetrics.totalOrders;
     const totalRevenue = currentMetrics.totalRevenue;
     const averageOrderValue = currentMetrics.averageOrderValue;
-    const revenueFromUpsells = currentMetrics.revenueFromUpsells;
     
     // Calculate metrics for PREVIOUS period
     const previousMetrics = calculatePeriodMetrics(previousOrders);
@@ -282,8 +275,45 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     });
     
-    // Use REAL cart tracking data when available, otherwise estimate conservatively from orders
-    const cartImpressions = totalOrders > 0 ? Math.max(totalOrders * 2, totalOrders) : 0; // Conservative estimate: 2 cart views per order
+    // 📊 Query REAL cart open tracking data
+    let cartImpressions = 0;
+    let cartOpensToday = 0;
+    
+    try {
+      // Get all cart_open events in the current period
+      const cartOpenEvents = await (db as any).analyticsEvent?.findMany?.({
+        where: {
+          shop: session.shop,
+          eventType: 'cart_open',
+          createdAt: { gte: startDate, lte: endDate }
+        }
+      }) ?? [];
+      
+      cartImpressions = cartOpenEvents.length;
+      
+      // If today, get today's cart opens
+      if (timeframe === "today") {
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEvents = await (db as any).analyticsEvent?.findMany?.({
+          where: {
+            shop: session.shop,
+            eventType: 'cart_open',
+            createdAt: { gte: todayStart, lte: endDate }
+          }
+        }) ?? [];
+        cartOpensToday = todayEvents.length;
+      } else {
+        cartOpensToday = cartImpressions;
+      }
+      
+      console.log(`📊 [Cart Tracking] Cart Opens: ${cartImpressions}, Today: ${cartOpensToday}`);
+    } catch (e) {
+      console.warn("Failed to fetch cart opens:", e);
+      // If tracking not available, show 0 instead of estimate
+      cartImpressions = 0;
+      cartOpensToday = 0;
+    }
+    
     const checkoutsCompleted = totalOrders;
     const cartToCheckoutRate = cartImpressions > 0 ? (totalOrders / cartImpressions) * 100 : 0;
     
@@ -756,6 +786,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       console.error('Error fetching attribution data:', error);
     }
     
+    // 🎯 Calculate PREVIOUS PERIOD attribution for real comparisons
+    let previousAttributedRevenue = 0;
+    let previousAttributedOrders = 0;
+    
+    try {
+      const previousAttributions = await (db as any).recommendationAttribution?.findMany?.({
+        where: {
+          shop: session.shop,
+          createdAt: { gte: previousPeriodStart, lte: previousPeriodEnd }
+        }
+      }) ?? [];
+      
+      previousAttributedRevenue = previousAttributions.reduce((sum: number, a: any) => 
+        sum + (a.attributedRevenue || 0), 0
+      );
+      
+      const previousUniqueOrders = new Set(previousAttributions.map((a: any) => a.orderId));
+      previousAttributedOrders = previousUniqueOrders.size;
+      
+      console.log(`💰 [Previous Period Attribution] Revenue: ${previousAttributedRevenue}, Orders: ${previousAttributedOrders}`);
+    } catch (e) {
+      console.warn("Failed to fetch previous period attributions:", e);
+    }
+    
     // ============================================
     // 🧠 ML System Status (Phase 2 & 3 Implementation!)
     // ============================================
@@ -853,7 +907,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           totalOrders: previousMetrics.totalOrders,
           totalRevenue: previousMetrics.totalRevenue,
           averageOrderValue: previousMetrics.averageOrderValue,
-          revenueFromUpsells: previousMetrics.revenueFromUpsells,
+          attributedRevenue: previousAttributedRevenue, // ✅ Real data from RecommendationAttribution
+          attributedOrders: previousAttributedOrders, // ✅ Real data from RecommendationAttribution
         },
         
         // 🎯 NEW: Attribution metrics (REAL from RecommendationAttribution)
@@ -871,11 +926,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         setupProgress,
         setupComplete: setupProgress === 100,
         
-        // Cart-specific metrics
+        // Cart-specific metrics (REAL tracking data)
         cartImpressions: cartImpressions,
-        cartOpensToday: timeframe === "today" ? Math.max(Math.floor(cartImpressions * 0.3), 0) : cartImpressions,
+        cartOpensToday: cartOpensToday,
         cartToCheckoutRate,
-        revenueFromUpsells,
         
         // Product performance - REAL DATA
         topProducts,
@@ -996,7 +1050,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           totalOrders: 0,
           totalRevenue: 0,
           averageOrderValue: 0,
-          revenueFromUpsells: 0,
+          attributedRevenue: 0,
+          attributedOrders: 0,
         },
         
         // ✅ NEW: Attribution metrics (fallback)
@@ -1019,7 +1074,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         cartImpressions: 0,
         cartOpensToday: 0,
         cartToCheckoutRate: 0,
-        revenueFromUpsells: 0,
         
         // Product performance
         topProducts: [],
@@ -1399,24 +1453,24 @@ export default function Dashboard() {
     },
     {
       id: "upsell_revenue",
-      title: "Additional Revenue Generated",
-      value: formatCurrency(analytics.revenueFromUpsells),
-      previousValue: formatCurrency(analytics.previousMetrics.revenueFromUpsells),
-      changePercent: Math.abs(calculateChange(analytics.revenueFromUpsells, analytics.previousMetrics.revenueFromUpsells)),
-      changeDirection: analytics.revenueFromUpsells >= analytics.previousMetrics.revenueFromUpsells ? "up" : "down",
-      comparison: `vs. ${formatCurrency(analytics.previousMetrics.revenueFromUpsells)} last period`,
+      title: "Revenue from AI Recommendations",
+      value: formatCurrency(analytics.attributedRevenue),
+      previousValue: formatCurrency(analytics.previousMetrics.attributedRevenue),
+      changePercent: Math.abs(calculateChange(analytics.attributedRevenue, analytics.previousMetrics.attributedRevenue)),
+      changeDirection: analytics.attributedRevenue >= analytics.previousMetrics.attributedRevenue ? "up" : "down",
+      comparison: `vs. ${formatCurrency(analytics.previousMetrics.attributedRevenue)} last period`,
       icon: CashDollarIcon,
     },
     {
       id: "cart_uplift_impact",
-      title: "Revenue from Recommendations",
-      value: `${analytics.revenueFromUpsells > 0 && analytics.totalRevenue > 0 ? ((analytics.revenueFromUpsells / analytics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
-      previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.totalRevenue > 0 ? ((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
+      title: "% of Revenue from Recommendations",
+      value: `${analytics.attributedRevenue > 0 && analytics.totalRevenue > 0 ? ((analytics.attributedRevenue / analytics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
+      previousValue: `${analytics.previousMetrics.attributedRevenue > 0 && analytics.previousMetrics.totalRevenue > 0 ? ((analytics.previousMetrics.attributedRevenue / analytics.previousMetrics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       changePercent: Math.abs(calculateChange(
-        analytics.revenueFromUpsells / (analytics.totalRevenue || 1),
-        analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.totalRevenue || 1)
+        analytics.attributedRevenue / (analytics.totalRevenue || 1),
+        analytics.previousMetrics.attributedRevenue / (analytics.previousMetrics.totalRevenue || 1)
       )),
-      changeDirection: (analytics.revenueFromUpsells / (analytics.totalRevenue || 1)) >= (analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.totalRevenue || 1)) ? "up" : "down",
+      changeDirection: (analytics.attributedRevenue / (analytics.totalRevenue || 1)) >= (analytics.previousMetrics.attributedRevenue / (analytics.previousMetrics.totalRevenue || 1)) ? "up" : "down",
       comparison: `vs. previous ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
       icon: CashDollarIcon,
     },
@@ -1458,15 +1512,12 @@ export default function Dashboard() {
     // ========================================
     {
       id: "orders_with_upsells",
-      title: "Orders with Extra Items",
-      value: `${analytics.checkoutsCompleted > 0 && analytics.revenueFromUpsells > 0 ? Math.round((analytics.revenueFromUpsells / analytics.averageOrderValue) || 0) : 0}`,
-      previousValue: `${analytics.previousMetrics.revenueFromUpsells > 0 && analytics.previousMetrics.averageOrderValue > 0 ? Math.round((analytics.previousMetrics.revenueFromUpsells / analytics.previousMetrics.averageOrderValue) || 0) : 0}`,
-      changePercent: Math.abs(calculateChange(
-        analytics.revenueFromUpsells / (analytics.averageOrderValue || 1),
-        analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)
-      )),
-      changeDirection: (analytics.revenueFromUpsells / (analytics.averageOrderValue || 1)) >= (analytics.previousMetrics.revenueFromUpsells / (analytics.previousMetrics.averageOrderValue || 1)) ? "up" : "down",
-      comparison: `vs. previous period`,
+      title: "Orders with AI Recommendations",
+      value: `${analytics.attributedOrders || 0}`,
+      previousValue: `0`, // TODO: Calculate previous period attributed orders
+      changePercent: 0,
+      changeDirection: "neutral" as const,
+      comparison: `Real tracked orders`,
       icon: OrderIcon,
     },
     {
@@ -1482,11 +1533,11 @@ export default function Dashboard() {
     {
       id: "avg_upsell_value",
       title: "Average Additional Sale Value",
-      value: `${analytics.topUpsells.length > 0 && analytics.topUpsells.filter((item: any) => item != null).reduce((sum: number, item: any) => sum + item.clicks, 0) > 0 ? formatCurrency(analytics.revenueFromUpsells / analytics.topUpsells.filter((item: any) => item != null).reduce((sum: number, item: any) => sum + item.clicks, 0)) : formatCurrency(0)}`,
-      previousValue: "N/A",
-      changePercent: 0,
-      changeDirection: "neutral" as const,
-      comparison: `Revenue per click`,
+      value: `${analytics.attributedOrders > 0 ? formatCurrency(analytics.attributedRevenue / analytics.attributedOrders) : formatCurrency(0)}`,
+      previousValue: `${analytics.previousMetrics.attributedRevenue > 0 && analytics.previousMetrics.attributedOrders > 0 ? formatCurrency(analytics.previousMetrics.attributedRevenue / analytics.previousMetrics.attributedOrders) : "N/A"}`,
+      changePercent: analytics.previousMetrics.attributedRevenue > 0 && analytics.previousMetrics.attributedOrders > 0 ? Math.abs(calculateChange(analytics.attributedRevenue / analytics.attributedOrders, analytics.previousMetrics.attributedRevenue / analytics.previousMetrics.attributedOrders)) : 0,
+      changeDirection: analytics.attributedOrders > 0 && analytics.previousMetrics.attributedOrders > 0 ? ((analytics.attributedRevenue / analytics.attributedOrders) >= (analytics.previousMetrics.attributedRevenue / analytics.previousMetrics.attributedOrders) ? "up" : "down") : "neutral" as const,
+      comparison: `Per order with attributed recommendations`,
       icon: CashDollarIcon,
     },
     // ✅ FREE SHIPPING BAR IMPACT METRICS (REAL DATA)
@@ -1603,27 +1654,27 @@ export default function Dashboard() {
       });
     }
     
-    // 2. Revenue from recommendations
-    const upsellPercentage = analytics.totalRevenue > 0 ? (analytics.revenueFromUpsells / analytics.totalRevenue) * 100 : 0;
-    if (analytics.revenueFromUpsells > 0 && upsellPercentage < 8) {
+    // 2. Revenue from recommendations (REAL attribution data)
+    const attributionPercentage = analytics.totalRevenue > 0 ? (analytics.attributedRevenue / analytics.totalRevenue) * 100 : 0;
+    if (analytics.attributedRevenue > 0 && attributionPercentage < 8) {
       insights.push({
         type: "warning",
         title: "More Revenue Available from Recommendations", 
-        description: `Recommendations generate ${upsellPercentage.toFixed(1)}% of revenue. Top stores reach 15-25% by showing relevant products at the right time.`,
+        description: `Recommendations generate ${attributionPercentage.toFixed(1)}% of revenue. Top stores reach 15-25% by showing relevant products at the right time.`,
         action: "Review your recommendation settings"
       });
-    } else if (analytics.revenueFromUpsells === 0 && analytics.totalOrders > 5) {
+    } else if (analytics.attributedRevenue === 0 && analytics.totalOrders > 5) {
       insights.push({
         type: "info",
-        title: "Start Showing Recommendations",
-        description: `With ${analytics.totalOrders} orders, product recommendations could generate ${formatCurrency(analytics.totalRevenue * 0.15)} in additional revenue.`,
-        action: "Enable AI recommendations in settings"
+        title: "Start Tracking Recommendation Performance",
+        description: `With ${analytics.totalOrders} orders, enable recommendation tracking to measure impact.`,
+        action: "Ensure recommendations are enabled in settings"
       });
-    } else if (upsellPercentage >= 15) {
+    } else if (attributionPercentage >= 15) {
       insights.push({
         type: "success",
         title: "Recommendations Performing Well",
-        description: `${upsellPercentage.toFixed(1)}% of revenue comes from recommendations. This is excellent performance.`,
+        description: `${attributionPercentage.toFixed(1)}% of revenue comes from recommendations. This is excellent performance.`,
         action: "Try recommending higher-value products"
       });
     }
@@ -1634,7 +1685,7 @@ export default function Dashboard() {
         insights.push({
           type: "info",
           title: "Opportunity to Increase Order Size",
-          description: `Average order of ${formatCurrency(analytics.averageOrderValue)} suggests customers buy one item at a time. Bundles could increase this by 30-50%.`,
+          description: `Average order of ${formatCurrency(analytics.averageOrderValue)} suggests customers buy one item at a time. Consider using bundles or free shipping incentives.`,
           action: analytics.freeShippingEnabled ? "Adjust free shipping threshold" : "Try free shipping above a threshold"
         });
       } else if (analytics.averageOrderValue > 150) {
@@ -1745,17 +1796,19 @@ export default function Dashboard() {
       });
     }
     
-    // 6. Product diversity in orders
-    const avgProductsPerOrder = analytics.totalRevenue > 0 && analytics.averageOrderValue > 0 ? 
-      (analytics.revenueFromUpsells > 0 ? 2.3 : 1.2) : 1.0;
-    
-    if (avgProductsPerOrder < 1.5 && analytics.totalOrders > 10) {
-      insights.push({
-        type: "info",
-        title: "Most Orders Have One Product",
-        description: `Customers usually buy one item. Showing related products could increase revenue by 25-35%.`,
-        action: "Enable related product recommendations"
-      });
+    // 6. Product diversity in orders - check if recommendations are increasing basket size
+    if (analytics.attributedOrders > 0 && analytics.totalOrders > 10) {
+      const ordersWithRecommendations = analytics.attributedOrders;
+      const percentageWithRecommendations = (ordersWithRecommendations / analytics.totalOrders) * 100;
+      
+      if (percentageWithRecommendations < 20) {
+        insights.push({
+          type: "info",
+          title: "Recommendations Could Increase Basket Size",
+          description: `Only ${percentageWithRecommendations.toFixed(1)}% of orders include recommended products. More visibility could increase multi-product orders.`,
+          action: "Review recommendation placement and visibility"
+        });
+      }
     }
     
     // 7. Early stage guidance
@@ -2118,11 +2171,11 @@ export default function Dashboard() {
               <InlineStack gap="400" align="space-between" blockAlign="center" wrap={false}>
                 <BlockStack gap="200">
                   <Text as="p" variant="headingMd" fontWeight="semibold">
-                    💡 Quick Win Available
+                    💡 Free Shipping Threshold Opportunity
                   </Text>
                   <Text as="p" variant="bodyMd">
                     Only {analytics.freeShippingConversionRate.toFixed(0)}% of customers reach your {formatCurrency(analytics.freeShippingThreshold)} free shipping threshold. 
-                    Lowering it to {formatCurrency(Math.round(analytics.freeShippingThreshold * 0.8))} could unlock approximately {formatCurrency(Math.round(analytics.avgAOVWithoutFreeShipping * analytics.ordersWithoutFreeShipping * 0.3))} more in revenue.
+                    {analytics.ordersWithoutFreeShipping} orders averaged {formatCurrency(analytics.avgAOVWithoutFreeShipping)} - consider testing a lower threshold.
                   </Text>
                 </BlockStack>
                 <a href={settingsHref} className="no-underline">
