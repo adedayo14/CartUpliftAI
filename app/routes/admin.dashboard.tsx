@@ -613,6 +613,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }) ?? [];
       
       console.log(`🔍 [Attribution Debug] Found ${attributions.length} attribution records for ${session.shop}`);
+      console.log(`📅 [Attribution Debug] Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
       
       if (attributions.length > 0) {
         console.log(`📊 [Attribution Debug] Sample record:`, {
@@ -622,6 +623,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           attributedRevenue: attributions[0].attributedRevenue,
           createdAt: attributions[0].createdAt
         });
+        
+        // Show breakdown by order
+        const orderBreakdown = new Map();
+        attributions.forEach((a: any) => {
+          const key = a.orderNumber || a.orderId;
+          if (!orderBreakdown.has(key)) {
+            orderBreakdown.set(key, { count: 0, total: 0, products: [] });
+          }
+          const o = orderBreakdown.get(key);
+          o.count++;
+          o.total += (a.attributedRevenue || 0);
+          o.products.push({ id: a.productId, revenue: a.attributedRevenue });
+        });
+        
+        console.log(`📦 [Attribution Debug] Breakdown by order:`, Array.from(orderBreakdown.entries()).map(([order, data]) => ({
+          order,
+          products: data.count,
+          totalRevenue: data.total,
+          productDetails: data.products
+        })));
       } else {
         // Check if we have ANY attribution records at all
         const allAttributions = await (db as any).recommendationAttribution?.findMany?.({
