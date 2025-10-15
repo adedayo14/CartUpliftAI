@@ -85,6 +85,19 @@ async function processOrderForAttribution(shop: string, order: any) {
       lineItemCount: order.line_items?.length 
     });
     
+    // 🛡️ DUPLICATE PREVENTION: Check if we already processed this order
+    const existingAttribution = await (db as any).recommendationAttribution?.findFirst({
+      where: {
+        shop,
+        orderId: order.id?.toString()
+      }
+    });
+    
+    if (existingAttribution) {
+      console.log(`⚠️ Order ${orderNumber} already attributed, skipping duplicate processing`);
+      return;
+    }
+    
     // Extract purchased product IDs AND variant IDs (for matching with tracking)
     // Build comprehensive maps for attribution matching
     const purchasedProductIds: string[] = [];
@@ -415,13 +428,27 @@ async function trackMissedOpportunity(shop: string, purchasedIds: string[], last
 }
 
 function calculateProductRevenue(order: any, productId: string): number {
-  const lineItem = order.line_items?.find((item: any) => 
+  // First try matching by product_id
+  let lineItem = order.line_items?.find((item: any) => 
     item.product_id?.toString() === productId
   );
   
-  if (!lineItem) return 0;
+  // If not found, try matching by variant_id (since attributed products could be variants)
+  if (!lineItem) {
+    lineItem = order.line_items?.find((item: any) => 
+      item.variant_id?.toString() === productId
+    );
+  }
   
-  return parseFloat(lineItem.price || 0) * (lineItem.quantity || 1);
+  if (!lineItem) {
+    console.warn(`⚠️ Could not find line item for product/variant ${productId}`);
+    return 0;
+  }
+  
+  const revenue = parseFloat(lineItem.price || 0) * (lineItem.quantity || 1);
+  console.log(`💰 Product ${productId}: £${lineItem.price} × ${lineItem.quantity} = £${revenue.toFixed(2)}`);
+  
+  return revenue;
 }
 
 function calculateConversionTime(recommendationEvent: any): number {
