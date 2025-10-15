@@ -354,6 +354,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const freeShippingAOVLift = avgAOVWithoutFreeShipping > 0 ? 
       ((avgAOVWithFreeShipping - avgAOVWithoutFreeShipping) / avgAOVWithoutFreeShipping) * 100 : 0;
     
+    // Calculate average amount added to reach free shipping threshold
+    const avgAmountAddedForFreeShipping = avgAOVWithFreeShipping > freeShippingThreshold 
+      ? avgAOVWithFreeShipping - freeShippingThreshold 
+      : 0;
+    
     // ✅ GIFT THRESHOLD IMPACT ANALYSIS (NEW TRACKING)
     const isGiftGatingEnabled = settings?.enableGiftGating || false;
     let giftThresholds: Array<{ threshold: number; productId: string; productTitle: string }> = [];
@@ -405,6 +410,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         console.error('Error parsing gift thresholds:', e);
       }
     }
+    
+    // Calculate average amount added to reach gift threshold
+    const lowestGiftThreshold = giftThresholds.length > 0 
+      ? Math.min(...giftThresholds.map(g => g.threshold)) 
+      : 0;
+    const avgAmountAddedForGift = lowestGiftThreshold > 0 && avgAOVWithGift > lowestGiftThreshold
+      ? avgAOVWithGift - lowestGiftThreshold
+      : 0;
     
     const giftConversionRate = totalOrders > 0 ? (ordersReachingGifts / totalOrders) * 100 : 0;
     const giftAOVLift = avgAOVWithoutGift > 0 ? 
@@ -994,6 +1007,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         freeShippingConversionRate,
         freeShippingAOVLift,
         freeShippingRevenue,
+        avgAmountAddedForFreeShipping,
         
         // ✅ GIFT THRESHOLD ANALYTICS (NEW)
         giftGatingEnabled: isGiftGatingEnabled,
@@ -1005,6 +1019,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         giftConversionRate,
         giftAOVLift,
         giftRevenue,
+        avgAmountAddedForGift,
         giftThresholdBreakdown,
         
         // Metadata
@@ -1137,6 +1152,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         freeShippingConversionRate: 0,
         freeShippingAOVLift: 0,
         freeShippingRevenue: 0,
+        avgAmountAddedForFreeShipping: 0,
         
         // Gift threshold metrics (fallback)
         giftGatingEnabled: false,
@@ -1148,6 +1164,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         giftConversionRate: 0,
         giftAOVLift: 0,
         giftRevenue: 0,
+        avgAmountAddedForGift: 0,
         giftThresholdBreakdown: [],
         
         // ✅ Setup progress (fallback)
@@ -1608,6 +1625,14 @@ export default function Dashboard() {
         icon: OrderIcon,
         showComparison: false,
       },
+      {
+        id: "avg_amount_added_free_shipping",
+        title: "Avg Added to Reach Free Shipping",
+        value: formatCurrency(analytics.avgAmountAddedForFreeShipping),
+        description: `Customers spend ${formatCurrency(analytics.avgAOVWithFreeShipping)} on average (threshold: ${formatCurrency(analytics.freeShippingThreshold)})`,
+        icon: CashDollarIcon,
+        showComparison: false,
+      },
     ] : []),
     // ✅ GIFT GATING IMPACT METRICS (REAL DATA)
     ...(analytics.giftGatingEnabled ? [
@@ -1632,6 +1657,14 @@ export default function Dashboard() {
         title: "Gift-Driven Sales", 
         value: formatCurrency(analytics.giftRevenue),
         description: `${analytics.totalRevenue > 0 ? ((analytics.giftRevenue / analytics.totalRevenue) * 100).toFixed(1) : '0'}% of total revenue`,
+        icon: CashDollarIcon,
+        showComparison: false,
+      },
+      {
+        id: "avg_amount_added_gift",
+        title: "Avg Added to Reach Gift",
+        value: formatCurrency(analytics.avgAmountAddedForGift),
+        description: `Customers spend ${formatCurrency(analytics.avgAOVWithGift)} on average (lowest threshold: ${formatCurrency(analytics.giftThresholds.length > 0 ? Math.min(...analytics.giftThresholds.map((g: any) => g.threshold)) : 0)})`,
         icon: CashDollarIcon,
         showComparison: false,
       },
