@@ -2487,23 +2487,20 @@ export default function Dashboard() {
                 {/* Table Header */}
                 <Box background="bg-surface-secondary" padding="300" borderRadius="200">
                   <InlineStack gap="400" align="space-between">
-                    <Box width="12%">
+                    <Box width="15%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Order</Text>
                     </Box>
-                    <Box width="10%">
+                    <Box width="12%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Items</Text>
                     </Box>
-                    <Box width="20%">
+                    <Box width="25%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Customer Spent</Text>
                     </Box>
-                    <Box width="20%">
+                    <Box width="25%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">Added from AI</Text>
                     </Box>
-                    <Box width="16%">
+                    <Box width="23%">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">AI Impact</Text>
-                    </Box>
-                    <Box width="22%">
-                      <Text as="span" variant="bodyMd" fontWeight="semibold">Products</Text>
                     </Box>
                   </InlineStack>
                 </Box>
@@ -2516,60 +2513,45 @@ export default function Dashboard() {
                     {/* Main Row */}
                     <Box padding="300">
                       <InlineStack gap="400" align="space-between" blockAlign="center">
-                        <Box width="12%">
+                        <Box width="15%">
                           <Text as="span" variant="bodyMd" fontWeight="medium">
                             #{order.orderNumber}
                           </Text>
                         </Box>
-                        <Box width="10%">
+                        <Box width="12%">
                           <Button
                             variant="plain"
                             size="slim"
                             onClick={() => showOrderProducts(order.orderNumber, order.products, order.totalValue, order.attributedValue, order.upliftPercentage)}
                           >
-                            {order.productCount} →
+                            {order.productCount}
                           </Button>
                         </Box>
-                        <Box width="20%">
+                        <Box width="25%">
                           <Text as="span" variant="bodyMd">
                             {formatCurrency(order.totalValue)}
                           </Text>
                         </Box>
-                        <Box width="20%">
+                        <Box width="25%">
                           <Text as="span" variant="bodyMd" fontWeight="semibold">
                             {formatCurrency(order.attributedValue)}
                           </Text>
                         </Box>
-                        <Box width="16%">
+                        <Box width="23%">
                           <Badge tone={order.upliftPercentage >= 50 ? "success" : order.upliftPercentage >= 30 ? "attention" : "info"}>
                             {`${order.upliftPercentage.toFixed(0)}%`}
                           </Badge>
-                        </Box>
-                        <Box width="22%">
-                          <Button
-                            variant="plain"
-                            size="slim"
-                            onClick={() => showOrderProducts(order.orderNumber, order.products, order.totalValue, order.attributedValue, order.upliftPercentage)}
-                          >
-                            View products →
-                          </Button>
                         </Box>
                       </InlineStack>
                     </Box>
                   </Box>
                 ))}
               </BlockStack>
-              
-              <Box padding="300" background="bg-surface-secondary" borderRadius="200">
-                <Text as="p" variant="bodyXs" tone="subdued">
-                  💡 <strong>How to read this:</strong> "Customer Spent" is the total order value. "Added from AI" shows how much came from products they clicked on in recommendations. "AI Impact" shows what percentage of the order came from AI recommendations.
-                </Text>
-              </Box>
             </BlockStack>
           </Card>
         )}
         
-        {/* Product Details Modal */}
+        {/* Product Details Modal - Simple List Only */}
         {selectedOrderProducts && (
           <Modal
             open={true}
@@ -2581,56 +2563,25 @@ export default function Dashboard() {
             }}
           >
             <Modal.Section>
-              <BlockStack gap="400">
-                {/* Order Summary */}
+              <BlockStack gap="300">
+                {/* Product List Only */}
                 <BlockStack gap="200">
-                  <InlineStack gap="400" align="space-between">
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodySm" tone="subdued">Customer Spent</Text>
-                      <Text as="p" variant="headingMd">{formatCurrency(selectedOrderProducts.totalValue)}</Text>
-                    </BlockStack>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodySm" tone="subdued">Added from AI</Text>
-                      <Text as="p" variant="headingMd" fontWeight="bold">{formatCurrency(selectedOrderProducts.attributedValue)}</Text>
-                    </BlockStack>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodySm" tone="subdued">AI Impact</Text>
-                      <Badge tone={selectedOrderProducts.upliftPercentage >= 50 ? "success" : selectedOrderProducts.upliftPercentage >= 30 ? "attention" : "info"} size="large">
-                        {`${selectedOrderProducts.upliftPercentage.toFixed(0)}%`}
-                      </Badge>
-                    </BlockStack>
-                  </InlineStack>
+                  {selectedOrderProducts.products.map((product: string, idx: number) => (
+                    <InlineStack key={idx} gap="200" blockAlign="center">
+                      <Box 
+                        padding="200" 
+                        background="bg-surface-success-hover" 
+                        borderRadius="100"
+                        minWidth="24px"
+                      >
+                        <Text as="span" variant="bodySm" fontWeight="semibold" alignment="center">
+                          {idx + 1}
+                        </Text>
+                      </Box>
+                      <Text as="span" variant="bodyMd">{product}</Text>
+                    </InlineStack>
+                  ))}
                 </BlockStack>
-                
-                <Divider />
-                
-                {/* Product List */}
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingSm">Products from recommendations:</Text>
-                  <BlockStack gap="100">
-                    {selectedOrderProducts.products.map((product: string, idx: number) => (
-                      <InlineStack key={idx} gap="200" blockAlign="center">
-                        <Box 
-                          padding="200" 
-                          background="bg-surface-success-hover" 
-                          borderRadius="100"
-                          minWidth="24px"
-                        >
-                          <Text as="span" variant="bodySm" fontWeight="semibold" alignment="center">
-                            {idx + 1}
-                          </Text>
-                        </Box>
-                        <Text as="span" variant="bodyMd">{product}</Text>
-                      </InlineStack>
-                    ))}
-                  </BlockStack>
-                </BlockStack>
-                
-                <Box padding="300" background="bg-surface-secondary" borderRadius="200">
-                  <Text as="p" variant="bodyXs" tone="subdued">
-                    💡 These products were clicked in your AI recommendations and then purchased by the customer.
-                  </Text>
-                </Box>
               </BlockStack>
             </Modal.Section>
           </Modal>
