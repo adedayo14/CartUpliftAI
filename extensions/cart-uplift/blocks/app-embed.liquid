@@ -227,6 +227,11 @@
         try {
           const giftAmount = {{ block.settings.gift_threshold | json }};
           const type = window.CartUpliftSettings.incentiveType;
+          console.log('🎁 GIFT CONFIGURATION CHECK:', {
+            incentiveType: type,
+            giftThreshold: giftAmount,
+            willConfigureGift: (type === 'gifts' || type === 'combined') && Number(giftAmount)
+          });
           // Inject product selection from the theme setting if provided
           // Liquid will output these JS vars safely whether set or not
           {% if block.settings.gift_product %}
