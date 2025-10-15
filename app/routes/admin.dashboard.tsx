@@ -614,6 +614,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       
       console.log(`🔍 [Attribution Debug] Found ${attributions.length} attribution records for ${session.shop}`);
       console.log(`📅 [Attribution Debug] Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      console.log(`🔢 [Attribution Debug] CODE VERSION: NO-ESTIMATES-v2 (commit 06ddebc)`);
       
       if (attributions.length > 0) {
         console.log(`📊 [Attribution Debug] Sample record:`, {
