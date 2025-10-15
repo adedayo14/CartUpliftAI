@@ -144,7 +144,7 @@ export default function DataReset() {
     <Page
       title="Reset Dashboard Data"
       subtitle="Clear tracking and attribution data to start fresh"
-      backAction={{ content: "Dashboard", url: "/admin/dashboard" }}
+      backAction={{ content: "Home", url: "/app" }}
       narrowWidth
     >
       <BlockStack gap="500">
