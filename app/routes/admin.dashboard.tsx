@@ -436,8 +436,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         avgOrderValue: stats.orders > 0 ? (stats.revenue / stats.orders).toFixed(2) : '0.00'
       }));
     
-    // NOTE: topUpsells will be populated later after fetching tracking data
-    // This placeholder will be replaced with real tracking + revenue data
+    // Top upsells populated from tracking data below (after fetching TrackingEvent records)
     const topUpsells: Array<any> = [];
 
     // ✅ SMART BUNDLE OPPORTUNITIES (REAL CO-OCCURRENCE ANALYSIS)
@@ -1537,7 +1536,7 @@ export default function Dashboard() {
       previousValue: "N/A",
       changePercent: 0,
       changeDirection: "neutral" as const,
-      comparison: "Est. from order patterns",
+      comparison: "From tracked cart opens",
       icon: OrderIcon,
     },
     // ========================================
