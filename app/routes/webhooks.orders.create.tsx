@@ -281,13 +281,15 @@ async function trackMissedOpportunity(shop: string, purchasedIds: string[], last
           productId1: anchors[0] || 'unknown',
           productId2: productId,
           overallScore: 0.5,
-          cooccurrenceCount: 1,
-          updatedAt: new Date()
+          coPurchaseScore: 1.0, // Start at 1.0 for first co-purchase
+          sampleSize: 1,
+          computedAt: new Date()
         },
         update: {
-          cooccurrenceCount: { increment: 1 },
+          coPurchaseScore: { increment: 0.1 }, // Increase by 0.1 each time they're bought together
           overallScore: { increment: 0.05 }, // Gradually learn this is a good pairing
-          updatedAt: new Date()
+          sampleSize: { increment: 1 },
+          computedAt: new Date()
         }
       }).catch((e: any) => console.warn("Failed to update similarity:", e));
     }
