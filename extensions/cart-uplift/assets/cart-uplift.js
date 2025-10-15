@@ -47,6 +47,8 @@
         formData.append('sessionId', sessionId);
         
         if (data.productId) formData.append('productId', data.productId);
+        if (data.variantId) formData.append('variantId', data.variantId);
+        if (data.parentProductId) formData.append('parentProductId', data.parentProductId);
         if (data.productTitle) formData.append('productTitle', data.productTitle);
         if (data.revenue) formData.append('revenue', data.revenue.toString());
         if (data.orderId) formData.append('orderId', data.orderId);
@@ -2137,7 +2139,7 @@
               ${reviewHtml ? `<div class="cartuplift-product-review">${reviewHtml}</div>` : ''}
               <div class="cartuplift-recommendation-price">${this.formatMoney(product.priceCents || 0)}</div>
             </div>
-            <button class="cartuplift-add-recommendation-circle" data-variant-id="${product.variant_id}">
+            <button class="cartuplift-add-recommendation-circle" data-product-id="${product.id}" data-variant-id="${product.variant_id}">
               +
             </button>
           </div>
@@ -2196,6 +2198,7 @@
                      onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'">
                 <div class="cartuplift-grid-hover">
                   <button class="cartuplift-grid-add-btn" 
+                          data-product-id="${product.id}"
                           data-variant-id="${product.variant_id}" 
                           data-grid-index="${index}"
                           aria-label="Add ${product.title}">
@@ -3375,15 +3378,18 @@
           
           const productTitle = card.querySelector('h4')?.textContent || `Product ${selectedVariantId}`;
           const position = Array.from(card.parentElement.children).indexOf(card);
+          const productId = e.target.dataset.productId; // Get parent product ID
           
-          // Track recommendation click
+          // Track recommendation click with both variant and product IDs
           CartAnalytics.trackEvent('click', {
             productId: selectedVariantId,
+            variantId: selectedVariantId,
+            parentProductId: productId,
             productTitle: productTitle,
             source: 'cart_drawer',
             position: position
           });
-          console.log('📊 Tracking recommendation click:', { selectedVariantId, productTitle, position });
+          console.log('📊 Tracking recommendation click:', { selectedVariantId, productId, productTitle, position });
           
           this.addToCart(selectedVariantId, 1);
         } else if (e.target.classList.contains('cartuplift-size-dropdown')) {
@@ -3413,17 +3419,20 @@
           const productUrl = productLink.getAttribute('href');
           const productHandle = productUrl ? productUrl.split('/').pop().split('?')[0] : null;
           const variantId = e.target.dataset.variantId;
+          const productId = e.target.dataset.productId; // Get parent product ID
           const productTitle = productLink.textContent;
           
-          // Track recommendation click
+          // Track recommendation click with both variant and product IDs
           const position = Array.from(listItem.parentElement.children).indexOf(listItem);
           CartAnalytics.trackEvent('click', {
             productId: variantId,
+            variantId: variantId,
+            parentProductId: productId,
             productTitle: productTitle,
             source: 'cart_drawer',
             position: position
           });
-          console.log('📊 Tracking click event:', { variantId, productTitle, position });
+          console.log('📊 Tracking click event:', { variantId, productId, productTitle, position });
           
           if (productHandle && variantId) {
             this.handleListProductAdd(productHandle, variantId, productTitle, button);
@@ -3445,19 +3454,22 @@
           button.dataset.processing = 'true';
           
           const variantId = button.dataset.variantId;
+          const productId = button.dataset.productId; // Get parent product ID
           const gridIndex = button.dataset.gridIndex;
           const gridItem = button.closest('.cartuplift-grid-item');
           const productHandle = gridItem ? gridItem.dataset.productHandle : null;
           const productTitle = gridItem ? gridItem.dataset.title : `Product ${variantId}`;
           
-          // Track recommendation click
+          // Track recommendation click with both variant and product IDs
           CartAnalytics.trackEvent('click', {
             productId: variantId,
+            variantId: variantId,
+            parentProductId: productId,
             productTitle: productTitle,
             source: 'cart_drawer',
             position: gridIndex
           });
-          console.log('📊 Tracking grid click event:', { variantId, productTitle, gridIndex });
+          console.log('📊 Tracking grid click event:', { variantId, productId, productTitle, gridIndex });
           
           // Check if we need to show variant selector or add directly
           if (productHandle && variantId) {

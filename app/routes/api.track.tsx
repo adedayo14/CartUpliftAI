@@ -22,6 +22,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Handle recommendation/product tracking (for ML analytics)
     if (eventType === "impression" || eventType === "click" || eventType === "add_to_cart") {
       const productId = formData.get("productId") as string;
+      const variantId = formData.get("variantId") as string | null;
+      const parentProductId = formData.get("parentProductId") as string | null;
       const productTitle = formData.get("productTitle") as string | null;
       const source = formData.get("source") as string | null;
       const position = formData.get("position") ? parseInt(formData.get("position") as string) : null;
@@ -30,15 +32,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Missing productId for product event" }, { status: 400 });
       }
 
+      // Build metadata to store variant/product relationship
+      const metadata: any = {};
+      if (variantId) metadata.variantId = variantId;
+      if (parentProductId) metadata.productId = parentProductId;
+
       await (db as any).trackingEvent.create({
         data: {
           shop,
           event: eventType,
-          productId,
+          productId, // This will be the variant ID in most cases
           productTitle: productTitle || undefined,
           sessionId: sessionId || undefined,
           source: source || "cart_drawer",
           position,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
           createdAt: new Date(),
         },
       });
