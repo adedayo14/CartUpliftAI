@@ -20,6 +20,8 @@ import {
   Box,
   ProgressBar,
   Banner,
+  Collapsible,
+  Divider,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { 
@@ -1175,6 +1177,20 @@ export default function Dashboard() {
   const [forceShowDashboard, setForceShowDashboard] = useState(false);
   const [webhookSetupState, setWebhookSetupState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [webhookMessage, setWebhookMessage] = useState('');
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  
+  // Toggle order expansion
+  const toggleOrder = (orderNumber: string) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderNumber)) {
+        newSet.delete(orderNumber);
+      } else {
+        newSet.add(orderNumber);
+      }
+      return newSet;
+    });
+  };
   
   // 🔍 CLIENT-SIDE DEBUG: Log loader data
   useEffect(() => {
@@ -2470,17 +2486,111 @@ export default function Dashboard() {
                 </Text>
               </BlockStack>
               
-              <DataTable
-                columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'text']}
-                headings={['Order', 'Customer Spent', 'Added from AI', 'AI Impact', 'What They Added']}
-                rows={(analytics as any).orderUpliftBreakdown.map((order: any) => [
-                  `#${order.orderNumber}`,
-                  formatCurrency(order.totalValue),
-                  formatCurrency(order.attributedValue),
-                  `${order.upliftPercentage.toFixed(0)}%`,
-                  `${order.productCount} item${order.productCount > 1 ? 's' : ''}: ${order.products.slice(0, 2).join(', ')}${order.products.length > 2 ? ` +${order.products.length - 2} more` : ''}`
-                ])}
-              />
+              {/* Custom expandable rows table */}
+              <BlockStack gap="0">
+                {/* Table Header */}
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="400" align="space-between">
+                    <Box width="15%">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">Order</Text>
+                    </Box>
+                    <Box width="18%">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">Customer Spent</Text>
+                    </Box>
+                    <Box width="18%">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">Added from AI</Text>
+                    </Box>
+                    <Box width="15%">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">AI Impact</Text>
+                    </Box>
+                    <Box width="34%">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">Products</Text>
+                    </Box>
+                  </InlineStack>
+                </Box>
+                
+                {/* Table Rows */}
+                {(analytics as any).orderUpliftBreakdown.map((order: any, index: number) => {
+                  const isExpanded = expandedOrders.has(order.orderNumber);
+                  const hasMultipleProducts = order.products.length > 1;
+                  
+                  return (
+                    <Box key={order.orderNumber}>
+                      {index > 0 && <Divider />}
+                      
+                      {/* Main Row */}
+                      <Box 
+                        padding="300"
+                        background={isExpanded ? "bg-surface-hover" : undefined}
+                      >
+                        <InlineStack gap="400" align="space-between" blockAlign="center">
+                          <Box width="15%">
+                            <Text as="span" variant="bodyMd" fontWeight="medium">
+                              #{order.orderNumber}
+                            </Text>
+                          </Box>
+                          <Box width="18%">
+                            <Text as="span" variant="bodyMd">
+                              {formatCurrency(order.totalValue)}
+                            </Text>
+                          </Box>
+                          <Box width="18%">
+                            <Text as="span" variant="bodyMd" fontWeight="semibold">
+                              {formatCurrency(order.attributedValue)}
+                            </Text>
+                          </Box>
+                          <Box width="15%">
+                            <Badge tone={order.upliftPercentage >= 50 ? "success" : order.upliftPercentage >= 30 ? "attention" : "info"}>
+                              {`${order.upliftPercentage.toFixed(0)}%`}
+                            </Badge>
+                          </Box>
+                          <Box width="34%">
+                            {hasMultipleProducts ? (
+                              <Button
+                                variant="plain"
+                                size="slim"
+                                onClick={() => toggleOrder(order.orderNumber)}
+                                disclosure={isExpanded ? "up" : "down"}
+                              >
+                                {order.productCount} item{order.productCount > 1 ? 's' : ''}
+                              </Button>
+                            ) : (
+                              <Text as="span" variant="bodyMd" tone="subdued">
+                                1 item: {order.products[0]}
+                              </Text>
+                            )}
+                          </Box>
+                        </InlineStack>
+                        
+                        {/* Expandable Product List */}
+                        {hasMultipleProducts && (
+                          <Collapsible
+                            open={isExpanded}
+                            id={`order-${order.orderNumber}-products`}
+                            transition={{duration: '200ms', timingFunction: 'ease-in-out'}}
+                          >
+                            <Box paddingBlockStart="300" paddingInlineStart="400">
+                              <BlockStack gap="200">
+                                <Text as="p" variant="bodySm" fontWeight="semibold" tone="subdued">
+                                  Products from recommendations:
+                                </Text>
+                                <BlockStack gap="100">
+                                  {order.products.map((product: string, idx: number) => (
+                                    <InlineStack key={idx} gap="200" blockAlign="center">
+                                      <Text as="span" variant="bodySm" tone="subdued">•</Text>
+                                      <Text as="span" variant="bodySm">{product}</Text>
+                                    </InlineStack>
+                                  ))}
+                                </BlockStack>
+                              </BlockStack>
+                            </Box>
+                          </Collapsible>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </BlockStack>
               
               <Box padding="300" background="bg-surface-secondary" borderRadius="200">
                 <Text as="p" variant="bodyXs" tone="subdued">
