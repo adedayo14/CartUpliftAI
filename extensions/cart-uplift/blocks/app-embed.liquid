@@ -526,7 +526,6 @@
       "type": "select",
       "id": "incentive_type",
       "label": "Choose goal",
-      "info": "Select what you want to offer customers. Configure the relevant sections below.",
       "options": [
         {
           "value": "combined",
@@ -541,19 +540,12 @@
           "label": "Gift with purchase"
         }
       ],
-      "default": "free_shipping"
-    },
-    {
-      "type": "paragraph",
-      "content": "⚠️ Configure the sections below based on your goal selection above. If you chose 'Free shipping goal', configure free shipping settings. If you chose 'Gift with purchase', configure gift settings. If you chose 'Free shipping + gifts', configure both sections."
+      "default": "free_shipping",
+      "info": "Choose 'Free shipping + gifts' to enable both features. Configure relevant sections below."
     },
     {
       "type": "header",
-      "content": "🚚 Free shipping goal settings"
-    },
-    {
-      "type": "paragraph",
-      "content": "Only configure these if you selected 'Free shipping goal' or 'Free shipping + gifts' above."
+      "content": "Free shipping goal"
     },
     {
       "type": "checkbox",
@@ -593,24 +585,19 @@
     },
     {
       "type": "header",
-      "content": "🎁 Gift with purchase settings"
-    },
-    {
-      "type": "paragraph",
-      "content": "Only configure these if you selected 'Gift with purchase' or 'Free shipping + gifts' above."
+      "content": "Gift with purchase"
     },
     {
       "type": "number",
       "id": "gift_threshold",
       "label": "Gift unlock amount ($)",
-      "default": 150,
-      "info": "Cart total required to unlock the gift product"
+      "default": 150
     },
     {
       "type": "product",
       "id": "gift_product",
       "label": "Gift product",
-      "info": "⚠️ REQUIRED: Select the product to give as a gift. Without this, auto-add won't work!"
+      "info": "REQUIRED for auto-add: Select product to give as gift when threshold is reached"
     },
     {
       "type": "text",
