@@ -85,11 +85,13 @@ async function processOrderForAttribution(shop: string, order: any) {
       lineItemCount: order.line_items?.length 
     });
     
-    // Extract purchased product IDs
-    const purchasedProductIds = order.line_items?.map((item: any) => {
+    // Extract purchased product IDs AND variant IDs (for matching with tracking)
+    const purchasedProductIds = order.line_items?.flatMap((item: any) => {
       const productId = item.product_id?.toString();
-      return productId;
-    }).filter(Boolean) || [];
+      const variantId = item.variant_id?.toString();
+      // Return both product ID and variant ID for better matching
+      return [productId, variantId].filter(Boolean);
+    }) || [];
     
     console.log("🛍️ Purchased products:", purchasedProductIds);
     
