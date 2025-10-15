@@ -140,7 +140,8 @@ async function processOrderForAttribution(shop: string, order: any) {
         .map(String) // Normalize to strings
     );
     
-    console.log(`👆 Clicked products: ${Array.from(clickedProductIds).slice(0, 5).join(', ')}${clickedProductIds.size > 5 ? '...' : ''}`);
+    console.log(`👆 Clicked products (${clickedProductIds.size} unique):`, Array.from(clickedProductIds).slice(0, 10).join(', '));
+    console.log(`🛒 Purchased product IDs (${purchasedProductIds.length}):`, purchasedProductIds.slice(0, 10).join(', '));
     
     // Parse metadata to find recommended products that were ALSO clicked
     let attributedProducts: string[] = [];
@@ -164,6 +165,11 @@ async function processOrderForAttribution(shop: string, order: any) {
         const matches = purchasedProductIds.filter((pid: string) => {
           const wasRecommended = recommendedIds.includes(pid) || recommendedIds.includes(Number(pid)) || recommendedIds.includes(String(pid));
           const wasClicked = clickedProductIds.has(String(pid));
+          
+          if (wasRecommended) {
+            console.log(`   🔍 Product ${pid}: recommended=true, clicked=${wasClicked}`);
+          }
+          
           return wasRecommended && wasClicked;
         });
         
