@@ -1275,7 +1275,7 @@ export default function Dashboard() {
   const exportAttributionData = () => {
     const headers = ['Metric', 'Value'];
     const rows = [
-      ['Attributed Revenue', formatCurrency(analytics.attributedRevenue)],
+      ['Attributed Sales', formatCurrency(analytics.attributedRevenue)],
       ['Attributed Orders', analytics.attributedOrders.toString()],
       ['ROI', `${analytics.roi.toFixed(1)}x`],
       ['App Cost', formatCurrency(analytics.appCost)],
@@ -1289,7 +1289,7 @@ export default function Dashboard() {
 
   const exportTopProducts = () => {
     if (!analytics.topAttributedProducts || analytics.topAttributedProducts.length === 0) return;
-    const headers = ['Product', 'Orders', 'Revenue', 'Average per Order'];
+    const headers = ['Product', 'Orders', 'Sales', 'Average per Order'];
     const rows = analytics.topAttributedProducts.map((p: any) => [
       `"${p.productTitle || p.productId}"`,
       p.orders,
@@ -1318,7 +1318,7 @@ export default function Dashboard() {
 
   const exportRecommendations = () => {
     if (!analytics.topRecommended || analytics.topRecommended.length === 0) return;
-    const headers = ['Product', 'Times Shown', 'Times Clicked', 'Click Rate', 'Revenue'];
+    const headers = ['Product', 'Times Shown', 'Times Clicked', 'Click Rate', 'Sales'];
     const rows = analytics.topRecommended.map((r: any) => [
       `"${r.productTitle || r.productId}"`,
       r.impressions || 0,
@@ -1361,8 +1361,8 @@ export default function Dashboard() {
     
     // Top Products
     if (analytics.topAttributedProducts && analytics.topAttributedProducts.length > 0) {
-      sections.push('TOP REVENUE GENERATORS');
-      sections.push('Product,Orders,Revenue,Avg per Order');
+      sections.push('TOP SALES GENERATORS');
+      sections.push('Product,Orders,Sales,Avg per Order');
       analytics.topAttributedProducts.forEach((p: any) => {
         sections.push(`"${p.productTitle || p.productId}",${p.orders},${analytics.currency}${p.revenue.toFixed(2)},${analytics.currency}${(p.revenue / p.orders).toFixed(2)}`);
       });
@@ -1380,7 +1380,7 @@ export default function Dashboard() {
       sections.push(`AOV With Free Shipping,${formatCurrency(analytics.avgAOVWithFreeShipping)}`);
       sections.push(`AOV Without Free Shipping,${formatCurrency(analytics.avgAOVWithoutFreeShipping)}`);
       sections.push(`AOV Lift,${analytics.freeShippingAOVLift.toFixed(1)}%`);
-      sections.push(`Free Shipping Revenue,${formatCurrency(analytics.freeShippingRevenue)}`);
+      sections.push(`Free Shipping Sales,${formatCurrency(analytics.freeShippingRevenue)}`);
       sections.push('');
     }
     
@@ -1493,7 +1493,7 @@ export default function Dashboard() {
     // ========================================
     {
       id: "total_revenue",
-      title: "Total Store Revenue",
+      title: "Total Store Sales",
       value: formatCurrency(analytics.totalRevenue),
       previousValue: formatCurrency(analytics.previousMetrics.totalRevenue),
       changePercent: Math.abs(calculateChange(analytics.totalRevenue, analytics.previousMetrics.totalRevenue)),
@@ -1503,7 +1503,7 @@ export default function Dashboard() {
     },
     {
       id: "upsell_revenue",
-      title: "Revenue from AI Recommendations",
+      title: "Sales from AI Recommendations",
       value: formatCurrency(analytics.attributedRevenue),
       previousValue: formatCurrency(analytics.previousMetrics.attributedRevenue),
       changePercent: Math.abs(calculateChange(analytics.attributedRevenue, analytics.previousMetrics.attributedRevenue)),
@@ -1513,7 +1513,7 @@ export default function Dashboard() {
     },
     {
       id: "cart_uplift_impact",
-      title: "% of Revenue from Recommendations",
+      title: "% of Sales from Recommendations",
       value: `${analytics.attributedRevenue > 0 && analytics.totalRevenue > 0 ? ((analytics.attributedRevenue / analytics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       previousValue: `${analytics.previousMetrics.attributedRevenue > 0 && analytics.previousMetrics.totalRevenue > 0 ? ((analytics.previousMetrics.attributedRevenue / analytics.previousMetrics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       changePercent: Math.abs(calculateChange(
@@ -1629,7 +1629,7 @@ export default function Dashboard() {
       },
       {
         id: "gift_revenue_impact",
-        title: "Gift-Driven Revenue", 
+        title: "Gift-Driven Sales", 
         value: formatCurrency(analytics.giftRevenue),
         description: `${analytics.totalRevenue > 0 ? ((analytics.giftRevenue / analytics.totalRevenue) * 100).toFixed(1) : '0'}% of total revenue`,
         icon: CashDollarIcon,
@@ -2438,7 +2438,7 @@ export default function Dashboard() {
               <InlineStack align="space-between" blockAlign="start">
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    Top Revenue Generators
+                    Top Sales Generators
                   </Text>
                   <Text as="p" variant="bodySm" tone="subdued">
                     Products that made the most money from AI recommendations
@@ -2451,7 +2451,7 @@ export default function Dashboard() {
               
               <DataTable
                 columnContentTypes={['text', 'numeric', 'numeric', 'numeric']}
-                headings={['Product', 'Orders', 'Revenue', 'Avg per Order']}
+                headings={['Product', 'Orders', 'Sales', 'Avg per Order']}
                 rows={analytics.topAttributedProducts.map((product: any) => [
                   product.productTitle || `Product ${product.productId}`,
                   product.orders.toString(),
