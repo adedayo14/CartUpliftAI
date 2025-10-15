@@ -329,6 +329,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Auto-detect if free shipping is enabled based on threshold or explicit setting
     const isFreeShippingEnabled = (settings?.enableFreeShipping || freeShippingThreshold > 0);
     
+    console.log('🚢 FREE SHIPPING DEBUG:', {
+      enableFreeShipping: settings?.enableFreeShipping,
+      freeShippingThreshold,
+      isFreeShippingEnabled,
+      shop: session.shop
+    });
+    
     let ordersWithFreeShipping = 0;
     let ordersWithoutFreeShipping = 0;
     let avgAOVWithFreeShipping = 0;
@@ -376,6 +383,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     // Auto-detect if gift gating is enabled based on thresholds or explicit setting
     const isGiftGatingEnabled = settings?.enableGiftGating || giftThresholds.length > 0;
+    
+    console.log('🎁 GIFT GATING DEBUG:', {
+      enableGiftGating: settings?.enableGiftGating,
+      giftThresholdsLength: giftThresholds.length,
+      giftThresholds,
+      isGiftGatingEnabled,
+      shop: session.shop
+    });
     
     let ordersReachingGifts = 0;
     let ordersNotReachingGifts = 0;
