@@ -324,17 +324,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const checkoutsCompleted = totalOrders;
     const cartToCheckoutRate = cartImpressions > 0 ? (totalOrders / cartImpressions) * 100 : 0;
     
-    // ✅ FREE SHIPPING BAR IMPACT ANALYSIS (NEW TRACKING)
+    // ✅ FREE SHIPPING THRESHOLD TRACKING - Simple percentage calculation
     const freeShippingThreshold = settings?.freeShippingThreshold || 0;
-    // Auto-detect if free shipping is enabled based on threshold or explicit setting
-    const isFreeShippingEnabled = (settings?.enableFreeShipping || freeShippingThreshold > 0);
-    
-    console.log('🚢 FREE SHIPPING DEBUG:', {
-      enableFreeShipping: settings?.enableFreeShipping,
-      freeShippingThreshold,
-      isFreeShippingEnabled,
-      shop: session.shop
-    });
     
     let ordersWithFreeShipping = 0;
     let ordersWithoutFreeShipping = 0;
@@ -343,21 +334,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let freeShippingRevenue = 0;
     let nonFreeShippingRevenue = 0;
     
-    if (isFreeShippingEnabled) {
-      orders.forEach((order: any) => {
-        const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
-        if (orderTotal >= freeShippingThreshold) {
-          ordersWithFreeShipping += 1;
-          freeShippingRevenue += orderTotal;
-        } else {
-          ordersWithoutFreeShipping += 1;
-          nonFreeShippingRevenue += orderTotal;
-        }
-      });
-      
-      avgAOVWithFreeShipping = ordersWithFreeShipping > 0 ? freeShippingRevenue / ordersWithFreeShipping : 0;
-      avgAOVWithoutFreeShipping = ordersWithoutFreeShipping > 0 ? nonFreeShippingRevenue / ordersWithoutFreeShipping : 0;
-    }
+    // Always calculate - check if each order reached the threshold
+    orders.forEach((order: any) => {
+      const orderTotal = parseFloat(order.node.totalPriceSet.shopMoney.amount);
+      if (orderTotal >= freeShippingThreshold) {
+        ordersWithFreeShipping += 1;
+        freeShippingRevenue += orderTotal;
+      } else {
+        ordersWithoutFreeShipping += 1;
+        nonFreeShippingRevenue += orderTotal;
+      }
+    });
+    
+    avgAOVWithFreeShipping = ordersWithFreeShipping > 0 ? freeShippingRevenue / ordersWithFreeShipping : 0;
+    avgAOVWithoutFreeShipping = ordersWithoutFreeShipping > 0 ? nonFreeShippingRevenue / ordersWithoutFreeShipping : 0;
     
     // Calculate free shipping bar effectiveness
     const freeShippingConversionRate = totalOrders > 0 ? (ordersWithFreeShipping / totalOrders) * 100 : 0;
@@ -381,17 +371,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     }
     
-    // Auto-detect if gift gating is enabled based on thresholds or explicit setting
-    const isGiftGatingEnabled = settings?.enableGiftGating || giftThresholds.length > 0;
-    
-    console.log('🎁 GIFT GATING DEBUG:', {
-      enableGiftGating: settings?.enableGiftGating,
-      giftThresholdsLength: giftThresholds.length,
-      giftThresholds,
-      isGiftGatingEnabled,
-      shop: session.shop
-    });
-    
     let ordersReachingGifts = 0;
     let ordersNotReachingGifts = 0;
     let avgAOVWithGift = 0;
@@ -400,7 +379,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let nonGiftRevenue = 0;
     let giftThresholdBreakdown: Array<{ threshold: number; ordersReached: number; percentReached: number }> = [];
     
-    if (isGiftGatingEnabled && giftThresholds.length > 0) {
+    // Always calculate if thresholds exist
+    if (giftThresholds.length > 0) {
       // Find the lowest gift threshold (first milestone)
       const lowestThreshold = Math.min(...giftThresholds.map(g => g.threshold));
       
@@ -1020,8 +1000,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         // Additional metrics - calculated from real data only
         cartAbandonmentRate: cartToCheckoutRate > 0 ? 100 - cartToCheckoutRate : 0,
         
-        // ✅ FREE SHIPPING BAR ANALYTICS (NEW)
-        freeShippingEnabled: isFreeShippingEnabled,
+        // ✅ THRESHOLD ANALYTICS - Always calculated
         freeShippingThreshold,
         ordersWithFreeShipping,
         ordersWithoutFreeShipping,
@@ -1033,7 +1012,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         avgAmountAddedForFreeShipping,
         
         // ✅ GIFT THRESHOLD ANALYTICS (NEW)
-        giftGatingEnabled: isGiftGatingEnabled,
+        
+        // ✅ GIFT THRESHOLD ANALYTICS - Always calculated
         giftThresholds,
         ordersReachingGifts,
         ordersNotReachingGifts,
@@ -1435,7 +1415,7 @@ export default function Dashboard() {
     }
     
     // Free Shipping Metrics
-    if (analytics.freeShippingEnabled) {
+    if (analytics.freeShippingThreshold > 0) {
       sections.push('FREE SHIPPING METRICS');
       sections.push('Metric,Value');
       sections.push(`Free Shipping Threshold,${formatCurrency(analytics.freeShippingThreshold)}`);
@@ -1450,7 +1430,7 @@ export default function Dashboard() {
     }
     
     // Gift Threshold Metrics
-    if (analytics.giftGatingEnabled && analytics.giftThresholds.length > 0) {
+    if (analytics.giftThresholds.length > 0) {
       sections.push('GIFT THRESHOLD METRICS');
       sections.push('Metric,Value');
       sections.push(`Gift Achievement Rate,${analytics.giftConversionRate.toFixed(1)}%`);
@@ -1655,72 +1635,35 @@ export default function Dashboard() {
       comparison: `Per order with attributed recommendations`,
       icon: CashDollarIcon,
     },
-    // ✅ FREE SHIPPING BAR IMPACT METRICS (REAL DATA)
-    ...(analytics.freeShippingEnabled ? [
+    // ✅ SIMPLE THRESHOLD METRICS - Always visible
+    {
+      id: "free_shipping_success_rate", 
+      title: "Free Shipping Achievement Rate",
+      value: `${analytics.freeShippingConversionRate.toFixed(1)}%`,
+      previousValue: "N/A",
+      changePercent: 0,
+      changeDirection: "neutral" as const,
+      comparison: `${analytics.ordersWithFreeShipping} of ${analytics.totalOrders} orders reached threshold`,
+      icon: OrderIcon,
+    },
+    {
+      id: "gift_achievement_rate", 
+      title: "Gift Achievement Rate",
+      value: `${analytics.giftConversionRate.toFixed(1)}%`,
+      previousValue: "N/A",
+      changePercent: 0,
+      changeDirection: "neutral" as const,
+      comparison: `${analytics.ordersReachingGifts} of ${analytics.totalOrders} orders reached threshold`,
+      icon: OrderIcon,
+    },
       {
-        id: "free_shipping_aov_boost",
-        title: "Free Shipping AOV Boost",
-        value: `${analytics.freeShippingAOVLift > 0 ? '+' : ''}${analytics.freeShippingAOVLift.toFixed(1)}%`,
-        description: `${formatCurrency(analytics.avgAOVWithFreeShipping)} vs ${formatCurrency(analytics.avgAOVWithoutFreeShipping)} without`,
-        icon: CashDollarIcon,
-        showComparison: false,
-      },
-      {
-        id: "free_shipping_success_rate", 
-        title: "Free Shipping Achievement Rate",
-        value: `${analytics.freeShippingConversionRate.toFixed(1)}%`,
-        description: `${analytics.ordersWithFreeShipping} of ${analytics.totalOrders} orders qualify`,
-        icon: OrderIcon,
-        showComparison: false,
-      },
-      {
-        id: "avg_amount_added_free_shipping",
-        title: "Avg Added to Reach Free Shipping",
-        value: formatCurrency(analytics.avgAmountAddedForFreeShipping),
-        description: `Customers spend ${formatCurrency(analytics.avgAOVWithFreeShipping)} on average (threshold: ${formatCurrency(analytics.freeShippingThreshold)})`,
-        icon: CashDollarIcon,
-        showComparison: false,
-      },
-    ] : []),
-    // ✅ GIFT GATING IMPACT METRICS (REAL DATA)
-    ...(analytics.giftGatingEnabled ? [
-      {
-        id: "gift_aov_boost",
-        title: "Gift AOV Boost",
-        value: `${analytics.giftAOVLift > 0 ? '+' : ''}${analytics.giftAOVLift.toFixed(1)}%`,
-        description: `${formatCurrency(analytics.avgAOVWithGift)} vs ${formatCurrency(analytics.avgAOVWithoutGift)} without`,
-        icon: CashDollarIcon,
-        showComparison: false,
-      },
-      {
-        id: "gift_achievement_rate", 
-        title: "Gift Achievement Rate",
-        value: `${analytics.giftConversionRate.toFixed(1)}%`,
-        description: `${analytics.ordersReachingGifts} of ${analytics.totalOrders} orders earn gifts`,
-        icon: OrderIcon,
-        showComparison: false,
-      },
-      {
-        id: "gift_revenue_impact",
-        title: "Gift-Driven Sales", 
-        value: formatCurrency(analytics.giftRevenue),
-        description: `${analytics.totalRevenue > 0 ? ((analytics.giftRevenue / analytics.totalRevenue) * 100).toFixed(1) : '0'}% of total revenue`,
-        icon: CashDollarIcon,
-        showComparison: false,
-      },
-      {
-        id: "avg_amount_added_gift",
-        title: "Avg Added to Reach Gift",
-        value: formatCurrency(analytics.avgAmountAddedForGift),
-        description: `Customers spend ${formatCurrency(analytics.avgAOVWithGift)} on average (lowest threshold: ${formatCurrency(analytics.giftThresholds.length > 0 ? Math.min(...analytics.giftThresholds.map((g: any) => g.threshold)) : 0)})`,
-        icon: CashDollarIcon,
-        showComparison: false,
-      },
-    ] : [])
+      comparison: `${analytics.ordersReachingGifts} of ${analytics.totalOrders} orders reached threshold`,
+      icon: OrderIcon,
+    },
   ];
 
   // Filter metrics based on user preferences - show only selected cards
-  const keyMetrics = allMetrics.filter(metric => selectedCards.has(metric.id));
+  const keyMetrics = allMetrics.filter(metric => metric.id && selectedCards.has(metric.id));
 
   const upsellTableRows = analytics.topUpsells.map((item: any) => [
     item.product,
@@ -1817,7 +1760,7 @@ export default function Dashboard() {
           type: "info",
           title: "Opportunity to Increase Order Size",
           description: `Average order of ${formatCurrency(analytics.averageOrderValue)} suggests customers buy one item at a time. Consider using bundles or free shipping incentives.`,
-          action: analytics.freeShippingEnabled ? "Adjust free shipping threshold" : "Try free shipping above a threshold"
+          action: analytics.freeShippingThreshold > 0 ? "Adjust free shipping threshold" : "Try free shipping above a threshold"
         });
       } else if (analytics.averageOrderValue > 150) {
         insights.push({
@@ -1830,7 +1773,7 @@ export default function Dashboard() {
     }
     
     // 4. Free shipping effectiveness
-    if (analytics.freeShippingEnabled) {
+    if (analytics.freeShippingThreshold > 0) {
       if (analytics.freeShippingConversionRate < 15) {
         insights.push({
           type: "warning",
@@ -1856,7 +1799,7 @@ export default function Dashboard() {
     }
     
     // 5. Gift threshold effectiveness (NEW)
-    if (analytics.giftGatingEnabled && analytics.giftThresholds.length > 0) {
+    if (analytics.giftThresholds.length > 0) {
       if (analytics.giftConversionRate < 10) {
         insights.push({
           type: "warning",
@@ -2297,7 +2240,7 @@ export default function Dashboard() {
         </Card>
         
         {/* �💡 QUICK WIN BANNER - Show best opportunity right now */}
-        {analytics.freeShippingEnabled && analytics.freeShippingConversionRate < 15 && analytics.freeShippingConversionRate > 0 && (
+        {analytics.freeShippingThreshold > 0 && analytics.freeShippingConversionRate < 15 && analytics.freeShippingConversionRate > 0 && (
           <Card>
             <Box padding="400" background="bg-surface-caution" borderRadius="200">
               <InlineStack gap="400" align="space-between" blockAlign="center" wrap={false}>
@@ -2779,9 +2722,9 @@ export default function Dashboard() {
                           </InlineStack>
                         )}
                         
-                        {metric.description && !metric.comparison && (
+                        {(metric as any).description && !metric.comparison && (
                           <Text as="p" variant="bodySm" tone="subdued">
-                            {metric.description}
+                            {(metric as any).description}
                           </Text>
                         )}
                       </BlockStack>
@@ -3121,8 +3064,8 @@ export default function Dashboard() {
                 <Checkbox
                   key={metric.id}
                   label={metric.title}
-                  checked={selectedCards.has(metric.id)}
-                  onChange={() => toggleCardVisibility(metric.id)}
+                  checked={metric.id ? selectedCards.has(metric.id) : false}
+                  onChange={() => metric.id && toggleCardVisibility(metric.id)}
                 />
               ))}
             </BlockStack>
