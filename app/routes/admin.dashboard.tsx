@@ -26,7 +26,8 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { 
   CashDollarIcon, 
   OrderIcon,
-  MagicIcon
+  MagicIcon,
+  ChartVerticalIcon
 } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { getSettings } from "../models/settings.server";
@@ -1513,7 +1514,7 @@ export default function Dashboard() {
     },
     {
       id: "cart_uplift_impact",
-      title: "% of Sales from Recommendations",
+      title: "Sales from Recommendations",
       value: `${analytics.attributedRevenue > 0 && analytics.totalRevenue > 0 ? ((analytics.attributedRevenue / analytics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       previousValue: `${analytics.previousMetrics.attributedRevenue > 0 && analytics.previousMetrics.totalRevenue > 0 ? ((analytics.previousMetrics.attributedRevenue / analytics.previousMetrics.totalRevenue) * 100).toFixed(1) : "0.0"}%`,
       changePercent: Math.abs(calculateChange(
@@ -1522,7 +1523,7 @@ export default function Dashboard() {
       )),
       changeDirection: (analytics.attributedRevenue / (analytics.totalRevenue || 1)) >= (analytics.previousMetrics.attributedRevenue / (analytics.previousMetrics.totalRevenue || 1)) ? "up" : "down",
       comparison: `vs. previous ${getTimeframeLabel(analytics.timeframe).toLowerCase()}`,
-      icon: CashDollarIcon,
+      icon: ChartVerticalIcon,
     },
     // ========================================
     // MIDDLE ROW - ENGAGEMENT & CONVERSION (Funnel)
