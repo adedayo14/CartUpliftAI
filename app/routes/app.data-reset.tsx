@@ -1,9 +1,14 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useActionData, useSubmit } from "@remix-run/react";
 import { Page, Card, Button, BlockStack, Text, Banner, InlineStack, Badge } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await authenticate.admin(request);
+  return json({});
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
