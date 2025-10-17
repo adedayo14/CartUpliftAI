@@ -356,6 +356,49 @@ export default function AppSettings() {
           </BlockStack>
         </Card>
 
+        {/* Cart Interaction */}
+        <Card>
+          <BlockStack gap="400">
+            <BlockStack gap="200">
+              <Text variant="headingMd" as="h2">Cart Interaction</Text>
+              <Text as="p" variant="bodyMd" tone="subdued">
+                Customize cart text and styling options.
+              </Text>
+            </BlockStack>
+
+            <FormLayout>
+              <Checkbox
+                label="Uppercase recommendation title"
+                checked={formSettings.enableRecommendationTitleCaps || false}
+                onChange={(value) => updateSetting("enableRecommendationTitleCaps", value)}
+                helpText="Makes recommendation section title all uppercase"
+              />
+
+              <Divider />
+
+              <Text variant="headingSm" as="h3">Link Labels</Text>
+
+              <TextField
+                label="Promo code link label"
+                value={formSettings.discountLinkText || "+ Got a promotion code?"}
+                onChange={(value) => updateSetting("discountLinkText", value)}
+                helpText="Text shown for discount code link"
+                placeholder="+ Got a promotion code?"
+                autoComplete="off"
+              />
+
+              <TextField
+                label="Order note link label"
+                value={formSettings.notesLinkText || "+ Add order notes"}
+                onChange={(value) => updateSetting("notesLinkText", value)}
+                helpText="Text shown for order notes link"
+                placeholder="+ Add order notes"
+                autoComplete="off"
+              />
+            </FormLayout>
+          </BlockStack>
+        </Card>
+
         {/* Save Button */}
         <Card>
           <InlineStack align="end">

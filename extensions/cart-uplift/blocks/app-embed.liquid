@@ -79,11 +79,7 @@
           giftValueProgressText: {{ block.settings.gift_value_progress_message | json }},
           giftNoticeText: {{ block.settings.gift_notice_text | json }},
 
-          // Cart Features (enabled when text is not blank)
-          discountLinkText: {{ block.settings.discount_link_text | json }},
-          enableDiscountCode: {{ block.settings.discount_link_text | json | size }} > 0,
-          notesLinkText: {{ block.settings.order_notes_link_text | json }},
-          enableNotes: {{ block.settings.order_notes_link_text | json | size }} > 0,
+          // Cart Features - will be loaded from database settings below
           
           // Express Checkout (always enabled)
           enableExpressCheckout: true,
@@ -93,7 +89,6 @@
           
           // Text styling
           enableProductTitleCaps: {{ block.settings.enable_product_title_caps | json }},
-          enableRecommendationTitleCaps: {{ block.settings.enable_recommendation_title_caps | json }},
 
           // Cart styling
           cartBackgroundColor: {{ block.settings.cart_background_color | json }},
@@ -294,6 +289,13 @@
             checkoutButtonText: dbSettings.checkoutButtonText,
             addButtonText: dbSettings.addButtonText,
             applyButtonText: dbSettings.applyButtonText,
+            
+            // Cart Interaction (moved from theme editor)
+            enableRecommendationTitleCaps: dbSettings.enableRecommendationTitleCaps,
+            discountLinkText: dbSettings.discountLinkText,
+            notesLinkText: dbSettings.notesLinkText,
+            enableDiscountCode: Boolean(dbSettings.discountLinkText && dbSettings.discountLinkText.trim().length > 0),
+            enableNotes: Boolean(dbSettings.notesLinkText && dbSettings.notesLinkText.trim().length > 0),
             
             // Gift Settings
             giftPriceText: dbSettings.giftPriceText,
@@ -676,29 +678,6 @@
       "label": "Let recommendations scroll with cart",
       "info": "When off, recommendations stay pinned above the cart items.",
       "default": false
-    },
-    {
-      "type": "header",
-      "content": "Text customization"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_recommendation_title_caps",
-      "label": "Uppercase recommendation title",
-      "info": "Makes recommendation section title all uppercase",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "discount_link_text",
-      "label": "Promo code link label",
-      "default": "+ Got a promotion code?"
-    },
-    {
-      "type": "text",
-      "id": "order_notes_link_text",
-      "label": "Order note link label",
-      "default": "+ Add order notes"
     }
   ]
 }
