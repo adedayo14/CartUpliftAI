@@ -26,6 +26,12 @@ export const loader = withAuth(async ({ auth }) => {
   const shop = auth.session.shop;
   const settings = await getSettings(shop);
   
+  console.log('[Settings Loader] Cart Interaction fields from DB:', {
+    enableRecommendationTitleCaps: settings.enableRecommendationTitleCaps,
+    discountLinkText: settings.discountLinkText,
+    notesLinkText: settings.notesLinkText
+  });
+  
   // Get real data quality metrics
   const dataMetrics = await getDataQualityMetrics(shop);
   
@@ -106,6 +112,12 @@ export default function AppSettings() {
       });
       
       const data = await response.json();
+      console.log('[Settings Save] API Response:', data);
+      console.log('[Settings Save] Returned Cart Interaction:', {
+        enableRecommendationTitleCaps: data.settings?.enableRecommendationTitleCaps,
+        discountLinkText: data.settings?.discountLinkText,
+        notesLinkText: data.settings?.notesLinkText
+      });
 
       if (data.success) {
         setShowSuccessBanner(true);
