@@ -84,6 +84,10 @@ model Settings {
   enableGiftGating        Boolean  @default(false)
   giftProgressStyle       String   @default("single-next") // "stacked", "single-multi", "single-next"
   giftThresholds          String   @default("[]") // JSON array of gift thresholds
+  
+  // Legacy gift fields (keep for backward compatibility)
+  giftThreshold           Int?     // Old singular threshold field - keep for existing data
+  giftVariantMode         String?  // Old variant mode field - keep for existing data
 
   // Legacy and UI fields used in dev schema (safe as additive columns)
   giftNoticeText          String   @default("Free gift added: {{product}} (worth {{amount}})")
