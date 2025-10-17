@@ -360,6 +360,11 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
           create: { shop, ...dataForSave },
           update: dataForSave,
         });
+        console.log('🔧 Save attempt succeeded with fields:', {
+          discountLinkText: dataForSave.discountLinkText,
+          notesLinkText: dataForSave.notesLinkText,
+          enableRecommendationTitleCaps: dataForSave.enableRecommendationTitleCaps,
+        });
         console.log('🔧 Save successful');
         break;
       } catch (dbError: any) {
