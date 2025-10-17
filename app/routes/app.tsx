@@ -2,6 +2,8 @@ import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
+import { useAppBridge } from "@shopify/app-bridge-react";
+import { NavigationMenu } from "@shopify/app-bridge/actions";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
 import { useEffect } from "react";
@@ -15,70 +17,35 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function AppLayout() {
   const { apiKey } = useLoaderData<typeof loader>();
+  const app = useAppBridge() as any;
 
   // Manual App Bridge navigation setup
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).shopify) {
-      const app = (window as any).shopify.app;
-      
-      console.log('🔍 Setting up navigation...');
-      console.log('- API Key:', apiKey ? 'Present' : 'Missing');
-      console.log('- App Bridge:', app ? 'Loaded' : 'Not loaded');
-      
-      // Create navigation menu programmatically
-      if (app) {
-        try {
-          app.dispatch({
-            type: 'Navigation/Update',
-            payload: {
-              items: [
-                {
-                  id: 'home',
-                  label: 'Home',
-                  destination: '/app',
-                },
-                {
-                  id: 'analytics',
-                  label: 'Analytics',
-                  destination: '/admin/dashboard',
-                },
-                {
-                  id: 'settings',
-                  label: 'Settings',
-                  destination: '/app/settings',
-                },
-              ],
-            },
-          });
-          console.log('✅ Navigation configured successfully');
-        } catch (error) {
-          console.error('❌ Navigation setup failed:', error);
-        }
-      } else {
-        console.warn('⚠️ App Bridge not available yet, retrying...');
-        // Retry after a short delay
-        setTimeout(() => {
-          if ((window as any).shopify?.app) {
-            try {
-              (window as any).shopify.app.dispatch({
-                type: 'Navigation/Update',
-                payload: {
-                  items: [
-                    { id: 'home', label: 'Home', destination: '/app' },
-                    { id: 'analytics', label: 'Analytics', destination: '/admin/dashboard' },
-                    { id: 'settings', label: 'Settings', destination: '/app/settings' },
-                  ],
-                },
-              });
-              console.log('✅ Navigation configured (delayed)');
-            } catch (error) {
-              console.error('❌ Delayed navigation setup failed:', error);
-            }
-          }
-        }, 1000);
+    console.log('🔍 Setting up navigation with useAppBridge...');
+    console.log('- API Key:', apiKey ? 'Present' : 'Missing');
+    console.log('- App Bridge hook:', app ? 'Available' : 'Not available');
+
+    if (!app) return;
+
+    try {
+      const items = [
+        { label: 'Home', destination: '/app' },
+        { label: 'Analytics', destination: '/admin/dashboard' },
+        { label: 'Settings', destination: '/app/settings' },
+      ];
+
+      // Some type defs expect AppLink instances; cast config to any for runtime success
+      const nav = (NavigationMenu as any).create(app, { items } as any);
+      if (nav && nav.subscribe) {
+        nav.subscribe((NavigationMenu as any).Action.UPDATE, () => {
+          console.log('✅ Navigation menu updated');
+        });
       }
+      console.log('✅ Navigation configured via actions');
+    } catch (err) {
+      console.error('❌ Navigation configuration failed:', err);
     }
-  }, [apiKey]);
+  }, [apiKey, app]);
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>

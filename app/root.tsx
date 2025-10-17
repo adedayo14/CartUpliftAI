@@ -11,7 +11,7 @@ import { useEffect } from "react";
 
 export default function App() {
   // Hard-code the API key to avoid hydration mismatch
-  const apiKey = "06d17c445a3713f419add1e31894bcc3";
+  const apiKey = "ba2c932cf6717c8fb6207fcc8111fe70";
   
   return (
     <html>
