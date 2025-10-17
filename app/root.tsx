@@ -25,7 +25,7 @@ export default function App() {
           rel="stylesheet"
           href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
         />
-        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
+        <script src={`https://cdn.shopify.com/shopifycloud/app-bridge.js?v=${Date.now()}`} />
         {/* Removed custom iframe script to avoid interfering with Shopify embedding */}
         <Meta />
         <Links />
