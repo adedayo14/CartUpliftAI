@@ -276,6 +276,8 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
       'enableRecommendations', 'enableAddons', 'enableDiscountCode', 'enableNotes', 'enableExpressCheckout', 'enableAnalytics', 'enableGiftGating',
   'cartIcon', 'freeShippingText', 'freeShippingAchievedText', 'recommendationsTitle', 'actionText',
       'addButtonText', 'checkoutButtonText', 'applyButtonText',
+      // Cart Interaction fields (moved from theme editor)
+      'enableRecommendationTitleCaps', 'discountLinkText', 'notesLinkText',
   'backgroundColor', 'textColor', 'buttonColor', 'buttonTextColor', 'recommendationsBackgroundColor', 'shippingBarBackgroundColor', 'shippingBarColor', 'recommendationLayout', 'maxRecommendations',
   'complementDetectionMode', 'manualRecommendationProducts', 'hideRecommendationsAfterThreshold', 'enableThresholdBasedSuggestions', 'thresholdSuggestionMode', 'enableManualRecommendations', 'progressBarMode', 'giftProgressStyle', 'giftThresholds',
       'themeEmbedEnabled', 'themeEmbedLastSeen',
@@ -283,16 +285,15 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
       'mlPersonalizationMode', 'enableMLRecommendations', 'mlPrivacyLevel', 'enableAdvancedPersonalization', 'enableBehaviorTracking', 'mlDataRetentionDays',
       // Smart Bundle Settings
       'enableSmartBundles', 'bundlesOnProductPages', 'bundlesOnCollectionPages', 'bundlesOnCartPage', 'bundlesOnCheckoutPage', 
-      'defaultBundleDiscount', 'bundleTitleTemplate', 'bundleDiscountPrefix', 'bundleConfidenceThreshold', 'bundleSavingsFormat', 
-      'showIndividualPricesInBundle', 'autoApplyBundleDiscounts',
+      'defaultBundleDiscount', 'bundleTitleTemplate', 'bundleDiscountPrefix', 'bundleConfidenceThreshold', 'bundleSavingsFormat', 'showIndividualPricesInBundle', 'autoApplyBundleDiscounts',
       // Enhanced Bundle Display Settings
       'enableEnhancedBundles', 'showPurchaseCounts', 'showRecentlyViewed', 'showTestimonials', 'showTrustBadges', 
       'highlightHighValue', 'enhancedImages', 'animatedSavings', 'highValueThreshold', 'bundlePriority',
       'badgeHighValueText', 'badgePopularText', 'badgeTrendingText', 'testimonialsList'
     ];
     
-  // Production-only fields (exclude in production environment)
-  const devOnlyFields: (keyof SettingsData)[] = ['enableTitleCaps', 'enableRecommendationTitleCaps', 'discountLinkText', 'notesLinkText'];
+  // Dev-only fields (exclude in production environment) - LEGACY, now empty
+  const devOnlyFields: (keyof SettingsData)[] = ['enableTitleCaps'];
     
     const filteredData: Partial<SettingsData> = {};
     for (const field of validFields) {
@@ -303,12 +304,12 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
       }
     }
     
-    // Include all fields for production PostgreSQL database
+    // Include legacy dev-only fields if present
     for (const field of devOnlyFields) {
       const key = field as keyof SettingsData;
       const val = normalizedData[key as keyof SettingsData];
       if (val !== undefined) {
-        console.log(`🔧 Including field ${String(field)} in save operation`);
+        console.log(`🔧 Including legacy field ${String(field)} in save operation`);
         (filteredData as any)[key] = val;
       }
     }
@@ -378,12 +379,6 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
         const columnRegex = /column\s+"([^"]+)"\s+of\s+relation\s+"settings"/gi;
         while ((m = columnRegex.exec(msg)) !== null) {
           unknownFieldMatches.push(m[1]);
-        }
-
-        // Generic fallback: specifically remove fields we know differ in prod
-        const likelyOffenders = ['discountLinkText', 'notesLinkText'];
-        for (const f of likelyOffenders) {
-          if (msg.includes(f)) unknownFieldMatches.push(f);
         }
 
         // De-duplicate
