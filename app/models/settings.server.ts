@@ -292,8 +292,8 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
       'badgeHighValueText', 'badgePopularText', 'badgeTrendingText', 'testimonialsList'
     ];
     
-  // Dev-only fields (exclude in production environment) - LEGACY, now empty
-  const devOnlyFields: (keyof SettingsData)[] = ['enableTitleCaps'];
+  // Dev-only fields disabled in production schema to avoid missing columns
+  const devOnlyFields: (keyof SettingsData)[] = [];
     
     const filteredData: Partial<SettingsData> = {};
     for (const field of validFields) {
@@ -329,16 +329,18 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
 
     const baselineSave = async () => {
       console.warn('🔧 Falling back to baseline core fields save');
-      const baselineFields: (keyof SettingsData)[] = [
-  'enableApp','showOnlyOnCartPage','autoOpenCart','enableFreeShipping','freeShippingThreshold',
-        'enableRecommendations','enableAddons','enableDiscountCode','enableNotes','enableExpressCheckout','enableAnalytics',
-  'cartIcon','freeShippingText','freeShippingAchievedText','recommendationsTitle','actionText',
-        'addButtonText','checkoutButtonText','applyButtonText','backgroundColor','textColor','buttonColor','buttonTextColor',
-        'recommendationsBackgroundColor','shippingBarBackgroundColor','shippingBarColor','recommendationLayout','maxRecommendations',
-        'complementDetectionMode','manualRecommendationProducts','hideRecommendationsAfterThreshold','enableThresholdBasedSuggestions','thresholdSuggestionMode','enableManualRecommendations','progressBarMode','giftProgressStyle','giftThresholds',
-        // ML/Privacy Settings - CRITICAL: Include these or they get stripped on fallback!
-        'mlPersonalizationMode','enableMLRecommendations','mlPrivacyLevel','enableAdvancedPersonalization','enableBehaviorTracking','mlDataRetentionDays'
-      ];
+  const baselineFields: (keyof SettingsData)[] = [
+    'enableApp','showOnlyOnCartPage','autoOpenCart','enableFreeShipping','freeShippingThreshold',
+    'enableRecommendations','enableAddons','enableDiscountCode','enableNotes','enableExpressCheckout','enableAnalytics',
+    'cartIcon','freeShippingText','freeShippingAchievedText','recommendationsTitle','actionText',
+    'addButtonText','checkoutButtonText','applyButtonText','backgroundColor','textColor','buttonColor','buttonTextColor',
+    'recommendationsBackgroundColor','shippingBarBackgroundColor','shippingBarColor','recommendationLayout','maxRecommendations',
+    'complementDetectionMode','manualRecommendationProducts','hideRecommendationsAfterThreshold','enableThresholdBasedSuggestions','thresholdSuggestionMode','enableManualRecommendations','progressBarMode','giftProgressStyle','giftThresholds',
+    // Cart interaction fields moved from theme
+    'enableRecommendationTitleCaps','discountLinkText','notesLinkText',
+    // ML/Privacy Settings - CRITICAL: Include these or they get stripped on fallback!
+    'mlPersonalizationMode','enableMLRecommendations','mlPrivacyLevel','enableAdvancedPersonalization','enableBehaviorTracking','mlDataRetentionDays'
+  ];
       const fallbackData: any = {};
       for (const key of baselineFields) {
         if ((filteredData as any)[key] !== undefined) fallbackData[key] = (filteredData as any)[key];
@@ -374,7 +376,7 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
         const unknownFieldMatches: string[] = [];
 
         // Prisma (JS) often reports: Unknown arg `fieldName` in data.update
-        const unknownArgRegex = /Unknown arg `([^`]+)` in data\.(?:create|update)/g;
+  const unknownArgRegex = /Unknown (?:arg|argument) `([^`]+)` in data\.(?:create|update)/g;
         let m;
         while ((m = unknownArgRegex.exec(msg)) !== null) {
           unknownFieldMatches.push(m[1]);
