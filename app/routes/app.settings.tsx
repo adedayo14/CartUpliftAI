@@ -13,9 +13,11 @@ import {
   Checkbox,
   Button,
   InlineStack,
+  InlineGrid,
   Badge,
   Divider,
   Icon,
+  Box,
 } from "@shopify/polaris";
 import { CheckIcon } from '@shopify/polaris-icons';
 import { withAuth } from "../utils/auth.server";
@@ -32,7 +34,6 @@ export const loader = withAuth(async ({ auth }) => {
     notesLinkText: settings.notesLinkText
   });
   
-  // Get real data quality metrics
   const dataMetrics = await getDataQualityMetrics(shop);
   
   let ordersBadgeText = `${dataMetrics.orderCount} Orders`;
@@ -148,7 +149,17 @@ export default function AppSettings() {
   return (
     <Page
       title="Settings"
-      subtitle="Configure AI recommendations, text customization, and features"
+      primaryAction={
+        <Button
+          variant="primary"
+          tone={buttonSuccess ? "success" : undefined}
+          onClick={handleSaveSettings}
+          loading={isSaving}
+          icon={buttonSuccess ? CheckIcon : undefined}
+        >
+          {isSaving ? "Saving..." : buttonSuccess ? "Saved!" : "Save"}
+        </Button>
+      }
     >
       <BlockStack gap="500">
         {/* Success/Error Banners */}
@@ -159,150 +170,116 @@ export default function AppSettings() {
           <Banner tone="critical">{errorMessage || 'Failed to save settings'}</Banner>
         )}
 
-        {/* AI Recommendations */}
-        <Card>
-          <BlockStack gap="400">
+        {/* Status Overview Cards */}
+        <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 3 }} gap="400">
+          <Card>
             <BlockStack gap="200">
-              <Text variant="headingMd" as="h2">AI-Powered Recommendations</Text>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                Configure machine learning to show personalized product suggestions based on customer behavior.
-              </Text>
+              <Text as="p" variant="bodyMd" tone="subdued">Recommendations Status</Text>
+              <InlineStack gap="200" align="start" blockAlign="center">
+                <Text as="h2" variant="headingLg">
+                  {formSettings.enableRecommendations ? "Active" : "Inactive"}
+                </Text>
+                <Badge tone={formSettings.enableRecommendations ? "success" : "info"}>
+                  {formSettings.enableRecommendations ? "On" : "Off"}
+                </Badge>
+              </InlineStack>
             </BlockStack>
+          </Card>
 
-            <Checkbox
-              label="Show Product Recommendations in Cart"
-              checked={formSettings.enableRecommendations}
-              onChange={(value) => updateSetting("enableRecommendations", value)}
-              helpText="Master toggle - must be enabled to show any recommendations to customers"
-            />
+          <Card>
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" tone="subdued">ML Recommendations</Text>
+              <InlineStack gap="200" align="start" blockAlign="center">
+                <Text as="h2" variant="headingLg">
+                  {formSettings.enableMLRecommendations ? "Active" : "Inactive"}
+                </Text>
+                <Badge tone={formSettings.enableMLRecommendations ? "success" : "info"}>
+                  {formSettings.enableMLRecommendations ? "On" : "Off"}
+                </Badge>
+              </InlineStack>
+            </BlockStack>
+          </Card>
 
-            {formSettings.enableRecommendations && (
-              <>
-                <Divider />
+          <Card>
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" tone="subdued">Data Quality</Text>
+              <InlineStack gap="200" align="start" blockAlign="center">
+                <Text as="h2" variant="headingLg">{dataQualityLabel}</Text>
+                <Badge tone={badgeTone}>{ordersBadgeText}</Badge>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </InlineGrid>
+
+        {/* Main Settings */}
+        <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
+          {/* Left Column */}
+          <BlockStack gap="400">
+            {/* Recommendations */}
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h2">Product Recommendations</Text>
                 
                 <Checkbox
-                  label="Enable ML Recommendations"
-                  checked={formSettings.enableMLRecommendations}
-                  onChange={(value) => {
-                    updateSetting("enableMLRecommendations", value);
-                    // Auto-enable master recommendations toggle when ML is enabled
-                    if (value && !formSettings.enableRecommendations) {
-                      updateSetting("enableRecommendations", true);
-                    }
-                  }}
-                  helpText="Use machine learning to personalize product recommendations"
+                  label="Enable product recommendations"
+                  checked={formSettings.enableRecommendations}
+                  onChange={(value) => updateSetting("enableRecommendations", value)}
+                  helpText="Show personalized product suggestions in cart"
                 />
-              </>
-            )}
 
-            {formSettings.enableRecommendations && formSettings.enableMLRecommendations && (
-              <BlockStack gap="400">
-                <Divider />
-
-                {/* Data Control - PROMINENT */}
-                <Card background="bg-surface-secondary">
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">You Control Your Data</Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Choose what data the AI uses to learn. More data = better recommendations, but you decide what you're comfortable with.
-                    </Text>
-
-                    <Select
-                      label="Privacy & Data Usage Level"
-                      options={[
-                        { label: 'Basic - Product data only (no personal tracking)', value: 'basic' },
-                        { label: 'Standard - Session tracking (no customer ID)', value: 'standard' },
-                        { label: 'Advanced - Full personalization (customer profiles)', value: 'advanced' }
-                      ]}
-                      value={formSettings.mlPrivacyLevel || "basic"}
+                {formSettings.enableRecommendations && (
+                  <>
+                    <Divider />
+                    
+                    <Checkbox
+                      label="Use AI-powered recommendations"
+                      checked={formSettings.enableMLRecommendations}
                       onChange={(value) => {
-                        updateSetting("mlPrivacyLevel", value);
-                        // Auto-enable behavior tracking for Standard/Advanced modes
-                        if (value === 'standard' || value === 'advanced') {
-                          updateSetting("enableBehaviorTracking", true);
-                        } else {
-                          updateSetting("enableBehaviorTracking", false);
+                        updateSetting("enableMLRecommendations", value);
+                        if (value && !formSettings.enableRecommendations) {
+                          updateSetting("enableRecommendations", true);
                         }
                       }}
+                      helpText="Personalize suggestions with machine learning"
                     />
 
-                    {/* Explain what each level means */}
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        <strong>Your current data:</strong>
-                      </Text>
-                      <InlineStack gap="200">
-                        <Badge tone={badgeTone}>{ordersBadgeText}</Badge>
-                        <Badge tone={badgeTone}>{`Quality: ${dataQualityLabel}`}</Badge>
-                      </InlineStack>
-                      
-                      {formSettings.mlPrivacyLevel === 'basic' && (
-                        <Text as="p" variant="bodyMd" tone="subdued">
-                          <strong>Basic mode:</strong> Uses product order data and categories only. No session or customer tracking. Completely anonymous recommendations based on store-wide patterns.
-                        </Text>
-                      )}
-                      {formSettings.mlPrivacyLevel === 'standard' && (
-                        <Text as="p" variant="bodyMd" tone="subdued">
-                          <strong>Standard mode:</strong> Tracks anonymous shopping sessions (cart views, product interest) but no customer identity. Shows what products go well together based on session behavior.
-                        </Text>
-                      )}
-                      {formSettings.mlPrivacyLevel === 'advanced' && (
-                        <>
-                          <Text as="p" variant="bodyMd" tone="subdued">
-                            <strong>Advanced mode:</strong> Full behavioral tracking with customer ID. Learns individual customer preferences and builds personalized recommendations for returning customers.
-                          </Text>
-                          <Banner tone="warning">
-                            <Text as="p" variant="bodyMd">
-                              Update your privacy policy to inform customers: "We analyze shopping patterns to improve product recommendations."
-                            </Text>
-                          </Banner>
-                        </>
-                      )}
-                    </BlockStack>
-                  </BlockStack>
-                </Card>
+                    {formSettings.enableMLRecommendations && (
+                      <>
+                        <Divider />
+                        
+                        <Select
+                          label="Recommendation strategy"
+                          options={[
+                            { label: 'Balanced - Mix of AI and popular products', value: 'balanced' },
+                            { label: 'AI-First - Prioritize personalized suggestions', value: 'ai_first' },
+                            { label: 'Popular - Show bestsellers and trending items', value: 'popular' }
+                          ]}
+                          value={formSettings.mlPersonalizationMode || "balanced"}
+                          onChange={(value) => updateSetting("mlPersonalizationMode", value)}
+                        />
+                      </>
+                    )}
+                  </>
+                )}
+              </BlockStack>
+            </Card>
 
-                {/* ML Settings */}
-                <FormLayout>
-                  <Select
-                    label="Recommendation Strategy"
-                    options={[
-                      { label: 'Balanced - Mix of AI and popular products', value: 'balanced' },
-                      { label: 'AI-First - Prioritize personalized suggestions', value: 'ai_first' },
-                      { label: 'Popular - Show bestsellers and trending items', value: 'popular' }
-                    ]}
-                    value={formSettings.mlPersonalizationMode || "balanced"}
-                    onChange={(value) => updateSetting("mlPersonalizationMode", value)}
-                    helpText="How the AI chooses which products to recommend"
-                  />
+            {/* Smart Features */}
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h2">Smart Features</Text>
+                
+                <Checkbox
+                  label="Threshold-based suggestions"
+                  checked={formSettings.enableThresholdBasedSuggestions}
+                  onChange={(value) => updateSetting("enableThresholdBasedSuggestions", value)}
+                  helpText="Help customers reach free shipping and gift thresholds"
+                />
 
-                  <TextField
-                    label="Data Retention Period"
-                    type="number"
-                    value={formSettings.mlDataRetentionDays || "90"}
-                    onChange={(value) => updateSetting("mlDataRetentionDays", value)}
-                    suffix="days"
-                    helpText="How long to keep learning data. Longer = more accurate recommendations."
-                    autoComplete="off"
-                  />
-                </FormLayout>
-
-                <Divider />
-
-                {/* Smart Threshold Features */}
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">Smart Threshold Suggestions</Text>
-                  
-                  <Checkbox
-                    label="Help customers reach free shipping & gift thresholds"
-                    checked={formSettings.enableThresholdBasedSuggestions}
-                    onChange={(value) => updateSetting("enableThresholdBasedSuggestions", value)}
-                    helpText="Suggest products at the right price to help customers unlock rewards (e.g., suggest $15 items when cart is $85 and threshold is $100)"
-                  />
-
-                  {formSettings.enableThresholdBasedSuggestions && (
+                {formSettings.enableThresholdBasedSuggestions && (
+                  <>
                     <Select
-                      label="Threshold Strategy"
+                      label="Threshold strategy"
                       options={[
                         { label: 'Smart AI - Best relevance + price match', value: 'smart' },
                         { label: 'Price Only - Cheapest path to threshold', value: 'price' },
@@ -311,128 +288,185 @@ export default function AppSettings() {
                       value={formSettings.thresholdSuggestionMode || 'smart'}
                       onChange={(value) => updateSetting("thresholdSuggestionMode", value)}
                     />
-                  )}
 
-                  <Checkbox
-                    label="Hide recommendations after all thresholds met"
-                    checked={formSettings.hideRecommendationsAfterThreshold}
-                    onChange={(value) => updateSetting("hideRecommendationsAfterThreshold", value)}
-                    helpText="Collapse recommendation section when customer has unlocked all rewards"
+                    <Divider />
+                  </>
+                )}
+
+                <Checkbox
+                  label="Hide recommendations when thresholds met"
+                  checked={formSettings.hideRecommendationsAfterThreshold}
+                  onChange={(value) => updateSetting("hideRecommendationsAfterThreshold", value)}
+                  helpText="Collapse section after all rewards unlocked"
+                />
+              </BlockStack>
+            </Card>
+
+            {/* Text Customization */}
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h2">Text Customization</Text>
+                
+                <BlockStack gap="400">
+                  <Text variant="headingSm" as="h3">Gift Settings</Text>
+                  
+                  <TextField
+                    label="Free gift price label"
+                    value={formSettings.giftPriceText || "FREE"}
+                    onChange={(value) => updateSetting("giftPriceText", value)}
+                    helpText="Text shown instead of price for free gifts"
+                    placeholder="FREE"
+                    autoComplete="off"
+                  />
+
+                  <Divider />
+
+                  <Text variant="headingSm" as="h3">Button Labels</Text>
+
+                  <TextField
+                    label="Checkout button"
+                    value={formSettings.checkoutButtonText || "CHECKOUT"}
+                    onChange={(value) => updateSetting("checkoutButtonText", value)}
+                    autoComplete="off"
+                  />
+
+                  <TextField
+                    label="Add button"
+                    value={formSettings.addButtonText || "Add"}
+                    onChange={(value) => updateSetting("addButtonText", value)}
+                    autoComplete="off"
+                  />
+
+                  <TextField
+                    label="Apply button"
+                    value={formSettings.applyButtonText || "Apply"}
+                    onChange={(value) => updateSetting("applyButtonText", value)}
+                    autoComplete="off"
                   />
                 </BlockStack>
               </BlockStack>
+            </Card>
+          </BlockStack>
+
+          {/* Right Column */}
+          <BlockStack gap="400">
+            {/* Privacy & Data */}
+            {formSettings.enableMLRecommendations && (
+              <Card>
+                <BlockStack gap="400">
+                  <BlockStack gap="200">
+                    <Text variant="headingMd" as="h2">Privacy & Data</Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Control what data the AI uses to learn
+                    </Text>
+                  </BlockStack>
+
+                  <Card background="bg-surface-secondary">
+                    <BlockStack gap="300">
+                      <InlineStack gap="200">
+                        <Badge tone={badgeTone}>{ordersBadgeText}</Badge>
+                        <Badge tone={badgeTone}>{`Quality: ${dataQualityLabel}`}</Badge>
+                      </InlineStack>
+
+                      <Select
+                        label="Data usage level"
+                        options={[
+                          { label: 'Basic - Product data only (no personal tracking)', value: 'basic' },
+                          { label: 'Standard - Session tracking (no customer ID)', value: 'standard' },
+                          { label: 'Advanced - Full personalization (customer profiles)', value: 'advanced' }
+                        ]}
+                        value={formSettings.mlPrivacyLevel || "basic"}
+                        onChange={(value) => {
+                          updateSetting("mlPrivacyLevel", value);
+                          if (value === 'standard' || value === 'advanced') {
+                            updateSetting("enableBehaviorTracking", true);
+                          } else {
+                            updateSetting("enableBehaviorTracking", false);
+                          }
+                        }}
+                      />
+
+                      {formSettings.mlPrivacyLevel === 'basic' && (
+                        <Box paddingBlockStart="200">
+                          <Text as="p" variant="bodyMd" tone="subdued">
+                            <strong>Basic mode:</strong> Uses product order data and categories only. No session or customer tracking. Completely anonymous.
+                          </Text>
+                        </Box>
+                      )}
+                      {formSettings.mlPrivacyLevel === 'standard' && (
+                        <Box paddingBlockStart="200">
+                          <Text as="p" variant="bodyMd" tone="subdued">
+                            <strong>Standard mode:</strong> Tracks anonymous shopping sessions but no customer identity. Shows what products go well together.
+                          </Text>
+                        </Box>
+                      )}
+                      {formSettings.mlPrivacyLevel === 'advanced' && (
+                        <Box paddingBlockStart="200">
+                          <BlockStack gap="300">
+                            <Text as="p" variant="bodyMd" tone="subdued">
+                              <strong>Advanced mode:</strong> Full behavioral tracking with customer ID. Learns individual preferences for returning customers.
+                            </Text>
+                            <Banner tone="warning">
+                              <Text as="p" variant="bodyMd">
+                                Update your privacy policy to inform customers about shopping pattern analysis.
+                              </Text>
+                            </Banner>
+                          </BlockStack>
+                        </Box>
+                      )}
+                    </BlockStack>
+                  </Card>
+
+                  <TextField
+                    label="Data retention period"
+                    type="number"
+                    value={formSettings.mlDataRetentionDays || "90"}
+                    onChange={(value) => updateSetting("mlDataRetentionDays", value)}
+                    suffix="days"
+                    helpText="How long to keep learning data"
+                    autoComplete="off"
+                  />
+                </BlockStack>
+              </Card>
             )}
-          </BlockStack>
-        </Card>
 
-        {/* Text Customization */}
-        <Card>
-          <BlockStack gap="400">
-            <BlockStack gap="200">
-              <Text variant="headingMd" as="h2">Text & Copy</Text>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                Customize text shown to customers in the cart.
-              </Text>
-            </BlockStack>
+            {/* Cart Interaction */}
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h2">Cart Styling</Text>
+                
+                <Checkbox
+                  label="Uppercase recommendation title"
+                  checked={formSettings.enableRecommendationTitleCaps || false}
+                  onChange={(value) => updateSetting("enableRecommendationTitleCaps", value)}
+                  helpText="Display recommendation section title in uppercase"
+                />
 
-            <FormLayout>
-              <Text variant="headingSm" as="h3">Gift Settings</Text>
-              
-              <TextField
-                label="Free Gift Price Label"
-                value={formSettings.giftPriceText || "FREE"}
-                onChange={(value) => updateSetting("giftPriceText", value)}
-                helpText="Text shown instead of price for free gift products"
-                placeholder="FREE"
-                autoComplete="off"
-              />
+                <Divider />
 
-              <Divider />
+                <Text variant="headingSm" as="h3">Cart Links</Text>
 
-              <Text variant="headingSm" as="h3">Button Labels</Text>
-
-              <InlineStack gap="400" wrap>
                 <TextField
-                  label="Checkout Button"
-                  value={formSettings.checkoutButtonText || "CHECKOUT"}
-                  onChange={(value) => updateSetting("checkoutButtonText", value)}
+                  label="Promo code link"
+                  value={formSettings.discountLinkText || "+ Got a promotion code?"}
+                  onChange={(value) => updateSetting("discountLinkText", value)}
+                  helpText="Text for discount code link"
+                  placeholder="+ Got a promotion code?"
                   autoComplete="off"
                 />
+
                 <TextField
-                  label="Add Button"
-                  value={formSettings.addButtonText || "Add"}
-                  onChange={(value) => updateSetting("addButtonText", value)}
+                  label="Order note link"
+                  value={formSettings.notesLinkText || "+ Add order notes"}
+                  onChange={(value) => updateSetting("notesLinkText", value)}
+                  helpText="Text for order notes link"
+                  placeholder="+ Add order notes"
                   autoComplete="off"
                 />
-                <TextField
-                  label="Apply Button"
-                  value={formSettings.applyButtonText || "Apply"}
-                  onChange={(value) => updateSetting("applyButtonText", value)}
-                  autoComplete="off"
-                />
-              </InlineStack>
-            </FormLayout>
+              </BlockStack>
+            </Card>
           </BlockStack>
-        </Card>
-
-        {/* Cart Interaction */}
-        <Card>
-          <BlockStack gap="400">
-            <BlockStack gap="200">
-              <Text variant="headingMd" as="h2">Cart Interaction</Text>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                Customize cart text and styling options.
-              </Text>
-            </BlockStack>
-
-            <FormLayout>
-              <Checkbox
-                label="Uppercase recommendation title"
-                checked={formSettings.enableRecommendationTitleCaps || false}
-                onChange={(value) => updateSetting("enableRecommendationTitleCaps", value)}
-                helpText="Makes recommendation section title all uppercase"
-              />
-
-              <Divider />
-
-              <Text variant="headingSm" as="h3">Link Labels</Text>
-
-              <TextField
-                label="Promo code link label"
-                value={formSettings.discountLinkText || "+ Got a promotion code?"}
-                onChange={(value) => updateSetting("discountLinkText", value)}
-                helpText="Text shown for discount code link"
-                placeholder="+ Got a promotion code?"
-                autoComplete="off"
-              />
-
-              <TextField
-                label="Order note link label"
-                value={formSettings.notesLinkText || "+ Add order notes"}
-                onChange={(value) => updateSetting("notesLinkText", value)}
-                helpText="Text shown for order notes link"
-                placeholder="+ Add order notes"
-                autoComplete="off"
-              />
-            </FormLayout>
-          </BlockStack>
-        </Card>
-
-        {/* Save Button */}
-        <Card>
-          <InlineStack align="end">
-            <Button
-              variant="primary"
-              tone={buttonSuccess ? "success" : undefined}
-              size="large"
-              onClick={handleSaveSettings}
-              loading={isSaving}
-              icon={buttonSuccess ? CheckIcon : undefined}
-            >
-              {isSaving ? "Saving..." : buttonSuccess ? "Saved!" : "Save Settings"}
-            </Button>
-          </InlineStack>
-        </Card>
+        </InlineGrid>
       </BlockStack>
     </Page>
   );
