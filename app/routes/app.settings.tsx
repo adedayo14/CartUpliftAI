@@ -89,6 +89,13 @@ export default function AppSettings() {
         settings: formSettings
       };
       
+      console.log('[Settings Save] Payload:', payload);
+      console.log('[Settings Save] Cart Interaction fields:', {
+        enableRecommendationTitleCaps: formSettings.enableRecommendationTitleCaps,
+        discountLinkText: formSettings.discountLinkText,
+        notesLinkText: formSettings.notesLinkText
+      });
+      
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
