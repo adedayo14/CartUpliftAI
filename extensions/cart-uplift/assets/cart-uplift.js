@@ -5058,49 +5058,49 @@
         if (raw === null || raw === undefined || raw === '') return null;
 
         let numeric;
-        let sourceString;
 
         if (typeof raw === 'number') {
           numeric = raw;
-          sourceString = raw.toString();
         } else if (typeof raw === 'string') {
           const trimmed = raw.trim();
           if (!trimmed) return null;
-          sourceString = trimmed;
+          
+          // Remove currency symbols and spaces, handle commas as thousands separators
           let cleaned = trimmed.replace(/[^0-9.,-]/g, '');
           if (!cleaned) return null;
+          
+          // Handle comma as thousands separator (e.g., "1,000" -> "1000")
           const hasComma = cleaned.includes(',');
           const hasDot = cleaned.includes('.');
+          
           if (hasComma && hasDot) {
+            // Format like "1,000.50" - remove commas
             cleaned = cleaned.replace(/,/g, '');
           } else if (hasComma && !hasDot) {
-            cleaned = cleaned.replace(/,/g, '.');
+            // Format like "1,000" (thousands) or "10,50" (European decimal)
+            // If comma appears before last 3 digits, it's a thousands separator
+            const parts = cleaned.split(',');
+            if (parts.length === 2 && parts[1].length === 3) {
+              // "1,000" -> "1000"
+              cleaned = cleaned.replace(/,/g, '');
+            } else {
+              // "10,50" -> "10.50"
+              cleaned = cleaned.replace(/,/g, '.');
+            }
           }
+          
           numeric = Number(cleaned);
         } else {
-          sourceString = String(raw);
           numeric = Number(raw);
         }
 
         if (!isFinite(numeric) || numeric <= 0) return null;
 
-        const digitsOnly = sourceString.replace(/[^0-9]/g, '');
-  const hasExplicitDecimal = /[.,]\d+$/.test(sourceString);
-        const maybeDollars = numeric / 100;
-
-        const looksLikeCents =
-          !hasExplicitDecimal &&
-          Number.isInteger(numeric) &&
-          digitsOnly.length >= 4 &&
-          digitsOnly.endsWith('00') &&
-          maybeDollars > 0 &&
-          maybeDollars <= 5000;
-
-        if (looksLikeCents) {
-          return Math.round(numeric);
-        }
-
+        // ALWAYS treat input as currency units (pounds/dollars) and convert to cents
+        // Users enter: 1, 2, 50, 100, 1000, etc. (never cents)
+        // We need: 100, 200, 5000, 10000, 100000 cents
         return Math.round(numeric * 100);
+        
       } catch (error) {
         console.warn('🛒 Failed to normalize free shipping threshold:', error);
         return null;
