@@ -44,3 +44,16 @@ prefix = "apps"
 
 [pos]
 embedded = false
+
+# App navigation menu
+[[app_navigation]]
+  label = "Home"
+  destination = "/app"
+
+[[app_navigation]]
+  label = "Analytics"
+  destination = "/admin/dashboard"
+
+[[app_navigation]]
+  label = "Settings"
+  destination = "/app/settings"
