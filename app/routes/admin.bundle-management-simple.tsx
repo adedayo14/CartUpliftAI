@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useLocation, useRevalidator } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, useLocation } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -439,9 +439,10 @@ export default function SimpleBundleManagement() {
       }
       
       console.log('🔵 [Frontend] Requesting session token from App Bridge...');
-      console.log('🔵 [Frontend] App Bridge idToken method exists?', typeof app.idToken === 'function');
+      console.log('🔵 [Frontend] App Bridge object type:', typeof app);
+      console.log('🔵 [Frontend] App has idToken method?', 'idToken' in app);
       
-      // Get the session token from App Bridge
+      // Get the session token from shopify.idToken() method
       const sessionToken = await app.idToken();
       console.log('🔵 [Frontend] Got session token (first 20 chars):', sessionToken?.substring(0, 20));
       
