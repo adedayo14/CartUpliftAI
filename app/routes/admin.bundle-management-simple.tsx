@@ -246,7 +246,8 @@ export default function SimpleBundleManagement() {
       hasData: !!productFetcher.data,
       success: (productFetcher.data as any)?.success,
       productsCount: (productFetcher.data as any)?.products?.length || 0,
-      error: (productFetcher.data as any)?.error
+      error: (productFetcher.data as any)?.error,
+      fullData: productFetcher.data
     });
   }, [productFetcher.state, productFetcher.data]);
   
