@@ -60,19 +60,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     `;
 
-    const response = await adminClient.graphql(graphqlQuery, { 
-      variables: { query: query || "status:active" } 
-    });
-    
+    // Race the GraphQL call against a timeout to prevent hanging UI
+    const respPromise = (async () => {
+      const resp = await adminClient.graphql(graphqlQuery, { 
+        variables: { query: query || "status:active" } 
+      });
+      return resp;
+    })();
+
+    const timeoutMs = 12000; // 12s safety timeout
+    const raced: any = await Promise.race([
+      respPromise,
+      new Promise((resolve) => setTimeout(() => resolve({ __timeout: true }), timeoutMs))
+    ]);
+
+    if (raced && raced.__timeout) {
+      console.error(`⏳ GraphQL products request timed out after ${timeoutMs}ms for shop ${shopDomain}`);
+      return json({ 
+        success: false, 
+        error: `Timed out loading products after ${Math.round(timeoutMs/1000)}s. Please Retry.`,
+        products: []
+      }, { status: 504, headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    const response = raced as Response;
     if (!response.ok) {
       console.error('🔥 GraphQL request failed:', response.status);
       return json({ 
         success: false, 
         error: 'Failed to fetch products from Shopify',
         products: []
-      }, { status: 500 });
+      }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
     }
-    
+
     const responseJson = await response.json();
     
     if ((responseJson as any).errors) {
@@ -81,7 +101,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         success: false, 
         error: 'GraphQL query failed',
         products: []
-      }, { status: 500 });
+  }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
     }
 
     const products = responseJson.data?.products?.edges || [];
@@ -105,7 +125,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         price: edge.node.variants.edges[0]?.node?.price || "0.00",
         image: edge.node.featuredImage?.url
       }))
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error("🔥 Bundle products API error:", error);
     return json({ 
