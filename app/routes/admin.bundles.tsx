@@ -473,7 +473,7 @@ export default function BundlesAdmin() {
       </BlockStack>
     </InlineStack>,
     <Text as="span" variant="bodySm">{bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI Suggested"}</Text>,
-    <Badge tone={bundle.status === "active" ? "success" : bundle.status === "paused" ? "warning" : "info"} key={`badge-${bundle.id}`}>
+    <Badge tone={bundle.status === "active" ? "success" : "info"} key={`badge-${bundle.id}`}>
       {bundle.status === "active" ? "Active" : bundle.status === "paused" ? "Paused" : "Draft"}
     </Badge>,
     <Text as="span" variant="bodySm" fontWeight="medium">{bundle.discountType === "percentage" ? `${bundle.discountValue}%` : formatMoney(bundle.discountValue)}</Text>,

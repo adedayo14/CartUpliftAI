@@ -979,7 +979,7 @@ export default function Dashboard() {
                   <Text variant="bodySm" tone="subdued">Total sales</Text>
                   <Text variant="heading2xl" as="h3">{formatCurrency(analytics.totalRevenue)}</Text>
                   {analytics.previousMetrics.totalRevenue > 0 && (
-                    <Badge tone={analytics.totalRevenue >= analytics.previousMetrics.totalRevenue ? "success" : "critical"}>
+                    <Badge tone={analytics.totalRevenue >= analytics.previousMetrics.totalRevenue ? "success" : "info"}>
                       {analytics.totalRevenue >= analytics.previousMetrics.totalRevenue ? "↗" : "↘"} {Math.abs(calculateChange(analytics.totalRevenue, analytics.previousMetrics.totalRevenue)).toFixed(1)}%
                     </Badge>
                   )}
@@ -991,7 +991,7 @@ export default function Dashboard() {
                 <BlockStack gap="200">
                   <Text variant="bodySm" tone="subdued">AI-generated sales</Text>
                   <Text variant="heading2xl" as="h3">{formatCurrency(analytics.attributedRevenue)}</Text>
-                  <Badge tone="magic">{analytics.roi > 0 ? `${analytics.roi.toFixed(1)}x ROI` : 'Getting started'}</Badge>
+                  <Badge tone="success">{analytics.roi > 0 ? `${analytics.roi.toFixed(1)}x ROI` : 'Getting started'}</Badge>
                 </BlockStack>
               </Card>
 
