@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useActionData, useSubmit, useNavigation } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useLoaderData, useActionData, useNavigation, Form } from "@remix-run/react";
+import { useEffect, useState, useRef } from "react";
 import {
   Page,
   Layout,
@@ -284,8 +284,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const submit = useSubmit();
   const navigation = useNavigation();
+  const formRef = useRef<HTMLFormElement>(null);
   
   console.log('[Frontend] Loader data:', loaderData);
   console.log('[Frontend] Action data:', actionData);
@@ -376,61 +376,61 @@ export default function SimpleBundleManagement() {
       return;
     }
 
-    // Build FormData for Remix submission
-    const formData = new FormData();
-    formData.append("action", "create-bundle");
-    formData.append("name", newBundle.name);
-    formData.append("description", newBundle.description);
-    formData.append("bundleType", newBundle.bundleType);
-    formData.append("discountType", newBundle.discountType);
-    formData.append("discountValue", newBundle.discountValue.toString());
-    formData.append("minProducts", newBundle.minProducts.toString());
-    formData.append("bundleStyle", newBundle.bundleStyle);
-    formData.append("selectMinQty", newBundle.selectMinQty.toString());
-    formData.append("selectMaxQty", newBundle.selectMaxQty.toString());
-    formData.append("allowDeselect", newBundle.allowDeselect.toString());
-    formData.append("hideIfNoML", newBundle.hideIfNoML.toString());
-    
-    if (assignedProducts.length > 0) {
-      formData.append("assignedProducts", JSON.stringify(assignedProducts));
-    }
-    
-    if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
-      formData.append("productIds", JSON.stringify(selectedProducts));
-    }
-    
-    if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
-      formData.append("collectionIds", JSON.stringify(selectedCollections));
-    }
-    
-    if (newBundle.bundleStyle === 'tier') {
-      formData.append("tierConfig", JSON.stringify(newBundle.tierConfig));
-    }
+    // Populate hidden form fields
+    if (formRef.current) {
+      const form = formRef.current;
+      
+      // Set all form values
+      (form.elements.namedItem('name') as HTMLInputElement).value = newBundle.name;
+      (form.elements.namedItem('description') as HTMLInputElement).value = newBundle.description;
+      (form.elements.namedItem('bundleType') as HTMLInputElement).value = newBundle.bundleType;
+      (form.elements.namedItem('discountType') as HTMLInputElement).value = newBundle.discountType;
+      (form.elements.namedItem('discountValue') as HTMLInputElement).value = newBundle.discountValue.toString();
+      (form.elements.namedItem('minProducts') as HTMLInputElement).value = newBundle.minProducts.toString();
+      (form.elements.namedItem('bundleStyle') as HTMLInputElement).value = newBundle.bundleStyle;
+      (form.elements.namedItem('selectMinQty') as HTMLInputElement).value = newBundle.selectMinQty.toString();
+      (form.elements.namedItem('selectMaxQty') as HTMLInputElement).value = newBundle.selectMaxQty.toString();
+      (form.elements.namedItem('allowDeselect') as HTMLInputElement).value = newBundle.allowDeselect.toString();
+      (form.elements.namedItem('hideIfNoML') as HTMLInputElement).value = newBundle.hideIfNoML.toString();
+      
+      if (assignedProducts.length > 0) {
+        (form.elements.namedItem('assignedProducts') as HTMLInputElement).value = JSON.stringify(assignedProducts);
+      }
+      
+      if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
+        (form.elements.namedItem('productIds') as HTMLInputElement).value = JSON.stringify(selectedProducts);
+      }
+      
+      if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
+        (form.elements.namedItem('collectionIds') as HTMLInputElement).value = JSON.stringify(selectedCollections);
+      }
+      
+      if (newBundle.bundleStyle === 'tier') {
+        (form.elements.namedItem('tierConfig') as HTMLInputElement).value = JSON.stringify(newBundle.tierConfig);
+      }
 
-    console.log('[handleCreateBundle] Submitting form data...');
-    console.log('[handleCreateBundle] FormData entries:', Array.from(formData.entries()));
-    
-    // Use Remix's submit function with explicit action
-    submit(formData, { 
-      method: "post",
-      action: "/admin/bundle-management-simple"
-    });
+      console.log('[handleCreateBundle] Submitting hidden form...');
+      
+      // Submit the form
+      form.requestSubmit();
+    }
   };
 
   const handleToggleStatus = (bundleId: string, currentStatus: string) => {
-    const formData = new FormData();
-    formData.append("action", "toggle-status");
-    formData.append("bundleId", bundleId);
-    formData.append("status", currentStatus === 'active' ? 'paused' : 'active');
-    submit(formData, { method: "post" });
+    // Find the toggle form and submit it
+    const toggleForm = document.getElementById(`toggle-${bundleId}`) as HTMLFormElement;
+    if (toggleForm) {
+      (toggleForm.elements.namedItem('status') as HTMLInputElement).value = currentStatus === 'active' ? 'paused' : 'active';
+      toggleForm.requestSubmit();
+    }
   };
 
   const handleDeleteBundle = (bundleId: string) => {
     if (confirm("Are you sure you want to delete this bundle?")) {
-      const formData = new FormData();
-      formData.append("action", "delete-bundle");
-      formData.append("bundleId", bundleId);
-      submit(formData, { method: "post" });
+      const deleteForm = document.getElementById(`delete-${bundleId}`) as HTMLFormElement;
+      if (deleteForm) {
+        deleteForm.requestSubmit();
+      }
     }
   };
 
@@ -883,6 +883,41 @@ export default function SimpleBundleManagement() {
           </BlockStack>
         </Modal.Section>
       </Modal>
+
+      {/* Hidden form for create bundle */}
+      <Form method="post" ref={formRef} style={{ display: 'none' }}>
+        <input type="hidden" name="action" value="create-bundle" />
+        <input type="hidden" name="name" />
+        <input type="hidden" name="description" />
+        <input type="hidden" name="bundleType" />
+        <input type="hidden" name="discountType" />
+        <input type="hidden" name="discountValue" />
+        <input type="hidden" name="minProducts" />
+        <input type="hidden" name="bundleStyle" />
+        <input type="hidden" name="selectMinQty" />
+        <input type="hidden" name="selectMaxQty" />
+        <input type="hidden" name="allowDeselect" />
+        <input type="hidden" name="hideIfNoML" />
+        <input type="hidden" name="assignedProducts" />
+        <input type="hidden" name="productIds" />
+        <input type="hidden" name="collectionIds" />
+        <input type="hidden" name="tierConfig" />
+      </Form>
+
+      {/* Hidden forms for toggle/delete actions for each bundle */}
+      {bundles.map((bundle: Bundle) => (
+        <div key={bundle.id} style={{ display: 'none' }}>
+          <Form method="post" id={`toggle-${bundle.id}`}>
+            <input type="hidden" name="action" value="toggle-status" />
+            <input type="hidden" name="bundleId" value={bundle.id} />
+            <input type="hidden" name="status" />
+          </Form>
+          <Form method="post" id={`delete-${bundle.id}`}>
+            <input type="hidden" name="action" value="delete-bundle" />
+            <input type="hidden" name="bundleId" value={bundle.id} />
+          </Form>
+        </div>
+      ))}
     </Page>
   );
 }
