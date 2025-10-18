@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useFetcher } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, useFetcher, useLocation } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -277,6 +277,8 @@ export default function SimpleBundleManagement() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const fetcher = useFetcher<typeof action>();
+  const location = useLocation();
+  const fetcherActionPath = location.search ? `${location.pathname}${location.search}` : location.pathname;
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
@@ -435,9 +437,10 @@ export default function SimpleBundleManagement() {
     }
     
     // Use fetcher.submit() to bypass navigation issues
+    console.log('🔵 [Frontend] fetcher action path:', fetcherActionPath);
     fetcher.submit(formData, {
       method: 'post',
-      action: '/admin/bundle-management-simple'
+      action: fetcherActionPath
     });
     console.log('🔵 [Frontend] fetcher.submit() called successfully');
   };
@@ -471,7 +474,7 @@ export default function SimpleBundleManagement() {
           formData.append('action', 'toggle-status');
           formData.append('bundleId', bundle.id);
           formData.append('status', bundle.status === 'active' ? 'paused' : 'active');
-          fetcher.submit(formData, { method: 'post' });
+          fetcher.submit(formData, { method: 'post', action: fetcherActionPath });
         }}
         loading={fetcher.state === "submitting"}
       >
@@ -485,7 +488,7 @@ export default function SimpleBundleManagement() {
             const formData = new FormData();
             formData.append('action', 'delete-bundle');
             formData.append('bundleId', bundle.id);
-            fetcher.submit(formData, { method: 'post' });
+            fetcher.submit(formData, { method: 'post', action: fetcherActionPath });
           }
         }}
         loading={fetcher.state === "submitting"}
