@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, useRevalidator } from "@remix-run/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Page,
   Layout,
@@ -182,9 +182,10 @@ export default function SimpleBundleManagement() {
   const revalidator = useRevalidator();
   const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const bundles = loaderData.bundles || [];
+  const loaderBundles = useMemo(() => (loaderData.bundles || []) as Bundle[], [loaderData.bundles]);
   const availableProducts = (loaderData.products ?? []) as Product[];
   const availableCollections = (loaderData.collections ?? []) as Collection[];
+  const [bundleList, setBundleList] = useState<Bundle[]>(loaderBundles);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -238,6 +239,10 @@ export default function SimpleBundleManagement() {
     setSelectedCollections([]);
     setAssignedProducts([]);
   }, []);
+
+  useEffect(() => {
+    setBundleList(loaderBundles);
+  }, [loaderBundles]);
 
   useEffect(() => () => {
     if (bannerTimeoutRef.current) {
@@ -315,6 +320,9 @@ export default function SimpleBundleManagement() {
         triggerBanner("success", "Bundle created successfully!");
         setShowCreateModal(false);
         resetForm();
+        if (data.bundle) {
+          setBundleList((prev) => [data.bundle as Bundle, ...prev]);
+        }
         revalidator.revalidate();
       } else {
         triggerBanner("error", data.error || "Failed to create bundle");
@@ -368,6 +376,15 @@ export default function SimpleBundleManagement() {
 
       if (data.success) {
         triggerBanner("success", "Status updated!");
+        const nextStatus = payload.status;
+        const updatedBundle = data.bundle as Bundle | undefined;
+        setBundleList((prev) =>
+          prev.map((bundle) =>
+            bundle.id === bundleId
+              ? { ...bundle, status: updatedBundle?.status ?? nextStatus }
+              : bundle
+          )
+        );
         revalidator.revalidate();
       } else {
         triggerBanner("error", data.error || "Failed to update status");
@@ -412,6 +429,7 @@ export default function SimpleBundleManagement() {
 
       if (data.success) {
         triggerBanner("success", "Bundle deleted!");
+        setBundleList((prev) => prev.filter((bundle) => bundle.id !== bundleId));
         revalidator.revalidate();
       } else {
         triggerBanner("error", data.error || "Failed to delete bundle");
@@ -423,7 +441,7 @@ export default function SimpleBundleManagement() {
     }
   };
 
-  const bundleTableRows = bundles.map((bundle: Bundle) => [
+  const bundleTableRows = bundleList.map((bundle: Bundle) => [
     bundle.name,
     bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI",
     <Badge tone={bundle.status === "active" ? "success" : bundle.status === "paused" ? "warning" : "info"} key={bundle.id}>
@@ -437,7 +455,7 @@ export default function SimpleBundleManagement() {
         size="micro"
         variant={bundle.status === "active" ? "secondary" : "primary"}
         onClick={() => handleToggleStatus(bundle.id, bundle.status)}
-        loading={isSaving && pendingBundleId === bundle.id}
+        loading={pendingBundleId === bundle.id}
       >
         {bundle.status === "active" ? "Pause" : "Activate"}
       </Button>
@@ -445,7 +463,7 @@ export default function SimpleBundleManagement() {
         size="micro"
         tone="critical"
         onClick={() => handleDelete(bundle.id)}
-        loading={isSaving && pendingBundleId === bundle.id}
+        loading={pendingBundleId === bundle.id}
       >
         Delete
       </Button>
@@ -486,7 +504,7 @@ export default function SimpleBundleManagement() {
         )}
         
         <Layout.Section>
-          {bundles.length === 0 ? (
+          {bundleList.length === 0 ? (
             <Card>
               <BlockStack gap="400">
                 <Text as="h2" variant="headingMd">Get Started</Text>
@@ -500,7 +518,7 @@ export default function SimpleBundleManagement() {
               <BlockStack gap="400">
                 <InlineStack align="space-between">
                   <Text as="h2" variant="headingMd">All Bundles</Text>
-                  <Badge tone="info">{`${bundles.length} Bundle${bundles.length === 1 ? "" : "s"}`}</Badge>
+                  <Badge tone="info">{`${bundleList.length} Bundle${bundleList.length === 1 ? "" : "s"}`}</Badge>
                 </InlineStack>
 
                 <DataTable
@@ -517,11 +535,11 @@ export default function SimpleBundleManagement() {
           <Card>
             <BlockStack gap="300">
               <Text as="h3" variant="headingSm">Status</Text>
-              <Text as="p" variant="bodyMd">
-                • Products: {availableProducts.length}
-                <br />• Collections: {availableCollections.length}
-                <br />• Bundles: {bundles.length}
-              </Text>
+                <Text as="p" variant="bodyMd">
+                  • Products: {availableProducts.length}
+                  <br />• Collections: {availableCollections.length}
+                  <br />• Bundles: {bundleList.length}
+                </Text>
             </BlockStack>
           </Card>
         </Layout.Section>
