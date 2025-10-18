@@ -411,8 +411,11 @@ export default function SimpleBundleManagement() {
 
       console.log('[handleCreateBundle] Submitting hidden form...');
       
-      // Submit the form
-      form.requestSubmit();
+      // Click the hidden submit button to trigger Remix form submission
+      const submitButton = document.getElementById('hidden-submit-button') as HTMLButtonElement;
+      if (submitButton) {
+        submitButton.click();
+      }
     }
   };
 
@@ -902,6 +905,7 @@ export default function SimpleBundleManagement() {
         <input type="hidden" name="productIds" />
         <input type="hidden" name="collectionIds" />
         <input type="hidden" name="tierConfig" />
+        <button type="submit" id="hidden-submit-button" style={{ display: 'none' }}>Submit</button>
       </Form>
 
       {/* Hidden forms for toggle/delete actions for each bundle */}
