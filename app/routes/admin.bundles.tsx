@@ -336,7 +336,6 @@ export default function BundlesAdmin() {
       });
       const data = await response.json();
       if (data.success) {
-        triggerBanner("success", "Status updated!");
         const nextStatus = payload.status;
         const updatedBundle = data.bundle as Bundle | undefined;
         setBundleList((prev) => prev.map((b) => b.id === bundleId ? { ...b, status: updatedBundle?.status ?? nextStatus } : b));
