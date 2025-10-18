@@ -826,32 +826,45 @@ export default function SimpleBundleManagement() {
                   ) : (
                     <ResourceList
                       items={availableProducts.slice(0, 25)}
-                      renderItem={(product: any) => (
-                        <ResourceItem
-                          id={product.id}
-                          onClick={() => {
-                            const isSelected = selectedProducts.includes(product.id);
-                            if (isSelected) {
-                              setSelectedProducts(selectedProducts.filter((id: string) => id !== product.id));
-                            } else {
-                              setSelectedProducts([...selectedProducts, product.id]);
-                            }
-                          }}
-                        >
-                          <InlineStack gap="300">
-                            <Checkbox label="" checked={selectedProducts.includes(product.id)} onChange={() => {}} />
-                            <Thumbnail source={product.image || ""} alt={product.title} size="small" />
-                            <BlockStack gap="100">
-                              <Text as="h3" variant="bodyMd">
-                                {product.title}
-                              </Text>
-                              <Text as="p" variant="bodySm" tone="subdued">
-                                ${product.price || "0.00"}
-                              </Text>
-                            </BlockStack>
-                          </InlineStack>
-                        </ResourceItem>
-                      )}
+                      renderItem={(product: any) => {
+                        const isSelected = selectedProducts.includes(product.id);
+                        const toggleSelection = () => {
+                          console.log('[Bundle] Product clicked:', product.id, 'Currently selected:', isSelected);
+                          if (isSelected) {
+                            const newSelection = selectedProducts.filter((id: string) => id !== product.id);
+                            console.log('[Bundle] Removing product. New selection:', newSelection);
+                            setSelectedProducts(newSelection);
+                          } else {
+                            const newSelection = [...selectedProducts, product.id];
+                            console.log('[Bundle] Adding product. New selection:', newSelection);
+                            setSelectedProducts(newSelection);
+                          }
+                        };
+                        
+                        return (
+                          <ResourceItem
+                            id={product.id}
+                            onClick={toggleSelection}
+                          >
+                            <InlineStack gap="300">
+                              <Checkbox 
+                                label="" 
+                                checked={isSelected} 
+                                onChange={toggleSelection}
+                              />
+                              <Thumbnail source={product.image || ""} alt={product.title} size="small" />
+                              <BlockStack gap="100">
+                                <Text as="h3" variant="bodyMd">
+                                  {product.title}
+                                </Text>
+                                <Text as="p" variant="bodySm" tone="subdued">
+                                  ${product.price || "0.00"}
+                                </Text>
+                              </BlockStack>
+                            </InlineStack>
+                          </ResourceItem>
+                        );
+                      }}
                     />
                   )}
 
