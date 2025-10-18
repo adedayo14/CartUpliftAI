@@ -159,8 +159,8 @@ export default function SimpleBundleManagement() {
 
   // Handle both bundle and product data from loader
   const bundles = (loaderData as any).bundles || [];
-  // Use consistent API endpoint for products
-  const productApiUrl = '/api/bundle-management?action=products';
+  // Use admin API endpoint for proper authentication in embedded apps
+  const productApiUrl = '/admin/api/bundle-data?action=products';
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -221,8 +221,8 @@ export default function SimpleBundleManagement() {
         availableCollections.length === 0 && !isLoadingCollections) {
       console.log('🔥 Loading collections via API fetcher...');
       setIsLoadingCollections(true);
-      // GET collections via API; cookies/session will auth
-      collectionsFetcher.load('/api/bundle-management?action=categories');
+      // GET collections via API; admin route handles auth automatically
+      collectionsFetcher.load('/admin/api/bundle-data?action=categories');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCreateModal, newBundle.bundleType, availableCollections.length, isLoadingCollections]);
@@ -915,7 +915,7 @@ export default function SimpleBundleManagement() {
                         content: "Reload Collections",
                         onAction: () => {
                           setIsLoadingCollections(true);
-                          collectionsFetcher.load('/api/bundle-management?action=categories');
+                          collectionsFetcher.load('/admin/api/bundle-data?action=categories');
                         },
                       }}
                     >
