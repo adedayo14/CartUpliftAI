@@ -56,8 +56,12 @@ interface Collection {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  console.log('[Loader] Starting bundle management loader...');
+  
   const authResult = await authenticate.admin(request);
   const shop = authResult.session.shop;
+  
+  console.log('[Loader] Authenticated for shop:', shop);
   
   try {
     // Load bundles
@@ -67,99 +71,152 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       orderBy: { createdAt: 'desc' }
     });
     
-    // Load products directly from Shopify
+    console.log(`[Loader] Loaded ${bundles.length} bundles`);
+    
+    // Load products directly from Shopify with enhanced error handling
     let products: Product[] = [];
     let collections: Collection[] = [];
     
     try {
-      console.log('[Loader] Fetching products from Shopify...');
-      const productsResponse = await authResult.admin.graphql(`
+      console.log('[Loader] Fetching products from Shopify GraphQL...');
+      
+      // Use media instead of deprecated images field
+      const productsResponse = await authResult.admin.graphql(
+        `#graphql
         query getProducts {
           products(first: 50) {
             edges {
               node {
                 id
                 title
-                priceRangeV2 {
-                  minVariantPrice {
-                    amount
+                variants(first: 1) {
+                  edges {
+                    node {
+                      price
+                    }
                   }
                 }
-                featuredImage {
-                  url
+                featuredMedia {
+                  preview {
+                    image {
+                      url
+                    }
+                  }
                 }
               }
             }
           }
-        }
-      `);
+        }`
+      );
       
       const productsData = await productsResponse.json();
-      console.log('[Loader] Products response:', JSON.stringify(productsData, null, 2));
+      
+      console.log('[Loader] GraphQL Response Status:', productsResponse.status);
+      console.log('[Loader] GraphQL Response:', JSON.stringify(productsData, null, 2));
+      
+      // Check for GraphQL errors (with proper type checking)
+      const responseData = productsData as any;
+      if (responseData.errors) {
+        console.error('[Loader] GraphQL errors:', responseData.errors);
+        throw new Error(`GraphQL errors: ${JSON.stringify(responseData.errors)}`);
+      }
       
       if (productsData.data?.products?.edges) {
-        products = productsData.data.products.edges.map((edge: any) => ({
-          id: edge.node.id,
-          title: edge.node.title,
-          price: edge.node.priceRangeV2.minVariantPrice.amount,
-          image: edge.node.featuredImage?.url || ""
-        }));
-        console.log(`[Loader] Successfully loaded ${products.length} products`);
+        products = productsData.data.products.edges
+          .filter((edge: any) => edge?.node) // Filter out null nodes
+          .map((edge: any) => {
+            const node = edge.node;
+            const variant = node.variants?.edges?.[0]?.node;
+            const mediaImage = node.featuredMedia?.preview?.image;
+            
+            return {
+              id: node.id,
+              title: node.title || 'Untitled Product',
+              price: variant?.price || '0.00',
+              image: mediaImage?.url || 'https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png'
+            };
+          });
+        
+        console.log(`[Loader] Successfully mapped ${products.length} products`);
+        console.log('[Loader] First product sample:', products[0]);
       } else {
-        console.warn('[Loader] No products found in response');
+        console.warn('[Loader] No products found in response structure');
+        console.warn('[Loader] Response structure:', Object.keys(productsData));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Loader] Failed to load products:', error);
+      console.error('[Loader] Error stack:', error.stack);
+      // Don't throw - continue with empty products
     }
     
     try {
-      console.log('[Loader] Fetching collections from Shopify...');
-      const collectionsResponse = await authResult.admin.graphql(`
+      console.log('[Loader] Fetching collections from Shopify GraphQL...');
+      
+      const collectionsResponse = await authResult.admin.graphql(
+        `#graphql
         query getCollections {
           collections(first: 50) {
             edges {
               node {
                 id
                 title
-                productsCount
+                productsCount {
+                  count
+                }
               }
             }
           }
-        }
-      `);
+        }`
+      );
       
       const collectionsData = await collectionsResponse.json();
-      console.log('[Loader] Collections response:', JSON.stringify(collectionsData, null, 2));
       
-      if (collectionsData.data?.collections?.edges) {
-        collections = collectionsData.data.collections.edges.map((edge: any) => ({
-          id: edge.node.id,
-          title: edge.node.title,
-          productsCount: edge.node.productsCount
-        }));
+      console.log('[Loader] Collections Response:', JSON.stringify(collectionsData, null, 2));
+      
+      const collectionsResponseData = collectionsData as any;
+      if (collectionsResponseData.errors) {
+        console.error('[Loader] Collections GraphQL errors:', collectionsResponseData.errors);
+      } else if (collectionsData.data?.collections?.edges) {
+        collections = collectionsData.data.collections.edges
+          .filter((edge: any) => edge?.node)
+          .map((edge: any) => ({
+            id: edge.node.id,
+            title: edge.node.title || 'Untitled Collection',
+            productsCount: edge.node.productsCount?.count || 0
+          }));
+        
         console.log(`[Loader] Successfully loaded ${collections.length} collections`);
-      } else {
-        console.warn('[Loader] No collections found in response');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Loader] Failed to load collections:', error);
+      console.error('[Loader] Error stack:', error.stack);
     }
+    
+    console.log('[Loader] Final counts - Products:', products.length, 'Collections:', collections.length);
     
     return json({ 
       success: true, 
       bundles, 
       products,
       collections,
-      shop 
+      shop,
+      debug: {
+        productsCount: products.length,
+        collectionsCount: collections.length,
+        bundlesCount: bundles.length
+      }
     });
-  } catch (error) {
-    console.error('[Bundle Loader] Failed to load data:', error);
+  } catch (error: any) {
+    console.error('[Bundle Loader] Critical error:', error);
+    console.error('[Bundle Loader] Error stack:', error.stack);
+    
     return json({ 
       success: false, 
       bundles: [],
       products: [],
       collections: [],
-      error: 'Failed to load data'
+      error: error.message || 'Failed to load data',
+      errorDetails: error.stack
     });
   }
 };
@@ -223,6 +280,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         },
       });
 
+      console.log('[Action] Bundle created:', bundle.id);
       return json({ success: true, bundle, message: "Bundle created successfully" });
     }
 
@@ -249,9 +307,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     return json({ success: false, error: "Invalid action" }, { status: 400 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Bundle action error:", error);
-    return json({ success: false, error: "Failed to perform action" }, { status: 500 });
+    return json({ success: false, error: error.message || "Failed to perform action" }, { status: 500 });
   }
 };
 
@@ -260,13 +318,7 @@ export default function SimpleBundleManagement() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   
-  console.log('[Frontend] Loader data received:', {
-    bundlesCount: loaderData.bundles?.length || 0,
-    productsCount: loaderData.products?.length || 0,
-    collectionsCount: loaderData.collections?.length || 0,
-    hasProducts: !!loaderData.products,
-    products: loaderData.products
-  });
+  console.log('[Frontend] Loader data received:', loaderData);
   
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
@@ -481,7 +533,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.2 - FIXED: Products load from loader, working product picker"
+      subtitle="🚀 v1.3 - FIXED: Enhanced GraphQL query + detailed logging"
       primaryAction={
         <Button
           variant="primary"
@@ -511,6 +563,22 @@ export default function SimpleBundleManagement() {
           </Layout.Section>
         )}
         
+        {!loaderData.success && 'error' in loaderData && (
+          <Layout.Section>
+            <Banner tone="critical" title="Failed to load data">
+              <p>{loaderData.error}</p>
+              {loaderData.errorDetails && (
+                <details>
+                  <summary>Error details</summary>
+                  <BlockStack>
+                    <Text as="p" variant="bodySm">{loaderData.errorDetails}</Text>
+                  </BlockStack>
+                </details>
+              )}
+            </Banner>
+          </Layout.Section>
+        )}
+        
         <Layout.Section>
           {bundles.length === 0 ? (
             <Card>
@@ -519,7 +587,7 @@ export default function SimpleBundleManagement() {
                   Get Started with Bundles
                 </Text>
                 <Text as="p" variant="bodyMd" tone="subdued">
-                  Create your first bundle to start increasing average order value through strategic product combinations.
+                  Create your first bundle to start increasing average order value.
                 </Text>
               </BlockStack>
             </Card>
@@ -547,13 +615,21 @@ export default function SimpleBundleManagement() {
           <Card>
             <BlockStack gap="300">
               <Text as="h3" variant="headingSm">
-                ✅ Status
+                ✅ Debug Info
               </Text>
               <Text as="p" variant="bodyMd">
                 • Products: {availableProducts.length} loaded
                 <br />• Collections: {availableCollections.length} loaded
                 <br />• Bundles: {bundles.length} total
+                <br />• Success: {loaderData.success ? 'Yes' : 'No'}
               </Text>
+              {availableProducts.length === 0 && (
+                <Banner tone="warning">
+                  <p><strong>No products found!</strong></p>
+                  <p>Check your browser console and server logs for details.</p>
+                  <p>Make sure you have products in your Shopify store.</p>
+                </Banner>
+              )}
             </BlockStack>
           </Card>
         </Layout.Section>
@@ -614,7 +690,7 @@ export default function SimpleBundleManagement() {
               onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as any })}
             />
 
-            {/* Product Assignment Section - FIXED */}
+            {/* Product Assignment Section */}
             <Card>
               <BlockStack gap="300">
                 <Text as="h3" variant="headingSm">Product Assignment</Text>
@@ -622,9 +698,21 @@ export default function SimpleBundleManagement() {
                   Choose which product pages should display this bundle
                 </Text>
                 
-                <Button onClick={() => setShowProductPicker(true)}>
-                  {`Select Products (${assignedProducts.length} selected)`}
+                <Button 
+                  onClick={() => setShowProductPicker(true)}
+                  disabled={availableProducts.length === 0}
+                >
+                  {availableProducts.length === 0 
+                    ? "No products available" 
+                    : `Select Products (${assignedProducts.length} selected)`
+                  }
                 </Button>
+                
+                {availableProducts.length === 0 && (
+                  <Text as="p" variant="bodySm" tone="critical">
+                    Add products to your Shopify store first, then refresh this page.
+                  </Text>
+                )}
                 
                 {assignedProducts.length > 0 && (
                   <BlockStack gap="200">
@@ -673,7 +761,7 @@ export default function SimpleBundleManagement() {
                       heading="No products available"
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                     >
-                      <p>Add products to your store first</p>
+                      <p>Add products to your Shopify store first, then reload this page.</p>
                     </EmptyState>
                   ) : (
                     <ResourceList
@@ -731,7 +819,7 @@ export default function SimpleBundleManagement() {
                       heading="No collections available"
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                     >
-                      <p>Create collections in your store first</p>
+                      <p>Create collections in your Shopify store first</p>
                     </EmptyState>
                   ) : (
                     <ResourceList
@@ -801,7 +889,7 @@ export default function SimpleBundleManagement() {
         </Modal.Section>
       </Modal>
 
-      {/* Product Picker Modal for Assignment - FIXED */}
+      {/* Product Picker Modal */}
       <Modal
         open={showProductPicker}
         onClose={() => setShowProductPicker(false)}
@@ -822,7 +910,7 @@ export default function SimpleBundleManagement() {
                 heading="No products available"
                 image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
               >
-                <p>Add products to your store first</p>
+                <p>Add products to your Shopify store, then reload this page.</p>
               </EmptyState>
             ) : (
               <ResourceList
