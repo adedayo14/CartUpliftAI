@@ -277,6 +277,9 @@ export default function SimpleBundleManagement() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   
+  console.log('🟢 [Component] Render - navigation.state:', navigation.state);
+  console.log('🟢 [Component] actionData:', actionData);
+  
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
   const availableCollections = loaderData.collections || [];
@@ -310,18 +313,37 @@ export default function SimpleBundleManagement() {
     ]
   });
 
+  // Monitor navigation state changes
+  useEffect(() => {
+    console.log('🟡 [Navigation] State changed to:', navigation.state);
+    if (navigation.state === 'submitting') {
+      console.log('🟡 [Navigation] Form is submitting...');
+      console.log('🟡 [Navigation] FormData:', navigation.formData ? 'exists' : 'null');
+      if (navigation.formData) {
+        console.log('🟡 [Navigation] Action:', navigation.formData.get('action'));
+      }
+    } else if (navigation.state === 'loading') {
+      console.log('🟡 [Navigation] Loading response...');
+    } else if (navigation.state === 'idle') {
+      console.log('🟡 [Navigation] Idle');
+    }
+  }, [navigation.state, navigation.formData]);
+
   // Handle action responses
   useEffect(() => {
+    console.log('🟣 [ActionData] Changed:', actionData);
     if (actionData) {
       if (actionData.success) {
+        console.log('✅ [ActionData] Success!');
         setShowSuccessBanner(true);
-        setBannerMessage(actionData.message || "Success!");
+        setBannerMessage((actionData as any).message || "Success!");
         setShowCreateModal(false);
         resetForm();
         setTimeout(() => setShowSuccessBanner(false), 3000);
       } else {
+        console.error('❌ [ActionData] Failed:', (actionData as any).error);
         setShowErrorBanner(true);
-        setBannerMessage(actionData.error || "Failed");
+        setBannerMessage((actionData as any).error || "Failed");
         setTimeout(() => setShowErrorBanner(false), 3000);
       }
     }
@@ -352,9 +374,34 @@ export default function SimpleBundleManagement() {
   };
 
   const handleSubmitForm = () => {
-    console.log('[Frontend] Submitting form...');
+    console.log('🔵 [Frontend] handleSubmitForm called');
+    console.log('🔵 [Frontend] formRef.current exists?', !!formRef.current);
+    console.log('🔵 [Frontend] Bundle name:', newBundle.name);
+    console.log('🔵 [Frontend] Selected products:', selectedProducts.length);
+    console.log('🔵 [Frontend] Assigned products:', assignedProducts.length);
+    
+    if (!newBundle.name.trim()) {
+      console.error('❌ [Frontend] Bundle name is empty!');
+      setShowErrorBanner(true);
+      setBannerMessage('Bundle name is required');
+      setTimeout(() => setShowErrorBanner(false), 3000);
+      return;
+    }
+    
     if (formRef.current) {
+      console.log('🔵 [Frontend] Form element found, calling requestSubmit()...');
+      
+      // Log all form data before submission
+      const formData = new FormData(formRef.current);
+      console.log('🔵 [Frontend] Form data entries:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
+      }
+      
       formRef.current.requestSubmit();
+      console.log('🔵 [Frontend] requestSubmit() called successfully');
+    } else {
+      console.error('❌ [Frontend] formRef.current is null!');
     }
   };
 
@@ -506,7 +553,16 @@ export default function SimpleBundleManagement() {
         ]}
       >
         <Modal.Section>
-          <Form method="post" ref={formRef}>
+          <Form 
+            method="post" 
+            ref={formRef}
+            onSubmit={(e) => {
+              console.log('🔴 [Form] onSubmit event fired!');
+              console.log('🔴 [Form] Event:', e);
+              console.log('🔴 [Form] Current target:', e.currentTarget);
+              console.log('🔴 [Form] Default prevented?', e.defaultPrevented);
+            }}
+          >
             <input type="hidden" name="action" value="create-bundle" />
             <input type="hidden" name="productIds" value={JSON.stringify(selectedProducts)} />
             <input type="hidden" name="collectionIds" value={JSON.stringify(selectedCollections)} />
