@@ -27,8 +27,9 @@
     data-bundle-priority="{{ block.settings.priority }}"
   >
     {%- comment -%} JavaScript will load bundles from backend API based on product ID {%- endcomment -%}
-    <div class="cartuplift-bundle-loading">
-      <p>Loading available bundles...</p>
+    <div class="cartuplift-bundle-loading" style="padding: 20px; text-align: center; color: #666;">
+      <p style="margin: 0 0 8px 0;">🎁 Loading bundles for product {{ product.id }}...</p>
+      <p style="margin: 0; font-size: 12px; color: #999;">Check browser console (F12) for details</p>
     </div>
   </div>
 {% endif %}
@@ -39,6 +40,10 @@
   "target": "section",
   "templates": ["product", "collection"],
   "settings": [
+    {
+      "type": "paragraph",
+      "content": "⚙️ **Configure bundles in your Cart Uplift admin dashboard.** This block displays bundles you've created for each product. Bundle display styles (Grid, FBT, List, Carousel, Tier) are managed in the admin app, not here."
+    },
     {
       "type": "checkbox",
       "id": "bundle_enabled",
@@ -62,6 +67,10 @@
       "step": 1,
       "default": 5,
       "info": "Order if multiple bundle blocks on same page (1 = highest)"
+    },
+    {
+      "type": "paragraph",
+      "content": "💡 **To see bundles preview:** Visit a product page in your store where you've assigned bundles. The JavaScript will load and display bundles based on your admin configuration."
     }
   ]
 }

@@ -105,6 +105,15 @@
 
       // Render each bundle
       this.bundles.forEach((bundleData, index) => {
+        console.log(`🎁 Rendering bundle ${index + 1}:`, {
+          name: bundleData.name,
+          type: bundleData.type,
+          bundleStyle: bundleData.bundleStyle,
+          products: bundleData.products?.length || 0,
+          discountType: bundleData.discountType,
+          discountValue: bundleData.discountValue
+        });
+        
         const bundle = new ProductBundle(widget, bundleData, index);
         bundle.init();
       });
