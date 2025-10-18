@@ -475,7 +475,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="✅ UPDATED Oct 3, 2025 - NO App Bridge - Direct fetch like Settings"
+      subtitle="✅ UPDATED Oct 18, 2025 - Fixed product selection + Smart Bundles theme integration"
       primaryAction={
         <Button
           variant="primary"
@@ -806,10 +806,23 @@ export default function SimpleBundleManagement() {
                     <BlockStack align="center" gap="300">
                       <Spinner size="large" />
                       <Text as="p">Loading products...</Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Fetcher state: {productFetcher.state}
+                      </Text>
                     </BlockStack>
                   ) : productLoadError ? (
                     <Banner tone="critical" title="Failed to load products">
                       <p>{productLoadError}</p>
+                      <Button onClick={() => productFetcher.load('/api/bundle-management?action=products')}>
+                        Retry
+                      </Button>
+                    </Banner>
+                  ) : (productFetcher.data && !(productFetcher.data as any).success) ? (
+                    <Banner tone="warning" title="API returned error">
+                      <p>Response: {JSON.stringify(productFetcher.data)}</p>
+                      <Button onClick={() => productFetcher.load('/api/bundle-management?action=products')}>
+                        Retry
+                      </Button>
                     </Banner>
                   ) : availableProducts.length === 0 ? (
                     <EmptyState
