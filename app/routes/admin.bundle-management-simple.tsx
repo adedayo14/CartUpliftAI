@@ -442,9 +442,20 @@ export default function SimpleBundleManagement() {
       console.log('🔵 [Frontend] App Bridge object type:', typeof app);
       console.log('🔵 [Frontend] App has idToken method?', 'idToken' in app);
       
-      // Get the session token from shopify.idToken() method
-      const sessionToken = await app.idToken();
-      console.log('🔵 [Frontend] Got session token (first 20 chars):', sessionToken?.substring(0, 20));
+      // Try to get the session token with a timeout
+      let sessionToken: string;
+      try {
+        console.log('🔵 [Frontend] Calling app.idToken() with 5s timeout...');
+        const tokenPromise = app.idToken();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('idToken timeout after 5s')), 5000)
+        );
+        sessionToken = await Promise.race([tokenPromise, timeoutPromise]) as string;
+        console.log('🔵 [Frontend] Got session token (first 20 chars):', sessionToken?.substring(0, 20));
+      } catch (tokenError: any) {
+        console.error('❌ [Frontend] idToken() failed:', tokenError.message);
+        throw new Error(`Failed to get session token: ${tokenError.message}`);
+      }
       
       // Use authenticated fetch with App Bridge
       console.log('🔵 [Frontend] POST to:', resolvedActionPath);
