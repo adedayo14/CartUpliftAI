@@ -85,7 +85,7 @@ console.log('🔥 Fetching products for shop:', session.shop);
 console.log(`🔥 Successfully fetched ${products.length} products`);
 ```
 
-### File: `/app/routes/admin.bundle-management-simple.tsx`
+### File: `/app/routes/admin.bundles.tsx` (formerly `admin.bundle-management-simple.tsx`)
 
 #### Fix 5: Consistent API Endpoint
 ```typescript
@@ -146,7 +146,7 @@ npm run dev
 ## How to Verify the Fix
 
 1. **Open the app in Shopify Admin**
-2. **Navigate to Bundle Management** (`/admin/bundle-management-simple`)
+2. **Navigate to Product Bundles** (`/admin/bundles`)
 3. **Click "Create New Bundle"**
 4. **Select "Manual Bundle" type**
 5. **Verify products load** (should see product list within seconds)
@@ -164,7 +164,7 @@ npm run dev
 ## Files Modified
 
 1. `/app/routes/api.bundle-management.tsx` - Authentication and timeout fixes
-2. `/app/routes/admin.bundle-management-simple.tsx` - API endpoint consistency
+2. `/app/routes/admin.bundles.tsx` - API endpoint consistency (renamed from `admin.bundle-management-simple.tsx`)
 
 ## Commit
 
