@@ -285,6 +285,7 @@ export default function SimpleBundleManagement() {
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
+  console.log('🟢 [Component] App Bridge:', app ? 'initialized' : 'NOT INITIALIZED');
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -393,7 +394,8 @@ export default function SimpleBundleManagement() {
   };
 
   const handleSubmitForm = async () => {
-    console.log('🔵 [Frontend] handleSubmitForm called with App Bridge');
+    console.log('🔵 [Frontend] ========== handleSubmitForm START ==========');
+    console.log('🔵 [Frontend] App Bridge object:', app);
     console.log('🔵 [Frontend] Bundle name:', newBundle.name);
     console.log('🔵 [Frontend] Selected products:', selectedProducts.length);
     console.log('🔵 [Frontend] Assigned products:', assignedProducts.length);
@@ -406,9 +408,11 @@ export default function SimpleBundleManagement() {
       return;
     }
     
+    console.log('🔵 [Frontend] Setting isSubmitting to true...');
     setIsSubmitting(true);
     
     try {
+      console.log('🔵 [Frontend] Building FormData...');
       // Build form data manually
       const formData = new FormData();
       formData.append('action', 'create-bundle');
@@ -428,18 +432,23 @@ export default function SimpleBundleManagement() {
       formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
       formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
       
-      console.log('🔵 [Frontend] FormData built, calling authenticated fetch...');
+      console.log('🔵 [Frontend] FormData built successfully');
       console.log('🔵 [Frontend] FormData entries:');
       for (const [key, value] of formData.entries()) {
         console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
       }
       
+      console.log('🔵 [Frontend] Requesting session token from App Bridge...');
+      console.log('🔵 [Frontend] App Bridge idToken method exists?', typeof app.idToken === 'function');
+      
       // Get the session token from App Bridge
       const sessionToken = await app.idToken();
-      console.log('🔵 [Frontend] Got session token');
+      console.log('🔵 [Frontend] Got session token (first 20 chars):', sessionToken?.substring(0, 20));
       
       // Use authenticated fetch with App Bridge
       console.log('🔵 [Frontend] POST to:', resolvedActionPath);
+      console.log('🔵 [Frontend] Calling fetch...');
+      
       const response = await fetch(resolvedActionPath, {
         method: 'POST',
         headers: {
@@ -448,7 +457,10 @@ export default function SimpleBundleManagement() {
         body: formData,
       });
       
+      console.log('🔵 [Frontend] Fetch completed');
       console.log('🔵 [Frontend] Response status:', response.status);
+      console.log('🔵 [Frontend] Response ok:', response.ok);
+      
       const result = await response.json();
       console.log('🔵 [Frontend] Response data:', result);
       
@@ -468,12 +480,17 @@ export default function SimpleBundleManagement() {
         setTimeout(() => setShowErrorBanner(false), 3000);
       }
     } catch (error: any) {
-      console.error('❌ [Frontend] Exception:', error);
+      console.error('❌ [Frontend] Exception caught:', error);
+      console.error('❌ [Frontend] Error name:', error.name);
+      console.error('❌ [Frontend] Error message:', error.message);
+      console.error('❌ [Frontend] Error stack:', error.stack);
       setShowErrorBanner(true);
       setBannerMessage('An error occurred: ' + error.message);
       setTimeout(() => setShowErrorBanner(false), 3000);
     } finally {
+      console.log('🔵 [Frontend] Setting isSubmitting to false...');
       setIsSubmitting(false);
+      console.log('🔵 [Frontend] ========== handleSubmitForm END ==========');
     }
   };
 
