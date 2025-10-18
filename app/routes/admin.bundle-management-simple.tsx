@@ -294,7 +294,8 @@ export default function SimpleBundleManagement() {
         hideIfNoML: newBundle.hideIfNoML,
       };
 
-      console.log('[Bundle Create] Sending to /api/bundle-management:', payload);
+      console.log('[Bundle Create] v2.4 - Sending to /api/bundle-management:', payload);
+      console.log('[Bundle Create] Session token:', sessionToken ? 'present' : 'MISSING');
 
       const response = await fetch('/api/bundle-management', {
         method: 'POST',
@@ -305,6 +306,8 @@ export default function SimpleBundleManagement() {
         body: JSON.stringify(payload),
       });
 
+      console.log('[Bundle Create] Response status:', response.status, response.statusText);
+      
       const data = await response.json();
       console.log('[Bundle Create] API Response:', data);
 
