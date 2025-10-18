@@ -17,23 +17,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function AppLayout() {
   const { apiKey } = useLoaderData<typeof loader>();
-  // Optional debug
+
   useEffect(() => {
-    console.log('🔍 App Bridge Nav (React) init - apiKey:', !!apiKey);
+    // Ensure App Bridge is ready before rendering nav
+    if (window.shopify?.environment) {
+      console.log('✅ App Bridge ready, nav should be visible');
+    }
   }, [apiKey]);
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <AppBridgeInitializer apiKey={apiKey} />
       <SessionStatus />
-      {/* Shopify App Design System: App Nav */}
-      <s-app-nav>
-        <s-link href="/app" rel="home">Home</s-link>
-        <s-link href="/admin/dashboard">Analytics</s-link>
-        <s-link href="/app/settings">Settings</s-link>
-        <s-link href="/admin/bundle-management-simple">Bundles</s-link>
-        <s-link href="/admin/ab-testing">A/B Testing</s-link>
-      </s-app-nav>
+      {/* Shopify App Design System: App Nav - wrapped in conditional to prevent premature render */}
+      {apiKey && (
+        <s-app-nav>
+          <s-link href="/app" rel="home">Home</s-link>
+          <s-link href="/admin/dashboard">Analytics</s-link>
+          <s-link href="/app/settings">Settings</s-link>
+          <s-link href="/admin/bundle-management-simple">Bundles</s-link>
+          <s-link href="/app/ab-testing">A/B Testing</s-link>
+        </s-app-nav>
+      )}
       <Outlet />
     </AppProvider>
   );
