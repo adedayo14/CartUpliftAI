@@ -57,7 +57,10 @@
     async loadBundles() {
       try {
         // Call backend API to get bundles for this product
-        const response = await fetch(`/apps/cart-uplift/api/bundles?product_id=${this.currentProductId}`, {
+        const apiUrl = `/apps/cart-uplift/api/bundles?product_id=${this.currentProductId}`;
+        console.log(`🎁 Fetching bundles from: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Accept': 'application/json'
@@ -65,15 +68,20 @@
         });
 
         if (!response.ok) {
-          console.warn('🎁 Failed to load bundles:', response.status);
+          console.warn(`🎁 Failed to load bundles: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.warn('🎁 Error response:', errorText);
           return;
         }
 
         const data = await response.json();
+        console.log('🎁 API Response:', data);
         
         if (data.success && data.bundles) {
           this.bundles = data.bundles;
-          console.log(`🎁 Loaded ${this.bundles.length} bundles from backend`);
+          console.log(`🎁 Loaded ${this.bundles.length} bundles from backend:`, this.bundles);
+        } else {
+          console.log('🎁 No bundles returned or API returned error:', data);
         }
       } catch (error) {
         console.error('🎁 Error loading bundles:', error);
