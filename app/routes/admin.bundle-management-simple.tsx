@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, Form } from "@remix-run/react";
-import { useEffect, useState, useRef } from "react";
+import { useLoaderData, useActionData, useNavigation, useSubmit, Form } from "@remix-run/react";
+import { useEffect, useState } from "react";
 import {
   Page,
   Layout,
@@ -285,7 +285,7 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const formRef = useRef<HTMLFormElement>(null);
+  const submit = useSubmit();
   
   console.log('[Frontend] Loader data:', loaderData);
   console.log('[Frontend] Action data:', actionData);
@@ -376,47 +376,39 @@ export default function SimpleBundleManagement() {
       return;
     }
 
-    // Populate hidden form fields
-    if (formRef.current) {
-      const form = formRef.current;
-      
-      // Set all form values
-      (form.elements.namedItem('name') as HTMLInputElement).value = newBundle.name;
-      (form.elements.namedItem('description') as HTMLInputElement).value = newBundle.description;
-      (form.elements.namedItem('bundleType') as HTMLInputElement).value = newBundle.bundleType;
-      (form.elements.namedItem('discountType') as HTMLInputElement).value = newBundle.discountType;
-      (form.elements.namedItem('discountValue') as HTMLInputElement).value = newBundle.discountValue.toString();
-      (form.elements.namedItem('minProducts') as HTMLInputElement).value = newBundle.minProducts.toString();
-      (form.elements.namedItem('bundleStyle') as HTMLInputElement).value = newBundle.bundleStyle;
-      (form.elements.namedItem('selectMinQty') as HTMLInputElement).value = newBundle.selectMinQty.toString();
-      (form.elements.namedItem('selectMaxQty') as HTMLInputElement).value = newBundle.selectMaxQty.toString();
-      (form.elements.namedItem('allowDeselect') as HTMLInputElement).value = newBundle.allowDeselect.toString();
-      (form.elements.namedItem('hideIfNoML') as HTMLInputElement).value = newBundle.hideIfNoML.toString();
-      
-      if (assignedProducts.length > 0) {
-        (form.elements.namedItem('assignedProducts') as HTMLInputElement).value = JSON.stringify(assignedProducts);
-      }
-      
-      if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
-        (form.elements.namedItem('productIds') as HTMLInputElement).value = JSON.stringify(selectedProducts);
-      }
-      
-      if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
-        (form.elements.namedItem('collectionIds') as HTMLInputElement).value = JSON.stringify(selectedCollections);
-      }
-      
-      if (newBundle.bundleStyle === 'tier') {
-        (form.elements.namedItem('tierConfig') as HTMLInputElement).value = JSON.stringify(newBundle.tierConfig);
-      }
-
-      console.log('[handleCreateBundle] Submitting hidden form...');
-      
-      // Click the hidden submit button to trigger Remix form submission
-      const submitButton = document.getElementById('hidden-submit-button') as HTMLButtonElement;
-      if (submitButton) {
-        submitButton.click();
-      }
+    // Create FormData and submit directly with useSubmit
+    const formData = new FormData();
+    formData.append('action', 'create-bundle');
+    formData.append('name', newBundle.name);
+    formData.append('description', newBundle.description);
+    formData.append('bundleType', newBundle.bundleType);
+    formData.append('discountType', newBundle.discountType);
+    formData.append('discountValue', newBundle.discountValue.toString());
+    formData.append('minProducts', newBundle.minProducts.toString());
+    formData.append('bundleStyle', newBundle.bundleStyle);
+    formData.append('selectMinQty', newBundle.selectMinQty.toString());
+    formData.append('selectMaxQty', newBundle.selectMaxQty.toString());
+    formData.append('allowDeselect', newBundle.allowDeselect.toString());
+    formData.append('hideIfNoML', newBundle.hideIfNoML.toString());
+    
+    if (assignedProducts.length > 0) {
+      formData.append('assignedProducts', JSON.stringify(assignedProducts));
     }
+    
+    if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
+      formData.append('productIds', JSON.stringify(selectedProducts));
+    }
+    
+    if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
+      formData.append('collectionIds', JSON.stringify(selectedCollections));
+    }
+    
+    if (newBundle.bundleStyle === 'tier') {
+      formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
+    }
+
+    console.log('[handleCreateBundle] Submitting with useSubmit()...');
+    submit(formData, { method: 'post', replace: false });
   };
 
   const handleToggleStatus = (bundleId: string, currentStatus: string) => {
@@ -886,27 +878,6 @@ export default function SimpleBundleManagement() {
           </BlockStack>
         </Modal.Section>
       </Modal>
-
-      {/* Hidden form for create bundle */}
-      <Form method="post" ref={formRef} style={{ display: 'none' }}>
-        <input type="hidden" name="action" value="create-bundle" />
-        <input type="hidden" name="name" />
-        <input type="hidden" name="description" />
-        <input type="hidden" name="bundleType" />
-        <input type="hidden" name="discountType" />
-        <input type="hidden" name="discountValue" />
-        <input type="hidden" name="minProducts" />
-        <input type="hidden" name="bundleStyle" />
-        <input type="hidden" name="selectMinQty" />
-        <input type="hidden" name="selectMaxQty" />
-        <input type="hidden" name="allowDeselect" />
-        <input type="hidden" name="hideIfNoML" />
-        <input type="hidden" name="assignedProducts" />
-        <input type="hidden" name="productIds" />
-        <input type="hidden" name="collectionIds" />
-        <input type="hidden" name="tierConfig" />
-        <button type="submit" id="hidden-submit-button" style={{ display: 'none' }}>Submit</button>
-      </Form>
 
       {/* Hidden forms for toggle/delete actions for each bundle */}
       {bundles.map((bundle: Bundle) => (
