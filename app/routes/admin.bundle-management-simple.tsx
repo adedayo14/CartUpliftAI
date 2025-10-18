@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, useSubmit } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -317,6 +317,7 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const submit = useSubmit();
   
   console.log('[Frontend] Loader data received:', loaderData);
   
@@ -438,21 +439,8 @@ export default function SimpleBundleManagement() {
       formData.append("tierConfig", JSON.stringify(newBundle.tierConfig));
     }
 
-    // Submit using native form submission (triggers Remix action)
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.style.display = 'none';
-    
-    for (const [key, value] of formData.entries()) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value.toString();
-      form.appendChild(input);
-    }
-    
-    document.body.appendChild(form);
-    form.submit();
+    // Use Remix submit instead of programmatic form submission
+    submit(formData, { method: "POST" });
   };
 
   const bundleTypeOptions = [
