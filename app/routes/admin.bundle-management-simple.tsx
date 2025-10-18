@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, Form } from "@remix-run/react";
-import { useEffect, useState, useRef } from "react";
+import { useLoaderData, useActionData, useNavigation, useFetcher } from "@remix-run/react";
+import { useEffect, useState } from "react";
 import {
   Page,
   Layout,
@@ -276,15 +276,16 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const fetcher = useFetcher<typeof action>();
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
+  console.log('🔷 [Fetcher] state:', fetcher.state);
+  console.log('🔷 [Fetcher] data:', fetcher.data);
   
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
   const availableCollections = loaderData.collections || [];
-  
-  const formRef = useRef<HTMLFormElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -329,10 +330,32 @@ export default function SimpleBundleManagement() {
     }
   }, [navigation.state, navigation.formData]);
 
-  // Handle action responses
+  // Handle fetcher responses (prioritize fetcher over actionData)
+  useEffect(() => {
+    console.log('🔷 [Fetcher] State changed to:', fetcher.state);
+    console.log('🔷 [Fetcher] Data:', fetcher.data);
+    
+    if (fetcher.state === 'idle' && fetcher.data) {
+      if (fetcher.data.success) {
+        console.log('✅ [Fetcher] Success!');
+        setShowSuccessBanner(true);
+        setBannerMessage((fetcher.data as any).message || "Bundle created successfully!");
+        setShowCreateModal(false);
+        resetForm();
+        setTimeout(() => setShowSuccessBanner(false), 3000);
+      } else {
+        console.error('❌ [Fetcher] Failed:', (fetcher.data as any).error);
+        setShowErrorBanner(true);
+        setBannerMessage((fetcher.data as any).error || "Failed to create bundle");
+        setTimeout(() => setShowErrorBanner(false), 3000);
+      }
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  // Keep actionData handler as backup (for other actions)
   useEffect(() => {
     console.log('🟣 [ActionData] Changed:', actionData);
-    if (actionData) {
+    if (actionData && !fetcher.data) {
       if (actionData.success) {
         console.log('✅ [ActionData] Success!');
         setShowSuccessBanner(true);
@@ -347,7 +370,7 @@ export default function SimpleBundleManagement() {
         setTimeout(() => setShowErrorBanner(false), 3000);
       }
     }
-  }, [actionData]);
+  }, [actionData, fetcher.data]);
 
   const resetForm = () => {
     setNewBundle({
@@ -374,8 +397,7 @@ export default function SimpleBundleManagement() {
   };
 
   const handleSubmitForm = () => {
-    console.log('🔵 [Frontend] handleSubmitForm called');
-    console.log('🔵 [Frontend] formRef.current exists?', !!formRef.current);
+    console.log('🔵 [Frontend] handleSubmitForm called with useFetcher');
     console.log('🔵 [Frontend] Bundle name:', newBundle.name);
     console.log('🔵 [Frontend] Selected products:', selectedProducts.length);
     console.log('🔵 [Frontend] Assigned products:', assignedProducts.length);
@@ -388,21 +410,36 @@ export default function SimpleBundleManagement() {
       return;
     }
     
-    if (formRef.current) {
-      console.log('🔵 [Frontend] Form element found, calling requestSubmit()...');
-      
-      // Log all form data before submission
-      const formData = new FormData(formRef.current);
-      console.log('🔵 [Frontend] Form data entries:');
-      for (const [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
-      }
-      
-      formRef.current.requestSubmit();
-      console.log('🔵 [Frontend] requestSubmit() called successfully');
-    } else {
-      console.error('❌ [Frontend] formRef.current is null!');
+    // Build form data manually
+    const formData = new FormData();
+    formData.append('action', 'create-bundle');
+    formData.append('productIds', JSON.stringify(selectedProducts));
+    formData.append('collectionIds', JSON.stringify(selectedCollections));
+    formData.append('assignedProducts', JSON.stringify(assignedProducts));
+    formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
+    formData.append('name', newBundle.name);
+    formData.append('description', newBundle.description || '');
+    formData.append('bundleType', newBundle.bundleType);
+    formData.append('bundleStyle', newBundle.bundleStyle);
+    formData.append('allowDeselect', newBundle.allowDeselect ? 'true' : '');
+    formData.append('discountType', newBundle.discountType);
+    formData.append('discountValue', newBundle.discountValue.toString());
+    formData.append('minProducts', newBundle.minProducts.toString());
+    formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
+    formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
+    
+    console.log('🔵 [Frontend] FormData built, calling fetcher.submit()...');
+    console.log('🔵 [Frontend] FormData entries:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
     }
+    
+    // Use fetcher.submit() to bypass navigation issues
+    fetcher.submit(formData, {
+      method: 'post',
+      action: '/admin/bundle-management-simple'
+    });
+    console.log('🔵 [Frontend] fetcher.submit() called successfully');
   };
 
   const bundleTypeOptions = [
@@ -426,33 +463,35 @@ export default function SimpleBundleManagement() {
     bundle.totalPurchases?.toLocaleString?.() || "0",
     `$${(bundle.totalRevenue || 0).toFixed(2)}`,
     <ButtonGroup key={bundle.id}>
-      <Form method="post" style={{ display: 'inline' }}>
-        <input type="hidden" name="action" value="toggle-status" />
-        <input type="hidden" name="bundleId" value={bundle.id} />
-        <input type="hidden" name="status" value={bundle.status === 'active' ? 'paused' : 'active'} />
-        <Button
-          size="micro"
-          variant={bundle.status === "active" ? "secondary" : "primary"}
-          submit
-          loading={navigation.state === "submitting"}
-        >
-          {bundle.status === "active" ? "Pause" : "Activate"}
-        </Button>
-      </Form>
-      <Form method="post" style={{ display: 'inline' }} onSubmit={(e) => {
-        if (!confirm("Delete this bundle?")) e.preventDefault();
-      }}>
-        <input type="hidden" name="action" value="delete-bundle" />
-        <input type="hidden" name="bundleId" value={bundle.id} />
-        <Button
-          size="micro"
-          tone="critical"
-          submit
-          loading={navigation.state === "submitting"}
-        >
-          Delete
-        </Button>
-      </Form>
+      <Button
+        size="micro"
+        variant={bundle.status === "active" ? "secondary" : "primary"}
+        onClick={() => {
+          const formData = new FormData();
+          formData.append('action', 'toggle-status');
+          formData.append('bundleId', bundle.id);
+          formData.append('status', bundle.status === 'active' ? 'paused' : 'active');
+          fetcher.submit(formData, { method: 'post' });
+        }}
+        loading={fetcher.state === "submitting"}
+      >
+        {bundle.status === "active" ? "Pause" : "Activate"}
+      </Button>
+      <Button
+        size="micro"
+        tone="critical"
+        onClick={() => {
+          if (confirm("Delete this bundle?")) {
+            const formData = new FormData();
+            formData.append('action', 'delete-bundle');
+            formData.append('bundleId', bundle.id);
+            fetcher.submit(formData, { method: 'post' });
+          }
+        }}
+        loading={fetcher.state === "submitting"}
+      >
+        Delete
+      </Button>
     </ButtonGroup>,
   ]);
 
@@ -553,23 +592,8 @@ export default function SimpleBundleManagement() {
         ]}
       >
         <Modal.Section>
-          <Form 
-            method="post" 
-            ref={formRef}
-            onSubmit={(e) => {
-              console.log('🔴 [Form] onSubmit event fired!');
-              console.log('🔴 [Form] Event:', e);
-              console.log('🔴 [Form] Current target:', e.currentTarget);
-              console.log('🔴 [Form] Default prevented?', e.defaultPrevented);
-            }}
-          >
-            <input type="hidden" name="action" value="create-bundle" />
-            <input type="hidden" name="productIds" value={JSON.stringify(selectedProducts)} />
-            <input type="hidden" name="collectionIds" value={JSON.stringify(selectedCollections)} />
-            <input type="hidden" name="assignedProducts" value={JSON.stringify(assignedProducts)} />
-            <input type="hidden" name="tierConfig" value={JSON.stringify(newBundle.tierConfig)} />
-            
-            <FormLayout>
+          {/* Form removed - using fetcher.submit() in handleSubmitForm instead */}
+          <FormLayout>
               <TextField
                 label="Bundle Name"
                 name="name"
@@ -747,7 +771,7 @@ export default function SimpleBundleManagement() {
               <input type="hidden" name="selectMinQty" value={newBundle.selectMinQty} />
               <input type="hidden" name="selectMaxQty" value={newBundle.selectMaxQty} />
             </FormLayout>
-          </Form>
+          {/* Form closing tag removed - using fetcher instead */}
         </Modal.Section>
       </Modal>
 
