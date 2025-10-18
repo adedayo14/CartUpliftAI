@@ -246,7 +246,7 @@ export default function BundlesAdmin() {
     discountType: "percentage",
     discountValue: 10,
     minProducts: 2,
-    bundleStyle: "grid" as "grid" | "fbt" | "tier",
+    bundleStyle: "grid" as "fbt" | "grid" | "list" | "carousel" | "tier",
     selectMinQty: 2,
     selectMaxQty: 10,
     allowDeselect: true,
@@ -696,18 +696,20 @@ export default function BundlesAdmin() {
                 helpText="Choose how products are selected for this bundle"
               />
 
-              <Select 
-                label="Display style" 
+                <Select 
+                label="Display style"
                 options={[
-                  { label: "Grid layout", value: "grid" }, 
-                  { label: "Frequently bought together", value: "fbt" }, 
-                  { label: "Quantity tiers", value: "tier" }
-                ]} 
-                value={newBundle.bundleStyle} 
-                onChange={(v) => setNewBundle({ ...newBundle, bundleStyle: v as "grid" | "fbt" | "tier" })} 
+                    { label: "Frequently bought together", value: "fbt" },
+                    { label: "Grid layout", value: "grid" },
+                    { label: "List layout", value: "list" },
+                    { label: "Carousel (scrollable)", value: "carousel" },
+                    { label: "Quantity tiers", value: "tier" }
+                ]}
+                value={newBundle.bundleStyle}
+                onChange={(v) => setNewBundle({ ...newBundle, bundleStyle: v as "fbt" | "grid" | "list" | "carousel" | "tier" })}
                 disabled={isSaving}
                 helpText="How the bundle will appear on your store"
-              />
+                />
 
               {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
                 <Card background="bg-surface-secondary">
