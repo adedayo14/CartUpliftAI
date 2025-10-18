@@ -159,10 +159,8 @@ export default function SimpleBundleManagement() {
 
   // Handle both bundle and product data from loader
   const bundles = (loaderData as any).bundles || [];
-  const shopDomain = (loaderData as any).shop as string | undefined;
-  const productApiUrl = shopDomain
-    ? `/admin/api/bundle-products?shop=${encodeURIComponent(shopDomain)}`
-    : '/admin/api/bundle-products';
+  // Use consistent API endpoint for products
+  const productApiUrl = '/api/bundle-management?action=products';
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -795,7 +793,7 @@ export default function SimpleBundleManagement() {
                         size="micro" 
                         onClick={() => {
                           console.log('[Bundle] Manual reload triggered');
-                          productFetcher.load('/api/bundle-management?action=products');
+                          productFetcher.load(productApiUrl);
                         }}
                       >
                         Reload Products

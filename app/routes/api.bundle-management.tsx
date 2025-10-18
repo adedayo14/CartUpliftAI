@@ -5,7 +5,7 @@ import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log('🔥 Bundle Management API: Request received');
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const url = new URL(request.url);
   const action = url.searchParams.get("action");
   
@@ -26,9 +26,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     if (action === "categories") {
-      // Get shop categories via GraphQL
-      const { admin } = await authenticate.admin(request);
-      const response = await admin.graphql(`
+      // Get shop categories via GraphQL (use already authenticated admin client)
+      console.log('🔥 Fetching collections for shop:', session.shop);
+      
+      // Add timeout protection
+      const graphqlPromise = admin.graphql(`
         #graphql
         query getCollections {
           collections(first: 100) {
@@ -44,10 +46,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
       `);
 
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Collections request timed out')), 10000)
+      );
+
+      const response = await Promise.race([graphqlPromise, timeoutPromise]) as Response;
+      
+      if (!response.ok) {
+        console.error('🔥 Collections GraphQL request failed:', response.status);
+        return json({ 
+          success: false, 
+          error: 'Failed to fetch collections from Shopify',
+          categories: []
+        }, { status: 500 });
+      }
+
       const responseJson = await response.json();
       
       if ((responseJson as any).errors) {
-        console.error('GraphQL errors:', (responseJson as any).errors);
+        console.error('🔥 Collections GraphQL errors:', (responseJson as any).errors);
         return json({ 
           success: false, 
           error: 'Failed to fetch collections from Shopify',
@@ -56,6 +73,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
       
       const collections = responseJson.data?.collections?.edges || [];
+      console.log(`🔥 Successfully fetched ${collections.length} collections`);
       
       return json({ 
         success: true, 
@@ -71,7 +89,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (action === "products") {
       const categoryId = url.searchParams.get("categoryId");
       const query = url.searchParams.get("query") || "";
-      const { admin } = await authenticate.admin(request);
+      // Use already authenticated admin client
 
       let graphqlQuery = `
         #graphql
@@ -140,11 +158,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
 
       const variables = categoryId 
-        ? { id: categoryId, query } 
-        : { query };
+        ? { id: categoryId, query: query || "status:active" } 
+        : { query: query || "status:active" };
 
-      const response = await admin.graphql(graphqlQuery, { variables });
+      console.log('🔥 Fetching products for shop:', session.shop, 'with query:', variables.query);
+
+      // Add timeout protection
+      const graphqlPromise = admin.graphql(graphqlQuery, { variables });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Products request timed out')), 10000)
+      );
+
+      const response = await Promise.race([graphqlPromise, timeoutPromise]) as Response;
+      
+      if (!response.ok) {
+        console.error('🔥 Products GraphQL request failed:', response.status);
+        return json({ 
+          success: false, 
+          error: 'Failed to fetch products from Shopify',
+          products: []
+        }, { status: 500 });
+      }
+
       const responseJson = await response.json();
+      
+      if ((responseJson as any).errors) {
+        console.error('🔥 Products GraphQL errors:', (responseJson as any).errors);
+        return json({ 
+          success: false, 
+          error: 'GraphQL query failed',
+          products: []
+        }, { status: 500 });
+      }
 
       let products = [];
       if (categoryId) {
@@ -152,6 +197,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       } else {
         products = responseJson.data?.products?.edges || [];
       }
+      
+      console.log(`🔥 Successfully fetched ${products.length} products`);
 
       return json({
         success: true,
@@ -167,6 +214,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             price: parseFloat(v.node.price),
             inventoryQuantity: v.node.inventoryQuantity
           })),
+          price: edge.node.variants.edges[0]?.node?.price || "0.00",
           image: edge.node.featuredImage?.url
         }))
       });
@@ -174,8 +222,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     return json({ success: false, error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    console.error("Bundle management loader error:", error);
-    return json({ success: false, error: "Failed to load data" }, { status: 500 });
+    console.error("🔥 Bundle management loader error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to load data";
+    return json({ 
+      success: false, 
+      error: errorMessage,
+      products: action === "products" ? [] : undefined,
+      categories: action === "categories" ? [] : undefined
+    }, { status: 500 });
   }
 };
 
