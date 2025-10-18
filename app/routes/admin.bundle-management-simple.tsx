@@ -479,7 +479,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.5 - FIXED: Real HTML Form submission"
+      subtitle="🚀 v1.6 - Using explicit action URLs"
       primaryAction={
         <Button
           variant="primary"
