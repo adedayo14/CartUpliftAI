@@ -4,6 +4,8 @@
   Version: 1.0.0
 {% endcomment %}
 
+<script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
+
 {%- liquid
   # Generate unique bundle ID from block ID
   assign bundle_id = block.id | prepend: 'bundle-'
