@@ -417,7 +417,7 @@ export default function BundlesAdmin() {
   };
 
   const handleDelete = async (bundleId: string) => {
-    if (!confirm("Delete this bundle?")) return;
+    // Silent delete - no confirmation prompt
     if (isSaving || pendingBundleId) return;
     setPendingBundleId(bundleId);
     try {
