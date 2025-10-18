@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useLoaderData } from "@remix-run/react";
+import { useState } from "react";
 import {
   Page,
   Layout,
@@ -222,38 +222,64 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const shopParam = formData.get("shop") as string;
-  
-  let shop: string;
-  
-  if (shopParam) {
-    shop = shopParam;
+  const contentType = request.headers.get("content-type");
+  let actionType, name, description, bundleType, discountType, discountValue, minProducts;
+  let productIds, collectionIds, assignedProducts, bundleStyle, selectMinQty, selectMaxQty;
+  let tierConfig, allowDeselect, hideIfNoML, shop, bundleId, status;
+
+  // Handle both JSON and FormData
+  if (contentType?.includes("application/json")) {
+    const body = await request.json();
+    actionType = body.action;
+    name = body.name;
+    description = body.description;
+    bundleType = body.bundleType;
+    discountType = body.discountType;
+    discountValue = parseFloat(body.discountValue);
+    minProducts = parseInt(body.minProducts) || 2;
+    productIds = body.productIds;
+    collectionIds = body.collectionIds;
+    assignedProducts = body.assignedProducts;
+    bundleStyle = body.bundleStyle || "grid";
+    selectMinQty = body.selectMinQty;
+    selectMaxQty = body.selectMaxQty;
+    tierConfig = body.tierConfig;
+    allowDeselect = body.allowDeselect;
+    hideIfNoML = body.hideIfNoML;
+    bundleId = body.bundleId;
+    status = body.status;
+    shop = body.shop;
   } else {
+    const formData = await request.formData();
+    actionType = formData.get("action");
+    name = formData.get("name") as string;
+    description = formData.get("description") as string;
+    bundleType = formData.get("bundleType") as string;
+    discountType = formData.get("discountType") as string;
+    discountValue = parseFloat(formData.get("discountValue") as string);
+    minProducts = parseInt(formData.get("minProducts") as string) || 2;
+    productIds = formData.get("productIds") as string;
+    collectionIds = formData.get("collectionIds") as string;
+    assignedProducts = formData.get("assignedProducts") as string;
+    bundleStyle = formData.get("bundleStyle") as string || "grid";
+    selectMinQty = formData.get("selectMinQty");
+    selectMaxQty = formData.get("selectMaxQty");
+    tierConfig = formData.get("tierConfig") as string;
+    allowDeselect = formData.get("allowDeselect") === "true";
+    hideIfNoML = formData.get("hideIfNoML") === "true";
+    bundleId = formData.get("bundleId") as string;
+    status = formData.get("status") as string;
+    shop = formData.get("shop") as string;
+  }
+
+  // Get shop from session if not provided
+  if (!shop) {
     const { session } = await authenticate.admin(request);
     shop = session.shop;
   }
-  
-  const actionType = formData.get("action");
 
   try {
     if (actionType === "create-bundle") {
-      const name = formData.get("name") as string;
-      const description = formData.get("description") as string;
-      const bundleType = formData.get("bundleType") as string;
-      const discountType = formData.get("discountType") as string;
-      const discountValue = parseFloat(formData.get("discountValue") as string);
-      const minProducts = parseInt(formData.get("minProducts") as string) || 2;
-      const productIds = formData.get("productIds") as string;
-      const collectionIds = formData.get("collectionIds") as string;
-      const assignedProducts = formData.get("assignedProducts") as string;
-      const bundleStyle = formData.get("bundleStyle") as string || "grid";
-      const selectMinQty = formData.get("selectMinQty");
-      const selectMaxQty = formData.get("selectMaxQty");
-      const tierConfig = formData.get("tierConfig") as string;
-      const allowDeselect = formData.get("allowDeselect") === "true";
-      const hideIfNoML = formData.get("hideIfNoML") === "true";
-
       if (!name || !bundleType || discountValue < 0) {
         return json({ success: false, error: "Invalid bundle data" }, { status: 400 });
       }
@@ -285,9 +311,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     if (actionType === "toggle-status") {
-      const bundleId = formData.get("bundleId") as string;
-      const status = formData.get("status") as string;
-
       const bundle = await (prisma as any).bundle.update({
         where: { id: bundleId, shop },
         data: { status },
@@ -297,8 +320,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     if (actionType === "delete-bundle") {
-      const bundleId = formData.get("bundleId") as string;
-
       await (prisma as any).bundle.delete({
         where: { id: bundleId, shop },
       });
@@ -315,7 +336,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
-  const fetcher = useFetcher<typeof action>();
   
   console.log('[Frontend] Loader data received:', loaderData);
   
@@ -351,30 +371,6 @@ export default function SimpleBundleManagement() {
     ]
   });
 
-  // Handle action data responses
-  useEffect(() => {
-    if (fetcher.data) {
-      if (fetcher.data.success) {
-        setShowSuccessBanner(true);
-        const message = 'message' in fetcher.data ? fetcher.data.message : "Action completed successfully";
-        setBannerMessage(message || "Action completed successfully");
-        if (message?.includes("created")) {
-          setShowCreateModal(false);
-          resetForm();
-        }
-      } else {
-        setShowErrorBanner(true);
-        const error = 'error' in fetcher.data ? fetcher.data.error : "Action failed";
-        setBannerMessage(error || "Action failed");
-      }
-      
-      setTimeout(() => {
-        setShowSuccessBanner(false);
-        setShowErrorBanner(false);
-      }, 3000);
-    }
-  }, [fetcher.data]);
-
   const resetForm = () => {
     setNewBundle({
       name: "",
@@ -407,38 +403,61 @@ export default function SimpleBundleManagement() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("action", "create-bundle");
-    formData.append("name", newBundle.name);
-    formData.append("description", newBundle.description);
-    formData.append("bundleType", newBundle.bundleType);
-    formData.append("discountType", newBundle.discountType);
-    formData.append("discountValue", newBundle.discountValue.toString());
-    formData.append("minProducts", newBundle.minProducts.toString());
-    formData.append("bundleStyle", newBundle.bundleStyle);
-    formData.append("selectMinQty", newBundle.selectMinQty.toString());
-    formData.append("selectMaxQty", newBundle.selectMaxQty.toString());
-    formData.append("allowDeselect", newBundle.allowDeselect.toString());
-    formData.append("hideIfNoML", newBundle.hideIfNoML.toString());
-    
-    if (assignedProducts.length > 0) {
-      formData.append("assignedProducts", JSON.stringify(assignedProducts));
-    }
-    
-    if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
-      formData.append("productIds", JSON.stringify(selectedProducts));
-    }
-    
-    if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
-      formData.append("collectionIds", JSON.stringify(selectedCollections));
-    }
-    
-    if (newBundle.bundleStyle === 'tier') {
-      formData.append("tierConfig", JSON.stringify(newBundle.tierConfig));
+    setIsSubmitting(true);
+    setShowSuccessBanner(false);
+    setShowErrorBanner(false);
+
+    try {
+      const payload = {
+        action: "create-bundle",
+        name: newBundle.name,
+        description: newBundle.description,
+        bundleType: newBundle.bundleType,
+        discountType: newBundle.discountType,
+        discountValue: newBundle.discountValue,
+        minProducts: newBundle.minProducts,
+        bundleStyle: newBundle.bundleStyle,
+        selectMinQty: newBundle.selectMinQty,
+        selectMaxQty: newBundle.selectMaxQty,
+        allowDeselect: newBundle.allowDeselect,
+        hideIfNoML: newBundle.hideIfNoML,
+        assignedProducts: assignedProducts.length > 0 ? JSON.stringify(assignedProducts) : "[]",
+        productIds: newBundle.bundleType === 'manual' && selectedProducts.length > 0 ? JSON.stringify(selectedProducts) : "[]",
+        collectionIds: newBundle.bundleType === 'category' && selectedCollections.length > 0 ? JSON.stringify(selectedCollections) : "[]",
+        tierConfig: newBundle.bundleStyle === 'tier' ? JSON.stringify(newBundle.tierConfig) : null
+      };
+
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setShowSuccessBanner(true);
+        setBannerMessage(data.message || "Bundle created successfully");
+        setShowCreateModal(false);
+        resetForm();
+        // Reload the page to show the new bundle
+        window.location.reload();
+      } else {
+        setShowErrorBanner(true);
+        setBannerMessage(data.error || "Failed to create bundle");
+      }
+    } catch (error: any) {
+      console.error('[Create Bundle] Error:', error);
+      setShowErrorBanner(true);
+      setBannerMessage(error.message || "Failed to create bundle");
+    } finally {
+      setIsSubmitting(false);
     }
 
-    // Use fetcher to submit without navigation
-    fetcher.submit(formData, { method: "POST" });
+    setTimeout(() => {
+      setShowSuccessBanner(false);
+      setShowErrorBanner(false);
+    }, 3000);
   };
 
   const bundleTypeOptions = [
@@ -514,7 +533,7 @@ export default function SimpleBundleManagement() {
     </ButtonGroup>,
   ]);
 
-  const isSubmitting = fetcher.state === "submitting" || fetcher.state === "loading";
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <Page
