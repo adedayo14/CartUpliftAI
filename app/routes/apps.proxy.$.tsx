@@ -1788,11 +1788,127 @@ export async function loader({ request }: LoaderFunctionArgs) {
         }
       }
       
-      console.log(`[BUNDLES API] === REAL PRODUCTS BUNDLE SYSTEM COMPLETED ===`);
-      console.log(`[BUNDLES API] Generated ${bundles.length} bundles using real products:`, bundles.map(b => ({ id: b.id, name: b.name, products: b.products?.length || 0 })));
+      // BEFORE returning ML bundles, check for MANUAL bundles from database
+      console.log('[BUNDLES API] Step 7: Checking for manual bundles in database...');
+      try {
+        const manualBundles = await db.bundle.findMany({
+          where: {
+            shop: shopStr,
+            status: 'active',
+            OR: [
+              // Check if product is in assignedProducts JSON array (string match)
+              { assignedProducts: { contains: productId } },
+              // Also check if product is in the bundle's productIds
+              { productIds: { contains: productId } }
+            ]
+          }
+        });
+        
+        console.log(`[BUNDLES API] Found ${manualBundles.length} manual bundles for product ${productId}`);
+        
+        if (manualBundles.length > 0) {
+          // Manual bundles exist - use them instead of ML bundles
+          const formattedManualBundles = await Promise.all(manualBundles.map(async (bundle) => {
+            // Parse productIds from JSON string
+            let productIds: string[] = [];
+            try {
+              productIds = JSON.parse(bundle.productIds || '[]');
+            } catch (e) {
+              console.warn('[BUNDLES API] Failed to parse bundle productIds:', e);
+            }
+            
+            // Fetch product details for bundle
+            const bundleProductDetails = await Promise.all(productIds.map(async (pid) => {
+              try {
+                const prodResp = await admin.graphql(`#graphql
+                  query($id: ID!) { 
+                    product(id: $id) { 
+                      id title handle
+                      variants(first: 1) { edges { node { id price compareAtPrice availableForSale } } }
+                      media(first: 1) { edges { node { ... on MediaImage { image { url } } } } }
+                    } 
+                  }
+                `, { variables: { id: `gid://shopify/Product/${pid}` } });
+                
+                if (prodResp.ok) {
+                  const data: any = await prodResp.json();
+                  const product = data?.data?.product;
+                  const variant = product?.variants?.edges?.[0]?.node;
+                  if (product && variant) {
+                    return {
+                      id: pid,
+                      variant_id: String(variant.id).replace('gid://shopify/ProductVariant/', ''),
+                      title: product.title,
+                      handle: product.handle,
+                      price: parseFloat(variant.price || '0'),
+                      comparePrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) : undefined,
+                      image: product.media?.edges?.[0]?.node?.image?.url
+                    };
+                  }
+                }
+              } catch (e) {
+                console.error(`[BUNDLES API] Error fetching product ${pid}:`, e);
+              }
+              return null;
+            }));
+            
+            const validProducts = bundleProductDetails.filter(p => p !== null);
+            
+            if (validProducts.length === 0) {
+              return null;
+            }
+            
+            const regularTotal = validProducts.reduce((sum, p: any) => sum + p.price, 0);
+            const bundlePrice = bundle.discountType === 'percentage'
+              ? regularTotal * (1 - bundle.discountValue / 100)
+              : regularTotal - bundle.discountValue;
+            const discountPercent = regularTotal > 0 ? Math.round(((regularTotal - bundlePrice) / regularTotal) * 100) : 0;
+            
+            return {
+              id: bundle.id,
+              name: bundle.name,
+              description: bundle.description || '',
+              type: bundle.type,
+              bundleStyle: bundle.bundleStyle || 'grid',
+              discountType: bundle.discountType,
+              discountValue: bundle.discountValue,
+              products: validProducts,
+              regular_total: regularTotal,
+              bundle_price: bundlePrice,
+              discount_percent: discountPercent,
+              savings_amount: regularTotal - bundlePrice,
+              selectMinQty: bundle.selectMinQty || 2,
+              selectMaxQty: bundle.selectMaxQty || validProducts.length,
+              status: 'active',
+              source: 'manual'
+            };
+          }));
+          
+          // Filter out null bundles
+          const validManualBundles = formattedManualBundles.filter(b => b !== null);
+          
+          if (validManualBundles.length > 0) {
+            console.log(`[BUNDLES API] Returning ${validManualBundles.length} manual bundles`);
+            return json({ success: true, bundles: validManualBundles }, {
+              headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=30',
+                'X-Bundles-Source': 'manual',
+                'X-Bundles-Count': String(validManualBundles.length)
+              }
+            });
+          }
+        }
+      } catch (manualErr) {
+        console.error('[BUNDLES API] Error loading manual bundles:', manualErr);
+        // Fall through to ML bundles
+      }
 
-      // Attach a small hint when empty to help diagnose in network panel
-      const payload = bundles.length ? { bundles } : { bundles, reason: 'no_candidates' };
+      console.log(`[BUNDLES API] === REAL PRODUCTS BUNDLE SYSTEM COMPLETED ===`);
+      console.log(`[BUNDLES API] Generated ${bundles.length} ML bundles using real products:`, bundles.map(b => ({ id: b.id, name: b.name, products: b.products?.length || 0 })));
+
+      // Return with success: true format
+      const payload = { success: true, bundles, reason: bundles.length ? 'ok' : 'no_candidates' };
       console.log(`[BUNDLES API] Returning payload:`, payload);
       return json(payload, {
         headers: {
@@ -1800,7 +1916,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
           'Cache-Control': 'public, max-age=30',
           'X-Bundles-Reason': bundles.length ? 'ok' : 'no_candidates',
           'X-Bundles-Context': context,
-          'X-Bundles-Shop': shopStr
+          'X-Bundles-Shop': shopStr,
+          'X-Bundles-Source': 'ml'
         }
       });
     } catch (err: unknown) {
