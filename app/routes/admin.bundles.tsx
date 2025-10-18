@@ -23,8 +23,21 @@ import {
   Thumbnail,
   Checkbox,
   EmptyState,
+  Box,
+  Divider,
+  Icon,
 } from "@shopify/polaris";
-import { PlusIcon } from "@shopify/polaris-icons";
+import { 
+  PlusIcon, 
+  PackageIcon,
+  CollectionIcon,
+  MagicIcon,
+  CheckIcon,
+  XIcon,
+  EditIcon,
+  DeleteIcon,
+  InfoIcon,
+} from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -366,16 +379,28 @@ export default function BundlesAdmin() {
     }
   };
 
+  const totalRevenue = useMemo(() => bundleList.reduce((sum, b) => sum + (b.totalRevenue || 0), 0), [bundleList]);
+  const totalPurchases = useMemo(() => bundleList.reduce((sum, b) => sum + (b.totalPurchases || 0), 0), [bundleList]);
+  const activeBundles = useMemo(() => bundleList.filter(b => b.status === 'active').length, [bundleList]);
+
   const bundleTableRows = bundleList.map((bundle: Bundle) => [
-    bundle.name,
-    bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI",
-    <Badge tone={bundle.status === "active" ? "success" : bundle.status === "paused" ? "warning" : "info"} key={bundle.id}>
-      {bundle.status}
+    <InlineStack gap="300" blockAlign="center" key={`name-${bundle.id}`}>
+      <Box>
+        <Icon source={bundle.type === 'manual' ? PackageIcon : bundle.type === 'category' ? CollectionIcon : MagicIcon} tone="base" />
+      </Box>
+      <BlockStack gap="100">
+        <Text as="span" variant="bodyMd" fontWeight="semibold">{bundle.name}</Text>
+        {bundle.description && <Text as="span" variant="bodySm" tone="subdued">{bundle.description}</Text>}
+      </BlockStack>
+    </InlineStack>,
+    <Text as="span" variant="bodySm">{bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI Suggested"}</Text>,
+    <Badge tone={bundle.status === "active" ? "success" : bundle.status === "paused" ? "warning" : "info"} key={`badge-${bundle.id}`}>
+      {bundle.status === "active" ? "Active" : bundle.status === "paused" ? "Paused" : "Draft"}
     </Badge>,
-    bundle.discountType === "percentage" ? `${bundle.discountValue}% off` : `${formatMoney(bundle.discountValue)} off`,
-    bundle.totalPurchases?.toLocaleString?.() || "0",
-    formatMoney(bundle.totalRevenue || 0),
-    <ButtonGroup key={bundle.id}>
+    <Text as="span" variant="bodySm" fontWeight="medium">{bundle.discountType === "percentage" ? `${bundle.discountValue}%` : formatMoney(bundle.discountValue)}</Text>,
+    <Text as="span" variant="bodySm">{bundle.totalPurchases?.toLocaleString?.() || "0"}</Text>,
+    <Text as="span" variant="bodySm" fontWeight="medium">{formatMoney(bundle.totalRevenue || 0)}</Text>,
+    <ButtonGroup key={`actions-${bundle.id}`}>
       <Button
         size="micro"
         variant={bundle.status === "active" ? "secondary" : "primary"}
@@ -393,9 +418,8 @@ export default function BundlesAdmin() {
   return (
     <Page
       title="Product Bundles"
-      subtitle="✅ v3.0 - Stable Release"
       primaryAction={{
-        content: "Create Bundle",
+        content: "Create bundle",
         onAction: () => { resetForm(); setShowCreateModal(true); },
         icon: PlusIcon,
       }}
@@ -416,134 +440,296 @@ export default function BundlesAdmin() {
           </Layout.Section>
         )}
 
+        {bundleList.length > 0 && (
+          <Layout.Section>
+            <InlineStack gap="400" wrap={false}>
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">Total revenue</Text>
+                  <Text as="p" variant="headingLg">{formatMoney(totalRevenue)}</Text>
+                </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">Total purchases</Text>
+                  <Text as="p" variant="headingLg">{totalPurchases.toLocaleString()}</Text>
+                </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">Active bundles</Text>
+                  <Text as="p" variant="headingLg">{activeBundles} / {bundleList.length}</Text>
+                </BlockStack>
+              </Card>
+            </InlineStack>
+          </Layout.Section>
+        )}
+
         <Layout.Section>
           {bundleList.length === 0 ? (
             <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">Get Started</Text>
-                <Text as="p" variant="bodyMd" tone="subdued">Create your first bundle</Text>
-              </BlockStack>
+              <EmptyState
+                heading="Create your first product bundle"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+                action={{
+                  content: "Create bundle",
+                  onAction: () => { resetForm(); setShowCreateModal(true); },
+                  icon: PlusIcon,
+                }}
+              >
+                <p>Increase your average order value by bundling products together with special discounts.</p>
+              </EmptyState>
             </Card>
           ) : (
-            <Card>
-              <BlockStack gap="400">
-                <InlineStack align="space-between">
-                  <Text as="h2" variant="headingMd">All Bundles</Text>
-                  <Badge tone="info">{`${bundleList.length} Bundle${bundleList.length === 1 ? "" : "s"}`}</Badge>
-                </InlineStack>
-
-                <DataTable
-                  columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "text"]}
-                  headings={["Name", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
-                  rows={bundleTableRows}
-                />
-              </BlockStack>
+            <Card padding="0">
+              <DataTable
+                columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "text"]}
+                headings={["Bundle", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
+                rows={bundleTableRows}
+              />
             </Card>
           )}
         </Layout.Section>
 
-        <Layout.Section variant="oneThird">
-          <Card>
-            <BlockStack gap="300">
-              <Text as="h3" variant="headingSm">Status</Text>
-              <Text as="p" variant="bodyMd">
-                • Products: {availableProducts.length}
-                <br />• Collections: {availableCollections.length}
-                <br />• Bundles: {bundleList.length}
-              </Text>
+        {bundleList.length > 0 && (
+          <Layout.Section variant="oneThird">
+            <BlockStack gap="400">
+              <Card>
+                <BlockStack gap="400">
+                  <Text as="h2" variant="headingMd">Quick stats</Text>
+                  <BlockStack gap="300">
+                    <InlineStack align="space-between">
+                      <Text as="span" variant="bodyMd" tone="subdued">Products available</Text>
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">{availableProducts.length}</Text>
+                    </InlineStack>
+                    <InlineStack align="space-between">
+                      <Text as="span" variant="bodyMd" tone="subdued">Collections</Text>
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">{availableCollections.length}</Text>
+                    </InlineStack>
+                    <InlineStack align="space-between">
+                      <Text as="span" variant="bodyMd" tone="subdued">Total bundles</Text>
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">{bundleList.length}</Text>
+                    </InlineStack>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
+
+              <Card>
+                <BlockStack gap="400">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={InfoIcon} tone="info" />
+                    <Text as="h2" variant="headingMd">Bundle types</Text>
+                  </InlineStack>
+                  <BlockStack gap="300">
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={PackageIcon} tone="base" />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">Manual</Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Hand-pick specific products to bundle together
+                      </Text>
+                    </BlockStack>
+                    <Divider />
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={CollectionIcon} tone="base" />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">Category</Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Automatically bundle all products from selected collections
+                      </Text>
+                    </BlockStack>
+                    <Divider />
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={MagicIcon} tone="base" />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">AI Suggested</Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Let AI recommend the best product combinations
+                      </Text>
+                    </BlockStack>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
             </BlockStack>
-          </Card>
-        </Layout.Section>
+          </Layout.Section>
+        )}
       </Layout>
 
       {/* Create Bundle Modal */}
       <Modal
         open={showCreateModal}
         onClose={() => !isSaving && setShowCreateModal(false)}
-        title="Create New Bundle"
-        primaryAction={{ content: "Create Bundle", disabled: !newBundle.name.trim() || isSaving, loading: isSaving, onAction: handleCreateBundle }}
-        secondaryActions={[{ content: "Cancel", disabled: isSaving, onAction: () => setShowCreateModal(false) }]}
+        title="Create bundle"
+        primaryAction={{ 
+          content: "Create bundle", 
+          disabled: !newBundle.name.trim() || isSaving, 
+          loading: isSaving, 
+          onAction: handleCreateBundle 
+        }}
+        secondaryActions={[{ 
+          content: "Cancel", 
+          disabled: isSaving, 
+          onAction: () => setShowCreateModal(false) 
+        }]}
       >
         <Modal.Section>
           <BlockStack gap="400">
             <FormLayout>
-              <TextField label="Bundle Name" name="name" value={newBundle.name} onChange={(v) => setNewBundle({ ...newBundle, name: v })} placeholder="e.g., Summer Essentials" autoComplete="off" disabled={isSaving} />
-              <TextField label="Description" name="description" value={newBundle.description} onChange={(v) => setNewBundle({ ...newBundle, description: v })} multiline={2} autoComplete="off" disabled={isSaving} />
-              <Select label="Bundle Type" name="bundleType" options={bundleTypeOptions} value={newBundle.bundleType} onChange={(v) => setNewBundle({ ...newBundle, bundleType: v })} disabled={isSaving} />
-              <Select label="Display Style" name="bundleStyle" options={[{ label: "Grid", value: "grid" }, { label: "FBT", value: "fbt" }, { label: "Tiers", value: "tier" }]} value={newBundle.bundleStyle} onChange={(v) => setNewBundle({ ...newBundle, bundleStyle: v as "grid" | "fbt" | "tier" })} disabled={isSaving} />
+              <TextField 
+                label="Bundle name" 
+                value={newBundle.name} 
+                onChange={(v) => setNewBundle({ ...newBundle, name: v })} 
+                placeholder="e.g., Summer Essentials Bundle" 
+                autoComplete="off" 
+                disabled={isSaving}
+                helpText="This will be displayed to customers"
+              />
+              
+              <TextField 
+                label="Description" 
+                value={newBundle.description} 
+                onChange={(v) => setNewBundle({ ...newBundle, description: v })} 
+                placeholder="Describe what's included in this bundle"
+                multiline={2} 
+                autoComplete="off" 
+                disabled={isSaving}
+                helpText="Optional internal description"
+              />
 
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingSm">Product Assignment</Text>
-                  <Button onClick={() => setShowProductPicker(true)} disabled={availableProducts.length === 0 || isSaving}>
-                    {`Select Products (${assignedProducts.length})`}
-                  </Button>
-                </BlockStack>
-              </Card>
+              <Select 
+                label="Bundle type" 
+                options={bundleTypeOptions} 
+                value={newBundle.bundleType} 
+                onChange={(v) => setNewBundle({ ...newBundle, bundleType: v })} 
+                disabled={isSaving}
+                helpText="Choose how products are selected for this bundle"
+              />
 
-              <Checkbox label="Allow deselect" checked={newBundle.allowDeselect} onChange={(checked) => setNewBundle({ ...newBundle, allowDeselect: checked })} disabled={isSaving} />
-              <Checkbox label="Hide if no AI recs" checked={newBundle.hideIfNoML} onChange={(checked) => setNewBundle({ ...newBundle, hideIfNoML: checked })} disabled={isSaving} />
+              <Select 
+                label="Display style" 
+                options={[
+                  { label: "Grid layout", value: "grid" }, 
+                  { label: "Frequently bought together", value: "fbt" }, 
+                  { label: "Quantity tiers", value: "tier" }
+                ]} 
+                value={newBundle.bundleStyle} 
+                onChange={(v) => setNewBundle({ ...newBundle, bundleStyle: v as "grid" | "fbt" | "tier" })} 
+                disabled={isSaving}
+                helpText="How the bundle will appear on your store"
+              />
 
               {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
-                <Card>
-                  <BlockStack gap="300">
-                    <Text as="h3" variant="headingSm">Select Products</Text>
-                    <ResourceList
-                      items={availableProducts.slice(0, 25)}
-                      renderItem={(product: Product) => {
-                        const isSelected = selectedProducts.includes(product.id);
-                        return (
-                          <ResourceItem id={product.id} onClick={() => {
-                            if (!isSaving) {
-                              setSelectedProducts(isSelected ? selectedProducts.filter(id => id !== product.id) : [...selectedProducts, product.id]);
-                            }
-                          }}>
-                            <InlineStack gap="300">
-                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSaving} />
-                              <Thumbnail source={product.image} alt={product.title} size="small" />
-                              <Text as="span">{product.title}</Text>
-                            </InlineStack>
-                          </ResourceItem>
-                        );
-                      }}
-                    />
-                    {selectedProducts.length > 0 && (<Banner tone="success">{selectedProducts.length} selected</Banner>)}
+                <Card background="bg-surface-secondary">
+                  <BlockStack gap="400">
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={PackageIcon} />
+                        <Text as="h3" variant="headingMd">Select products</Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Choose which products to include in this bundle
+                      </Text>
+                    </BlockStack>
+                    <Box paddingBlockStart="200">
+                      <ResourceList
+                        items={availableProducts.slice(0, 25)}
+                        renderItem={(product: Product) => {
+                          const isSelected = selectedProducts.includes(product.id);
+                          return (
+                            <ResourceItem 
+                              id={product.id} 
+                              onClick={() => {
+                                if (!isSaving) {
+                                  setSelectedProducts(isSelected ? selectedProducts.filter(id => id !== product.id) : [...selectedProducts, product.id]);
+                                }
+                              }}
+                            >
+                              <InlineStack gap="300" blockAlign="center">
+                                <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSaving} />
+                                <Thumbnail source={product.image} alt={product.title} size="small" />
+                                <BlockStack gap="050">
+                                  <Text as="span" variant="bodyMd">{product.title}</Text>
+                                  <Text as="span" variant="bodySm" tone="subdued">{formatMoney(parseFloat(product.price))}</Text>
+                                </BlockStack>
+                              </InlineStack>
+                            </ResourceItem>
+                          );
+                        }}
+                      />
+                    </Box>
+                    {selectedProducts.length > 0 && (
+                      <Banner tone="success">
+                        <Text as="p" variant="bodySm">
+                          {selectedProducts.length} product{selectedProducts.length === 1 ? '' : 's'} selected
+                        </Text>
+                      </Banner>
+                    )}
                   </BlockStack>
                 </Card>
               )}
 
               {newBundle.bundleType === "category" && availableCollections.length > 0 && (
-                <Card>
-                  <BlockStack gap="300">
-                    <Text as="h3" variant="headingSm">Select Collections</Text>
-                    <ResourceList
-                      items={availableCollections}
-                      renderItem={(collection: Collection) => {
-                        const isSelected = selectedCollections.includes(collection.id);
-                        return (
-                          <ResourceItem id={collection.id} onClick={() => {
-                            if (!isSaving) {
-                              setSelectedCollections(isSelected ? selectedCollections.filter(id => id !== collection.id) : [...selectedCollections, collection.id]);
-                            }
-                          }}>
-                            <InlineStack gap="300">
-                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSaving} />
-                              <Text as="span">{collection.title}</Text>
-                            </InlineStack>
-                          </ResourceItem>
-                        );
-                      }}
-                    />
-                    {selectedCollections.length > 0 && (<Banner tone="success">{selectedCollections.length} selected</Banner>)}
+                <Card background="bg-surface-secondary">
+                  <BlockStack gap="400">
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={CollectionIcon} />
+                        <Text as="h3" variant="headingMd">Select collections</Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        All products from selected collections will be eligible for bundling
+                      </Text>
+                    </BlockStack>
+                    <Box paddingBlockStart="200">
+                      <ResourceList
+                        items={availableCollections}
+                        renderItem={(collection: Collection) => {
+                          const isSelected = selectedCollections.includes(collection.id);
+                          return (
+                            <ResourceItem 
+                              id={collection.id} 
+                              onClick={() => {
+                                if (!isSaving) {
+                                  setSelectedCollections(isSelected ? selectedCollections.filter(id => id !== collection.id) : [...selectedCollections, collection.id]);
+                                }
+                              }}
+                            >
+                              <InlineStack gap="300" blockAlign="center">
+                                <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSaving} />
+                                <BlockStack gap="050">
+                                  <Text as="span" variant="bodyMd">{collection.title}</Text>
+                                  <Text as="span" variant="bodySm" tone="subdued">{collection.productsCount} products</Text>
+                                </BlockStack>
+                              </InlineStack>
+                            </ResourceItem>
+                          );
+                        }}
+                      />
+                    </Box>
+                    {selectedCollections.length > 0 && (
+                      <Banner tone="success">
+                        <Text as="p" variant="bodySm">
+                          {selectedCollections.length} collection{selectedCollections.length === 1 ? '' : 's'} selected
+                        </Text>
+                      </Banner>
+                    )}
                   </BlockStack>
                 </Card>
               )}
 
-              <InlineStack gap="400">
-                <Select label="Discount Type" name="discountType" options={discountTypeOptions} value={newBundle.discountType} onChange={(v) => setNewBundle({ ...newBundle, discountType: v })} disabled={isSaving} />
+              <FormLayout.Group>
+                <Select 
+                  label="Discount type" 
+                  options={discountTypeOptions} 
+                  value={newBundle.discountType} 
+                  onChange={(v) => setNewBundle({ ...newBundle, discountType: v })} 
+                  disabled={isSaving} 
+                />
                 <TextField
-                  label="Value"
-                  name="discountValue"
+                  label="Discount value"
                   type="number"
                   value={newBundle.discountValue.toString()}
                   onChange={(v) => setNewBundle({ ...newBundle, discountValue: parseFloat(v) || 0 })}
@@ -551,21 +737,99 @@ export default function BundlesAdmin() {
                   autoComplete="off"
                   disabled={isSaving}
                 />
-              </InlineStack>
+              </FormLayout.Group>
 
-              <TextField label="Min Products" name="minProducts" type="number" value={newBundle.minProducts.toString()} onChange={(v) => setNewBundle({ ...newBundle, minProducts: parseInt(v) || 2 })} autoComplete="off" disabled={isSaving} />
+              <TextField 
+                label="Minimum products" 
+                type="number" 
+                value={newBundle.minProducts.toString()} 
+                onChange={(v) => setNewBundle({ ...newBundle, minProducts: parseInt(v) || 2 })} 
+                autoComplete="off" 
+                disabled={isSaving}
+                helpText="Minimum number of products required to apply the bundle discount"
+              />
+
+              <BlockStack gap="300">
+                <Checkbox 
+                  label="Allow customers to deselect bundle items" 
+                  checked={newBundle.allowDeselect} 
+                  onChange={(checked) => setNewBundle({ ...newBundle, allowDeselect: checked })} 
+                  disabled={isSaving}
+                  helpText="Let customers customize which products they want from the bundle"
+                />
+                <Checkbox 
+                  label="Hide bundle if no AI recommendations available" 
+                  checked={newBundle.hideIfNoML} 
+                  onChange={(checked) => setNewBundle({ ...newBundle, hideIfNoML: checked })} 
+                  disabled={isSaving}
+                  helpText="Only show this bundle when AI can find suitable product recommendations"
+                />
+              </BlockStack>
+
+              {assignedProducts.length === 0 && (
+                <Card background="bg-surface-secondary">
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd">Product assignment</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Choose which product pages should display this bundle
+                    </Text>
+                    <Button 
+                      onClick={() => setShowProductPicker(true)} 
+                      disabled={availableProducts.length === 0 || isSaving}
+                    >
+                      Select product pages
+                    </Button>
+                  </BlockStack>
+                </Card>
+              )}
+
+              {assignedProducts.length > 0 && (
+                <Card background="bg-surface-success">
+                  <BlockStack gap="200">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={CheckIcon} tone="success" />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          Assigned to {assignedProducts.length} product page{assignedProducts.length === 1 ? '' : 's'}
+                        </Text>
+                      </InlineStack>
+                      <Button 
+                        size="micro"
+                        onClick={() => setShowProductPicker(true)}
+                        disabled={isSaving}
+                      >
+                        Change
+                      </Button>
+                    </InlineStack>
+                  </BlockStack>
+                </Card>
+              )}
             </FormLayout>
           </BlockStack>
         </Modal.Section>
       </Modal>
 
       {/* Product Picker Modal */}
-      <Modal open={showProductPicker} onClose={() => setShowProductPicker(false)} title="Select Products" primaryAction={{ content: "Done", onAction: () => setShowProductPicker(false) }}>
+      <Modal 
+        open={showProductPicker} 
+        onClose={() => setShowProductPicker(false)} 
+        title="Select product pages" 
+        primaryAction={{ 
+          content: "Done", 
+          onAction: () => setShowProductPicker(false) 
+        }}
+      >
         <Modal.Section>
-          <BlockStack gap="300">
+          <BlockStack gap="400">
+            <Text as="p" variant="bodyMd">
+              Choose which product pages will display this bundle
+            </Text>
             {availableProducts.length === 0 ? (
-              <EmptyState heading="No products" image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png">
-                <p>Add products to your store</p>
+              <EmptyState 
+                heading="No products available" 
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>Add products to your store to assign them to bundles</p>
               </EmptyState>
             ) : (
               <ResourceList
@@ -573,13 +837,19 @@ export default function BundlesAdmin() {
                 renderItem={(product: Product) => {
                   const isSelected = assignedProducts.includes(product.id);
                   return (
-                    <ResourceItem id={product.id} onClick={() => {
-                      setAssignedProducts(isSelected ? assignedProducts.filter(id => id !== product.id) : [...assignedProducts, product.id]);
-                    }}>
-                      <InlineStack gap="300">
+                    <ResourceItem 
+                      id={product.id} 
+                      onClick={() => {
+                        setAssignedProducts(isSelected ? assignedProducts.filter(id => id !== product.id) : [...assignedProducts, product.id]);
+                      }}
+                    >
+                      <InlineStack gap="300" blockAlign="center">
                         <Checkbox label="" checked={isSelected} onChange={() => {}} />
                         <Thumbnail source={product.image} alt={product.title} size="small" />
-                        <Text as="span">{product.title}</Text>
+                        <BlockStack gap="050">
+                          <Text as="span" variant="bodyMd">{product.title}</Text>
+                          <Text as="span" variant="bodySm" tone="subdued">{formatMoney(parseFloat(product.price))}</Text>
+                        </BlockStack>
                       </InlineStack>
                     </ResourceItem>
                   );
