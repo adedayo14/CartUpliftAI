@@ -1,7 +1,8 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useSubmit } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
+import type { FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Page,
   Layout,
@@ -54,6 +55,12 @@ interface Collection {
   title: string;
   productsCount: number;
 }
+
+type ActionResponse = {
+  success: boolean;
+  message?: string;
+  error?: string;
+};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log('[Loader] Starting...');
@@ -274,28 +281,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const navigation = useNavigation();
-  const submit = useSubmit();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [actionPath, setActionPath] = useState('/admin/bundle-management-simple');
-  
-  console.log('🟢 [Component] Render - navigation.state:', navigation.state);
-  console.log('🟢 [Component] actionData:', actionData);
-
-  // Capture the full URL with query params on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      const path = `${url.pathname}${url.search}`;
-      setActionPath(path);
-      console.log('🔧 [Action Path] Set to:', path);
-    }
-  }, []);
+  const createFetcher = useFetcher<typeof action>();
+  const mutationFetcher = useFetcher<typeof action>();
+  const revalidator = useRevalidator();
+  const formRef = useRef<HTMLFormElement>(null);
+  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const bundles = loaderData.bundles || [];
-  const availableProducts = loaderData.products || [];
-  const availableCollections = loaderData.collections || [];
+  const availableProducts = (loaderData.products ?? []) as Product[];
+  const availableCollections = (loaderData.collections ?? []) as Collection[];
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -304,6 +298,7 @@ export default function SimpleBundleManagement() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [bannerMessage, setBannerMessage] = useState("");
+  const [pendingBundleId, setPendingBundleId] = useState<string | null>(null);
 
   const [newBundle, setNewBundle] = useState({
     name: "",
@@ -324,40 +319,13 @@ export default function SimpleBundleManagement() {
     ]
   });
 
-  // Monitor navigation state changes
-  useEffect(() => {
-    if (navigation.state === 'submitting') {
-      setIsSubmitting(true);
-      console.log('🟡 [Navigation] Submitting...');
-    } else if (navigation.state === 'loading') {
-      console.log('🟡 [Navigation] Loading...');
-    } else if (navigation.state === 'idle') {
-      setIsSubmitting(false);
-      console.log('🟡 [Navigation] Idle');
-    }
-  }, [navigation.state]);
+  const isCreateSubmitting = createFetcher.state === "submitting";
+  const isMutationSubmitting = mutationFetcher.state === "submitting";
+  const createData = createFetcher.data as ActionResponse | undefined;
+  const mutationData = mutationFetcher.data as ActionResponse | undefined;
+  const lastActionData = createData ?? mutationData;
 
-  // Handle actionData responses
-  useEffect(() => {
-    console.log('🟣 [ActionData] Changed:', actionData);
-    if (actionData) {
-      if (actionData.success) {
-        console.log('✅ [ActionData] Success!');
-        setShowSuccessBanner(true);
-        setBannerMessage((actionData as any).message || "Success!");
-        setShowCreateModal(false);
-        resetForm();
-        setTimeout(() => setShowSuccessBanner(false), 3000);
-      } else {
-        console.error('❌ [ActionData] Failed:', (actionData as any).error);
-        setShowErrorBanner(true);
-        setBannerMessage((actionData as any).error || "Failed");
-        setTimeout(() => setShowErrorBanner(false), 3000);
-      }
-    }
-  }, [actionData]);
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setNewBundle({
       name: "",
       description: "",
@@ -379,45 +347,87 @@ export default function SimpleBundleManagement() {
     setSelectedProducts([]);
     setSelectedCollections([]);
     setAssignedProducts([]);
-  };
+  }, []);
 
-  const handleSubmitForm = () => {
-    console.log('🔵 [Frontend] ========== handleSubmitForm START ==========');
-    console.log('🔵 [Frontend] Bundle name:', newBundle.name);
-    console.log('🔵 [Frontend] Selected products:', selectedProducts.length);
-    console.log('🔵 [Frontend] Assigned products:', assignedProducts.length);
-    
+  console.log('🟢 [Component] Render - createFetcher.state:', createFetcher.state, 'mutationFetcher.state:', mutationFetcher.state);
+  console.log('🟢 [Component] last action data:', lastActionData);
+
+  useEffect(() => () => {
+    if (bannerTimeoutRef.current) {
+      clearTimeout(bannerTimeoutRef.current);
+    }
+  }, []);
+
+  const triggerBanner = useCallback((type: "success" | "error", message: string) => {
+    setBannerMessage(message);
+    setShowSuccessBanner(type === "success");
+    setShowErrorBanner(type === "error");
+
+    if (bannerTimeoutRef.current) {
+      clearTimeout(bannerTimeoutRef.current);
+    }
+
+    bannerTimeoutRef.current = setTimeout(() => {
+      setShowSuccessBanner(false);
+      setShowErrorBanner(false);
+      bannerTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    if (createFetcher.state === "idle" && createData) {
+      if (createData.success) {
+        console.log('✅ [CreateFetcher] Success!');
+        triggerBanner("success", createData.message ?? "Bundle created successfully!");
+        setShowCreateModal(false);
+        resetForm();
+        revalidator.revalidate();
+      } else {
+        console.error('❌ [CreateFetcher] Failed:', createData.error);
+        triggerBanner("error", createData.error ?? "Failed to create bundle");
+      }
+    }
+  }, [createFetcher.state, createData, triggerBanner, revalidator, resetForm]);
+
+  useEffect(() => {
+    if (mutationFetcher.state === "idle" && mutationData) {
+      if (mutationData.success) {
+        console.log('✅ [MutationFetcher] Success!');
+        triggerBanner("success", mutationData.message ?? "Updated successfully!");
+        revalidator.revalidate();
+      } else {
+        console.error('❌ [MutationFetcher] Failed:', mutationData.error);
+        triggerBanner("error", mutationData.error ?? "Failed to update bundle");
+      }
+    }
+  }, [mutationFetcher.state, mutationData, triggerBanner, revalidator]);
+
+  useEffect(() => {
+    if (mutationFetcher.state === "idle") {
+      setPendingBundleId(null);
+    }
+  }, [mutationFetcher.state]);
+
+  const handleCreateBundle = useCallback(() => {
     if (!newBundle.name.trim()) {
-      console.error('❌ [Frontend] Bundle name is empty!');
-      setShowErrorBanner(true);
-      setBannerMessage('Bundle name is required');
-      setTimeout(() => setShowErrorBanner(false), 3000);
+      triggerBanner("error", "Bundle name is required");
       return;
     }
-    
-    // Build form data
-    const formData = new FormData();
-    formData.append('action', 'create-bundle');
-    formData.append('productIds', JSON.stringify(selectedProducts));
-    formData.append('collectionIds', JSON.stringify(selectedCollections));
-    formData.append('assignedProducts', JSON.stringify(assignedProducts));
-    formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
-    formData.append('name', newBundle.name);
-    formData.append('description', newBundle.description || '');
-    formData.append('bundleType', newBundle.bundleType);
-    formData.append('bundleStyle', newBundle.bundleStyle);
-    formData.append('allowDeselect', newBundle.allowDeselect ? 'true' : '');
-    formData.append('discountType', newBundle.discountType);
-    formData.append('discountValue', newBundle.discountValue.toString());
-    formData.append('minProducts', newBundle.minProducts.toString());
-    formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
-    formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
-    formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
-    
-    console.log('🔵 [Frontend] Submitting with Remix submit()...');
-    console.log('🔵 [Frontend] Action path:', actionPath);
-    submit(formData, { method: 'POST', action: actionPath });
-  };
+
+    formRef.current?.requestSubmit();
+  }, [newBundle.name, triggerBanner]);
+
+  const handleCreateFormSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    if (isCreateSubmitting) {
+      event.preventDefault();
+      return;
+    }
+
+    if (!newBundle.name.trim()) {
+      event.preventDefault();
+      triggerBanner("error", "Bundle name is required");
+    }
+  }, [isCreateSubmitting, newBundle.name, triggerBanner]);
 
   const bundleTypeOptions = [
     { label: "Manual Bundle", value: "manual" },
@@ -431,20 +441,34 @@ export default function SimpleBundleManagement() {
   ];
 
   const handleToggleStatus = (bundleId: string, currentStatus: string) => {
+    if (mutationFetcher.state !== "idle") {
+      return;
+    }
+
+    setPendingBundleId(bundleId);
+
     const formData = new FormData();
     formData.append('action', 'toggle-status');
     formData.append('bundleId', bundleId);
     formData.append('status', currentStatus === 'active' ? 'paused' : 'active');
-    submit(formData, { method: 'POST', action: actionPath });
+    mutationFetcher.submit(formData, { method: 'post' });
   };
 
   const handleDelete = (bundleId: string) => {
-    if (!confirm("Delete this bundle?")) return;
-    
+    if (!confirm("Delete this bundle?")) {
+      return;
+    }
+
+    if (mutationFetcher.state !== "idle") {
+      return;
+    }
+
+    setPendingBundleId(bundleId);
+
     const formData = new FormData();
     formData.append('action', 'delete-bundle');
     formData.append('bundleId', bundleId);
-    submit(formData, { method: 'POST', action: actionPath });
+    mutationFetcher.submit(formData, { method: 'post' });
   };
 
   const bundleTableRows = bundles.map((bundle: Bundle) => [
@@ -461,7 +485,7 @@ export default function SimpleBundleManagement() {
         size="micro"
         variant={bundle.status === "active" ? "secondary" : "primary"}
         onClick={() => handleToggleStatus(bundle.id, bundle.status)}
-        loading={isSubmitting}
+        loading={isMutationSubmitting && pendingBundleId === bundle.id}
       >
         {bundle.status === "active" ? "Pause" : "Activate"}
       </Button>
@@ -469,7 +493,7 @@ export default function SimpleBundleManagement() {
         size="micro"
         tone="critical"
         onClick={() => handleDelete(bundle.id)}
-        loading={isSubmitting}
+        loading={isMutationSubmitting && pendingBundleId === bundle.id}
       >
         Delete
       </Button>
@@ -479,7 +503,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.6 - Using explicit action URLs"
+      subtitle="🚀 v1.7 - Fetcher submission flow"
       primaryAction={
         <Button
           variant="primary"
@@ -554,25 +578,35 @@ export default function SimpleBundleManagement() {
       {/* Modal with real Form */}
       <Modal
         open={showCreateModal}
-        onClose={() => !isSubmitting && setShowCreateModal(false)}
+        onClose={() => !isCreateSubmitting && setShowCreateModal(false)}
         title="Create New Bundle"
         primaryAction={{
           content: "Create Bundle",
-          disabled: !newBundle.name.trim() || isSubmitting,
-          loading: isSubmitting,
-          onAction: handleSubmitForm,
+          disabled: !newBundle.name.trim() || isCreateSubmitting,
+          loading: isCreateSubmitting,
+          onAction: handleCreateBundle,
         }}
         secondaryActions={[
           {
             content: "Cancel",
-            disabled: isSubmitting,
+            disabled: isCreateSubmitting,
             onAction: () => setShowCreateModal(false),
           },
         ]}
       >
         <Modal.Section>
-          {/* Form removed - using fetcher.submit() in handleSubmitForm instead */}
-          <FormLayout>
+          <createFetcher.Form method="post" ref={formRef} onSubmit={handleCreateFormSubmit}>
+            <input type="hidden" name="action" value="create-bundle" />
+            <input type="hidden" name="productIds" value={JSON.stringify(selectedProducts)} />
+            <input type="hidden" name="collectionIds" value={JSON.stringify(selectedCollections)} />
+            <input type="hidden" name="assignedProducts" value={JSON.stringify(assignedProducts)} />
+            <input type="hidden" name="tierConfig" value={JSON.stringify(newBundle.tierConfig)} />
+            <input type="hidden" name="selectMinQty" value={newBundle.selectMinQty ?? ""} />
+            <input type="hidden" name="selectMaxQty" value={newBundle.selectMaxQty ?? ""} />
+            <input type="hidden" name="allowDeselect" value={newBundle.allowDeselect ? "true" : "false"} />
+            <input type="hidden" name="hideIfNoML" value={newBundle.hideIfNoML ? "true" : "false"} />
+
+            <FormLayout>
               <TextField
                 label="Bundle Name"
                 name="name"
@@ -580,7 +614,7 @@ export default function SimpleBundleManagement() {
                 onChange={(value) => setNewBundle({ ...newBundle, name: value })}
                 placeholder="e.g., Summer Essentials"
                 autoComplete="off"
-                disabled={isSubmitting}
+                disabled={isCreateSubmitting}
               />
 
               <TextField
@@ -590,7 +624,7 @@ export default function SimpleBundleManagement() {
                 onChange={(value) => setNewBundle({ ...newBundle, description: value })}
                 multiline={2}
                 autoComplete="off"
-                disabled={isSubmitting}
+                disabled={isCreateSubmitting}
               />
 
               <Select
@@ -599,7 +633,7 @@ export default function SimpleBundleManagement() {
                 options={bundleTypeOptions}
                 value={newBundle.bundleType}
                 onChange={(value) => setNewBundle({ ...newBundle, bundleType: value })}
-                disabled={isSubmitting}
+                disabled={isCreateSubmitting}
               />
 
               <Select
@@ -611,16 +645,16 @@ export default function SimpleBundleManagement() {
                   { label: "Tiers", value: "tier" }
                 ]}
                 value={newBundle.bundleStyle}
-                onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as any })}
-                disabled={isSubmitting}
+                onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as "grid" | "fbt" | "tier" })}
+                disabled={isCreateSubmitting}
               />
 
               <Card>
                 <BlockStack gap="300">
                   <Text as="h3" variant="headingSm">Product Assignment</Text>
-                  <Button 
+                  <Button
                     onClick={() => setShowProductPicker(true)}
-                    disabled={availableProducts.length === 0 || isSubmitting}
+                    disabled={availableProducts.length === 0 || isCreateSubmitting}
                   >
                     {`Select Products (${assignedProducts.length})`}
                   </Button>
@@ -629,18 +663,16 @@ export default function SimpleBundleManagement() {
 
               <Checkbox
                 label="Allow deselect"
-                name="allowDeselect"
                 checked={newBundle.allowDeselect}
                 onChange={(checked) => setNewBundle({ ...newBundle, allowDeselect: checked })}
-                disabled={isSubmitting}
+                disabled={isCreateSubmitting}
               />
 
               <Checkbox
                 label="Hide if no AI recs"
-                name="hideIfNoML"
                 checked={newBundle.hideIfNoML}
                 onChange={(checked) => setNewBundle({ ...newBundle, hideIfNoML: checked })}
-                disabled={isSubmitting}
+                disabled={isCreateSubmitting}
               />
 
               {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
@@ -655,7 +687,7 @@ export default function SimpleBundleManagement() {
                           <ResourceItem
                             id={product.id}
                             onClick={() => {
-                              if (!isSubmitting) {
+                              if (!isCreateSubmitting) {
                                 setSelectedProducts(
                                   isSelected
                                     ? selectedProducts.filter(id => id !== product.id)
@@ -665,7 +697,7 @@ export default function SimpleBundleManagement() {
                             }}
                           >
                             <InlineStack gap="300">
-                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSubmitting} />
+                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isCreateSubmitting} />
                               <Thumbnail source={product.image} alt={product.title} size="small" />
                               <Text as="span">{product.title}</Text>
                             </InlineStack>
@@ -692,7 +724,7 @@ export default function SimpleBundleManagement() {
                           <ResourceItem
                             id={collection.id}
                             onClick={() => {
-                              if (!isSubmitting) {
+                              if (!isCreateSubmitting) {
                                 setSelectedCollections(
                                   isSelected
                                     ? selectedCollections.filter(id => id !== collection.id)
@@ -702,7 +734,7 @@ export default function SimpleBundleManagement() {
                             }}
                           >
                             <InlineStack gap="300">
-                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSubmitting} />
+                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isCreateSubmitting} />
                               <Text as="span">{collection.title}</Text>
                             </InlineStack>
                           </ResourceItem>
@@ -723,7 +755,7 @@ export default function SimpleBundleManagement() {
                   options={discountTypeOptions}
                   value={newBundle.discountType}
                   onChange={(value) => setNewBundle({ ...newBundle, discountType: value })}
-                  disabled={isSubmitting}
+                  disabled={isCreateSubmitting}
                 />
                 <TextField
                   label="Value"
@@ -733,7 +765,7 @@ export default function SimpleBundleManagement() {
                   onChange={(value) => setNewBundle({ ...newBundle, discountValue: parseFloat(value) || 0 })}
                   suffix={newBundle.discountType === "percentage" ? "%" : "$"}
                   autoComplete="off"
-                  disabled={isSubmitting}
+                  disabled={isCreateSubmitting}
                 />
               </InlineStack>
 
@@ -744,13 +776,10 @@ export default function SimpleBundleManagement() {
                 value={newBundle.minProducts.toString()}
                 onChange={(value) => setNewBundle({ ...newBundle, minProducts: parseInt(value) || 2 })}
                 autoComplete="off"
-                disabled={isSubmitting}
+                disabled={isCreateSubmitting}
               />
-
-              <input type="hidden" name="selectMinQty" value={newBundle.selectMinQty} />
-              <input type="hidden" name="selectMaxQty" value={newBundle.selectMaxQty} />
             </FormLayout>
-          {/* Form closing tag removed - using fetcher instead */}
+          </createFetcher.Form>
         </Modal.Section>
       </Modal>
 

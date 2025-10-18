@@ -148,63 +148,32 @@ model Settings {
 
 // Bundle Management System
 model Bundle {
-  id              String   @id @default(cuid())
-  shop            String
-  name            String
-  description     String?
-  type            String   // "manual", "category", "ai_suggested" 
-  status          String   @default("draft") // "draft", "active", "paused"
-  
-  // Discount Configuration
-  discountType    String   @default("percentage") // "percentage", "fixed"
-  discountValue   Float    @default(0)
-  
-  // Bundle Rules
-  categoryIds     String?  // JSON array of category IDs for category bundles
-  productIds      String   // JSON array of product IDs
-  minProducts     Int      @default(2) // Minimum products required for bundle
-  maxProducts     Int?     // Maximum products allowed (null = unlimited)
-  
-  // AI Bundle Settings
-  aiAutoApprove   Boolean  @default(false) // Auto-show AI bundles or require approval
-  aiDiscountMax   Float?   // Maximum discount AI can apply
-  
-  // Performance Tracking
-  totalViews      Int      @default(0)
-  totalAddToCart  Int      @default(0) 
-  totalPurchases  Int      @default(0)
-  totalRevenue    Float    @default(0)
-  
-  // Bundle Configuration
-  displayTitle    String?  // Custom title for storefront
-  displayRules    String?  // JSON: display conditions, triggers, etc.
-  
-  // NEW FIELDS - Product-specific assignment & display styles
-  assignedProducts String?  // JSON array: ["gid://shopify/Product/123", "456"] - where to show bundle
-  bundleStyle     String   @default("grid") // "grid" | "fbt" | "tier" - display style
-  
-  // Category selection (Choose X from Y)
-  selectMinQty    Int?     // Minimum items to select (e.g., "Choose 5")
-  selectMaxQty    Int?     // Maximum items to select (e.g., "from 20")
-  
-  // Quantity tier pricing (Buy more, save more)
-  tierConfig      String?  // JSON: [{qty: 1, discount: 0}, {qty: 2, discount: 10}, {qty: 5, discount: 20}]
-  
-  // FBT (Frequently Bought Together) settings
-  allowDeselect   Boolean  @default(true)  // Can users uncheck items in FBT view?
-  mainProductId   String?  // The anchor/current product in FBT bundle
-  
-  // Display control
-  hideIfNoML      Boolean  @default(false) // Hide bundle if ML doesn't find recommendations
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  bundles         BundleProduct[]
+  id               String    @id @default(cuid())
+  shop             String
+  name             String
+  description      String?
+  type             String    // manual, category, ai_suggested
+  status           String    @default("draft") // draft, active, paused
+  discountType     String    @default("percentage")
+  discountValue    Float     @default(0)
+  minProducts      Int       @default(2)
+  productIds       String    @default("[]") // JSON array of product IDs
+  collectionIds    String    @default("[]") // JSON array of collection IDs
+  assignedProducts String    @default("[]") // JSON array for assigned products
+  bundleStyle      String    @default("grid") // grid, fbt, tier
+  selectMinQty     Int?
+  selectMaxQty     Int?
+  tierConfig       String    @default("[]") // JSON array of tier configurations
+  allowDeselect    Boolean   @default(true)
+  hideIfNoML       Boolean   @default(false)
+  products         BundleProduct[]
+  totalPurchases   Int       @default(0)
+  totalRevenue     Float     @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   
   @@index([shop])
-  @@index([shop, status])
+  @@index([status])
 }
 
 model BundleProduct {
