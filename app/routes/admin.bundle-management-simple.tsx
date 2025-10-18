@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useSubmit } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -315,9 +315,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const navigation = useNavigation();
-  const submit = useSubmit();
+  const fetcher = useFetcher<typeof action>();
   
   console.log('[Frontend] Loader data received:', loaderData);
   
@@ -355,10 +353,10 @@ export default function SimpleBundleManagement() {
 
   // Handle action data responses
   useEffect(() => {
-    if (actionData) {
-      if (actionData.success) {
+    if (fetcher.data) {
+      if (fetcher.data.success) {
         setShowSuccessBanner(true);
-        const message = 'message' in actionData ? actionData.message : "Action completed successfully";
+        const message = 'message' in fetcher.data ? fetcher.data.message : "Action completed successfully";
         setBannerMessage(message || "Action completed successfully");
         if (message?.includes("created")) {
           setShowCreateModal(false);
@@ -366,7 +364,7 @@ export default function SimpleBundleManagement() {
         }
       } else {
         setShowErrorBanner(true);
-        const error = 'error' in actionData ? actionData.error : "Action failed";
+        const error = 'error' in fetcher.data ? fetcher.data.error : "Action failed";
         setBannerMessage(error || "Action failed");
       }
       
@@ -375,7 +373,7 @@ export default function SimpleBundleManagement() {
         setShowErrorBanner(false);
       }, 3000);
     }
-  }, [actionData]);
+  }, [fetcher.data]);
 
   const resetForm = () => {
     setNewBundle({
@@ -439,8 +437,8 @@ export default function SimpleBundleManagement() {
       formData.append("tierConfig", JSON.stringify(newBundle.tierConfig));
     }
 
-    // Use Remix submit instead of programmatic form submission
-    submit(formData, { method: "POST" });
+    // Use fetcher to submit without navigation
+    fetcher.submit(formData, { method: "POST" });
   };
 
   const bundleTypeOptions = [
@@ -516,7 +514,7 @@ export default function SimpleBundleManagement() {
     </ButtonGroup>,
   ]);
 
-  const isSubmitting = navigation.state === "submitting";
+  const isSubmitting = fetcher.state === "submitting" || fetcher.state === "loading";
 
   return (
     <Page
