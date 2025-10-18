@@ -274,30 +274,24 @@ export default function SimpleBundleManagement() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || '';
-      const shop = urlParams.get('shop') || '';
 
       const payload = {
-        shop,
-        sessionToken,
-        action: "create",
-        bundle: {
-          name: newBundle.name,
-          description: newBundle.description,
-          type: newBundle.bundleType,
-          discountType: newBundle.discountType,
-          discountValue: newBundle.discountValue,
-          minProducts: newBundle.minProducts,
-          productIds: JSON.stringify(selectedProducts),
-          collectionIds: JSON.stringify(selectedCollections),
-          assignedProducts: JSON.stringify(assignedProducts),
-          bundleStyle: newBundle.bundleStyle,
-          selectMinQty: newBundle.selectMinQty,
-          selectMaxQty: newBundle.selectMaxQty,
-          tierConfig: JSON.stringify(newBundle.tierConfig),
-          allowDeselect: newBundle.allowDeselect,
-          hideIfNoML: newBundle.hideIfNoML,
-          status: "draft",
-        }
+        action: "create-bundle",
+        name: newBundle.name,
+        description: newBundle.description,
+        type: newBundle.bundleType,
+        discountType: newBundle.discountType,
+        discountValue: newBundle.discountValue,
+        minProducts: newBundle.minProducts,
+        productIds: JSON.stringify(selectedProducts),
+        collectionIds: JSON.stringify(selectedCollections),
+        assignedProducts: JSON.stringify(assignedProducts),
+        bundleStyle: newBundle.bundleStyle,
+        selectMinQty: newBundle.selectMinQty,
+        selectMaxQty: newBundle.selectMaxQty,
+        tierConfig: JSON.stringify(newBundle.tierConfig),
+        allowDeselect: newBundle.allowDeselect,
+        hideIfNoML: newBundle.hideIfNoML,
       };
 
       console.log('[Bundle Create] Sending to /api/bundle-management:', payload);
@@ -351,12 +345,9 @@ export default function SimpleBundleManagement() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || '';
-      const shop = urlParams.get('shop') || '';
 
       const payload = {
-        shop,
-        sessionToken,
-        action: "toggle",
+        action: "toggle-status",
         bundleId,
         status: currentStatus === 'active' ? 'paused' : 'active'
       };
@@ -399,12 +390,9 @@ export default function SimpleBundleManagement() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || '';
-      const shop = urlParams.get('shop') || '';
 
       const payload = {
-        shop,
-        sessionToken,
-        action: "delete",
+        action: "delete-bundle",
         bundleId
       };
 
@@ -464,7 +452,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v2.1 - Cache busted"
+      subtitle="🚀 v2.2 - Fixed API payload structure"
       primaryAction={
         <Button
           variant="primary"
