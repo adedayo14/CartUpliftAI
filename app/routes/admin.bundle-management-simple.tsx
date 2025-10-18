@@ -455,7 +455,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="✅ v3.0 - Fully operational"
+      subtitle="✅ v3.0 - Stable Release"
       primaryAction={
         <Button
           variant="primary"
