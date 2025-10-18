@@ -326,9 +326,18 @@ export default function BundlesAdmin() {
         allowDeselect: newBundle.allowDeselect,
         hideIfNoML: newBundle.hideIfNoML,
       };
-      const response = await fetch('/api/bundle-management', {
+      
+      // Use absolute URL to prevent Shopify App Bridge from intercepting
+      const apiUrl = `${window.location.origin}/api/bundle-management`;
+      console.log('[handleCreateBundle] Making request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${sessionToken}`,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify(payload),
       });
       
@@ -381,9 +390,17 @@ export default function BundlesAdmin() {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || '';
       const payload = { action: "toggle-status", bundleId, status: currentStatus === 'active' ? 'paused' : 'active' };
-      const response = await fetch('/api/bundle-management', {
+      
+      // Use absolute URL to prevent Shopify App Bridge from intercepting
+      const apiUrl = `${window.location.origin}/api/bundle-management`;
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${sessionToken}`,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify(payload),
       });
       
@@ -424,9 +441,18 @@ export default function BundlesAdmin() {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || '';
       const payload = { action: "delete-bundle", bundleId };
-      const response = await fetch('/api/bundle-management', {
+      
+      // Use absolute URL to prevent Shopify App Bridge from intercepting
+      const apiUrl = `${window.location.origin}/api/bundle-management`;
+      console.log('[handleDelete] Making request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${sessionToken}`,
+          'X-Requested-With': 'XMLHttpRequest' // Indicate this is an AJAX request
+        },
         body: JSON.stringify(payload),
       });
       
