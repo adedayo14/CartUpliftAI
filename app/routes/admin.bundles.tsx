@@ -86,12 +86,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     try {
       const shopRes = await authResult.admin.graphql(
         `#graphql
-        query shopInfo { shop { currencyCode } }
+        query shopInfo { 
+          shop { 
+            currencyCode
+            currencyFormats {
+              moneyFormat
+            }
+          } 
+        }
         `
       );
       const shopJson = await shopRes.json();
-      currencyCode = shopJson?.data?.shop?.currencyCode || undefined;
+      currencyCode = shopJson?.data?.shop?.currencyCode;
       console.log('[Loader] Shop currency:', currencyCode);
+      if (!currencyCode) {
+        console.warn('[Loader] Currency code not found, GraphQL response:', JSON.stringify(shopJson));
+      }
     } catch (err) {
       console.error('[Loader] Currency fetch error:', err);
     }
@@ -170,7 +180,16 @@ export default function BundlesAdmin() {
   const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loaderBundles = useMemo(() => (loaderData as any).bundles || [], [loaderData]);
-  const currencyCode = (loaderData as any).currencyCode || 'USD';
+  const currencyCode = (loaderData as any).currencyCode;
+  
+  // Log if currency code is missing to help debug
+  useEffect(() => {
+    if (!currencyCode) {
+      console.warn('[BundlesAdmin] No currency code available from loader. Check Shopify API permissions.');
+    } else {
+      console.log('[BundlesAdmin] Using currency:', currencyCode);
+    }
+  }, [currencyCode]);
   const availableProducts = (loaderData.products ?? []) as Product[];
   const availableCollections = (loaderData.collections ?? []) as Collection[];
   const [bundleList, setBundleList] = useState<Bundle[]>(loaderBundles);
@@ -186,19 +205,37 @@ export default function BundlesAdmin() {
   const [isSaving, setIsSaving] = useState(false);
 
   const currencySymbol = useMemo(() => {
-    try {
-      const parts = new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).formatToParts(0);
-      return parts.find(p => p.type === 'currency')?.value || '$';
-    } catch {
+    if (!currencyCode) {
+      console.warn('[currencySymbol] No currency code provided, using default symbol');
       return '$';
+    }
+    try {
+      const parts = new Intl.NumberFormat(undefined, { 
+        style: 'currency', 
+        currency: currencyCode 
+      }).formatToParts(0);
+      const symbol = parts.find(p => p.type === 'currency')?.value || currencyCode;
+      console.log('[currencySymbol] Currency:', currencyCode, 'Symbol:', symbol);
+      return symbol;
+    } catch (error) {
+      console.error('[currencySymbol] Error formatting currency:', error);
+      return currencyCode || '$';
     }
   }, [currencyCode]);
 
   const formatMoney = useCallback((amount: number) => {
-    try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(amount || 0);
-    } catch {
+    if (!currencyCode) {
+      console.warn('[formatMoney] No currency code, using simple format');
       return `$${(amount || 0).toFixed(2)}`;
+    }
+    try {
+      return new Intl.NumberFormat(undefined, { 
+        style: 'currency', 
+        currency: currencyCode 
+      }).format(amount || 0);
+    } catch (error) {
+      console.error('[formatMoney] Error formatting amount:', error);
+      return `${currencyCode} ${(amount || 0).toFixed(2)}`;
     }
   }, [currencyCode]);
 
