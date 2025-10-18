@@ -278,12 +278,26 @@ export default function SimpleBundleManagement() {
   const navigation = useNavigation();
   const fetcher = useFetcher<typeof action>();
   const location = useLocation();
-  const fetcherActionPath = location.search ? `${location.pathname}${location.search}` : location.pathname;
+  const remixActionPath = location.search ? `${location.pathname}${location.search}` : location.pathname;
+  const [embeddedActionPath, setEmbeddedActionPath] = useState(remixActionPath);
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
   console.log('🔷 [Fetcher] state:', fetcher.state);
   console.log('🔷 [Fetcher] data:', fetcher.data);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentUrl = new URL(window.location.href);
+      const fullPath = `${currentUrl.pathname}${currentUrl.search}`;
+      setEmbeddedActionPath(fullPath);
+      console.log('🟦 [ActionPath] Updated to:', fullPath);
+    } else {
+      setEmbeddedActionPath(remixActionPath);
+    }
+  }, [remixActionPath]);
+
+  const resolvedActionPath = embeddedActionPath || remixActionPath;
+
   
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
@@ -429,6 +443,7 @@ export default function SimpleBundleManagement() {
     formData.append('minProducts', newBundle.minProducts.toString());
     formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
     formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
+    formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
     
     console.log('🔵 [Frontend] FormData built, calling fetcher.submit()...');
     console.log('🔵 [Frontend] FormData entries:');
@@ -437,10 +452,10 @@ export default function SimpleBundleManagement() {
     }
     
     // Use fetcher.submit() to bypass navigation issues
-    console.log('🔵 [Frontend] fetcher action path:', fetcherActionPath);
+    console.log('🔵 [Frontend] fetcher action path:', resolvedActionPath);
     fetcher.submit(formData, {
       method: 'post',
-      action: fetcherActionPath
+      action: resolvedActionPath,
     });
     console.log('🔵 [Frontend] fetcher.submit() called successfully');
   };
@@ -474,7 +489,7 @@ export default function SimpleBundleManagement() {
           formData.append('action', 'toggle-status');
           formData.append('bundleId', bundle.id);
           formData.append('status', bundle.status === 'active' ? 'paused' : 'active');
-          fetcher.submit(formData, { method: 'post', action: fetcherActionPath });
+          fetcher.submit(formData, { method: 'post', action: resolvedActionPath });
         }}
         loading={fetcher.state === "submitting"}
       >
@@ -488,7 +503,7 @@ export default function SimpleBundleManagement() {
             const formData = new FormData();
             formData.append('action', 'delete-bundle');
             formData.append('bundleId', bundle.id);
-            fetcher.submit(formData, { method: 'post', action: fetcherActionPath });
+            fetcher.submit(formData, { method: 'post', action: resolvedActionPath });
           }
         }}
         loading={fetcher.state === "submitting"}
