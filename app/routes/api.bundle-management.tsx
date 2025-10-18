@@ -259,7 +259,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const type = (body.type as string) || (body.bundleType as string);
       const discountType = (body.discountType as string) || 'percentage';
       const discountValue = parseFloat(String(body.discountValue));
-      const categoryIds = (body.categoryIds as string) || (body.collectionIds as string);
+      const collectionIds = (body.categoryIds as string) || (body.collectionIds as string);
       const productIds = (body.productIds as string);
       const minProducts = body.minProducts ? parseInt(String(body.minProducts)) : 2;
       const maxProducts = body.maxProducts ? parseInt(String(body.maxProducts)) : null;
@@ -290,13 +290,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           type,
           discountType,
           discountValue,
-          categoryIds,
+          collectionIds,
           productIds,
           minProducts,
-          maxProducts,
-          aiAutoApprove,
-          aiDiscountMax,
-          displayTitle,
           // NEW FIELDS
           assignedProducts,
           bundleStyle,
@@ -304,7 +300,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           selectMaxQty,
           tierConfig,
           allowDeselect,
-          mainProductId,
           hideIfNoML,
           status: 'draft'
         }
