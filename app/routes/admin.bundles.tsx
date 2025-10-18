@@ -442,26 +442,34 @@ export default function BundlesAdmin() {
 
         {bundleList.length > 0 && (
           <Layout.Section>
-            <InlineStack gap="400" wrap={false}>
-              <Card>
+            <Card>
+              <InlineStack gap="800" align="space-between">
                 <BlockStack gap="200">
                   <Text as="p" variant="bodySm" tone="subdued">Total revenue</Text>
-                  <Text as="p" variant="headingLg">{formatMoney(totalRevenue)}</Text>
+                  <Text as="p" variant="heading2xl">{formatMoney(totalRevenue)}</Text>
                 </BlockStack>
-              </Card>
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodySm" tone="subdued">Total purchases</Text>
-                  <Text as="p" variant="headingLg">{totalPurchases.toLocaleString()}</Text>
-                </BlockStack>
-              </Card>
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodySm" tone="subdued">Active bundles</Text>
-                  <Text as="p" variant="headingLg">{activeBundles} / {bundleList.length}</Text>
-                </BlockStack>
-              </Card>
-            </InlineStack>
+                <Box borderInlineStartWidth="025" borderColor="border" paddingInlineStart="800">
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodySm" tone="subdued">Total purchases</Text>
+                    <Text as="p" variant="heading2xl">{totalPurchases.toLocaleString()}</Text>
+                  </BlockStack>
+                </Box>
+                <Box borderInlineStartWidth="025" borderColor="border" paddingInlineStart="800">
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodySm" tone="subdued">Active bundles</Text>
+                    <Text as="p" variant="heading2xl">{activeBundles} / {bundleList.length}</Text>
+                  </BlockStack>
+                </Box>
+                <Box borderInlineStartWidth="025" borderColor="border" paddingInlineStart="800">
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodySm" tone="subdued">Avg. bundle value</Text>
+                    <Text as="p" variant="heading2xl">
+                      {totalPurchases > 0 ? formatMoney(totalRevenue / totalPurchases) : formatMoney(0)}
+                    </Text>
+                  </BlockStack>
+                </Box>
+              </InlineStack>
+            </Card>
           </Layout.Section>
         )}
 
@@ -521,35 +529,39 @@ export default function BundlesAdmin() {
                     <Text as="h2" variant="headingMd">Bundle types</Text>
                   </InlineStack>
                   <BlockStack gap="300">
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
+                    <InlineStack gap="300" blockAlign="start">
+                      <Box>
                         <Icon source={PackageIcon} tone="base" />
+                      </Box>
+                      <BlockStack gap="050">
                         <Text as="span" variant="bodyMd" fontWeight="semibold">Manual</Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Hand-pick specific products to bundle together
-                      </Text>
-                    </BlockStack>
-                    <Divider />
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          Hand-pick specific products
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                    <InlineStack gap="300" blockAlign="start">
+                      <Box>
                         <Icon source={CollectionIcon} tone="base" />
+                      </Box>
+                      <BlockStack gap="050">
                         <Text as="span" variant="bodyMd" fontWeight="semibold">Category</Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Automatically bundle all products from selected collections
-                      </Text>
-                    </BlockStack>
-                    <Divider />
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          Auto-bundle from collections
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                    <InlineStack gap="300" blockAlign="start">
+                      <Box>
                         <Icon source={MagicIcon} tone="base" />
+                      </Box>
+                      <BlockStack gap="050">
                         <Text as="span" variant="bodyMd" fontWeight="semibold">AI Suggested</Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Let AI recommend the best product combinations
-                      </Text>
-                    </BlockStack>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          AI-powered recommendations
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
                   </BlockStack>
                 </BlockStack>
               </Card>
