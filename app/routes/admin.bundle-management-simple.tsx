@@ -474,7 +474,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="✅ UPDATED Oct 18, 2025 - Fixed product selection + Smart Bundles theme integration"
+      subtitle="🚀 v1.1 - Fixed authentication & loading (Oct 18, 2025)"
       primaryAction={
         <Button
           variant="primary"
