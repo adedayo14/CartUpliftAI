@@ -303,7 +303,6 @@ export default function SimpleBundleManagement() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [bannerMessage, setBannerMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [newBundle, setNewBundle] = useState({
     name: "",
@@ -367,88 +366,52 @@ export default function SimpleBundleManagement() {
     setAssignedProducts([]);
   };
 
-  const handleCreateBundle = async () => {
-    console.log('[handleCreateBundle] CALLED - Starting bundle creation');
-    console.log('[handleCreateBundle] Bundle name:', newBundle.name);
-    console.log('[handleCreateBundle] Bundle type:', newBundle.bundleType);
-    console.log('[handleCreateBundle] Selected products:', selectedProducts);
+  const handleCreateBundle = () => {
+    console.log('[handleCreateBundle] Starting...');
     
     if (!newBundle.name.trim()) {
-      console.log('[handleCreateBundle] Validation failed - no bundle name');
       setShowErrorBanner(true);
       setBannerMessage('Bundle name is required');
       setTimeout(() => setShowErrorBanner(false), 3000);
       return;
     }
 
-    console.log('[handleCreateBundle] Setting isSubmitting to true');
-    setIsSubmitting(true);
-    setShowSuccessBanner(false);
-    setShowErrorBanner(false);
-
-    try {
-      const payload = {
-        action: "create-bundle",
-        name: newBundle.name,
-        description: newBundle.description,
-        bundleType: newBundle.bundleType,
-        discountType: newBundle.discountType,
-        discountValue: newBundle.discountValue,
-        minProducts: newBundle.minProducts,
-        bundleStyle: newBundle.bundleStyle,
-        selectMinQty: newBundle.selectMinQty,
-        selectMaxQty: newBundle.selectMaxQty,
-        allowDeselect: newBundle.allowDeselect,
-        hideIfNoML: newBundle.hideIfNoML,
-        assignedProducts: assignedProducts.length > 0 ? JSON.stringify(assignedProducts) : "[]",
-        productIds: newBundle.bundleType === 'manual' && selectedProducts.length > 0 ? JSON.stringify(selectedProducts) : "[]",
-        collectionIds: newBundle.bundleType === 'category' && selectedCollections.length > 0 ? JSON.stringify(selectedCollections) : "[]",
-        tierConfig: newBundle.bundleStyle === 'tier' ? JSON.stringify(newBundle.tierConfig) : null
-      };
-
-      console.log('[handleCreateBundle] Payload prepared:', payload);
-      console.log('[handleCreateBundle] Sending POST to:', window.location.pathname);
-
-      const response = await fetch(window.location.pathname, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      console.log('[handleCreateBundle] Response received, status:', response.status);
-      const data = await response.json();
-      console.log('[handleCreateBundle] Response data:', data);
-      
-      if (data.success) {
-        console.log('[handleCreateBundle] SUCCESS! Bundle created:', data.message);
-        setShowSuccessBanner(true);
-        setBannerMessage(data.message || "Bundle created successfully");
-        setShowCreateModal(false);
-        resetForm();
-        
-        console.log('[handleCreateBundle] Reloading page in 500ms...');
-        // Small delay to let user see success message before reload
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
-      } else {
-        console.log('[handleCreateBundle] FAILED:', data.error);
-        setShowErrorBanner(true);
-        setBannerMessage(data.error || "Failed to create bundle");
-      }
-    } catch (error: any) {
-      console.error('[handleCreateBundle] EXCEPTION:', error);
-      setShowErrorBanner(true);
-      setBannerMessage(error.message || "Failed to create bundle");
-    } finally {
-      console.log('[handleCreateBundle] Finally block - setting isSubmitting to false');
-      setIsSubmitting(false);
+    // Build FormData for Remix submission
+    const formData = new FormData();
+    formData.append("action", "create-bundle");
+    formData.append("name", newBundle.name);
+    formData.append("description", newBundle.description);
+    formData.append("bundleType", newBundle.bundleType);
+    formData.append("discountType", newBundle.discountType);
+    formData.append("discountValue", newBundle.discountValue.toString());
+    formData.append("minProducts", newBundle.minProducts.toString());
+    formData.append("bundleStyle", newBundle.bundleStyle);
+    formData.append("selectMinQty", newBundle.selectMinQty.toString());
+    formData.append("selectMaxQty", newBundle.selectMaxQty.toString());
+    formData.append("allowDeselect", newBundle.allowDeselect.toString());
+    formData.append("hideIfNoML", newBundle.hideIfNoML.toString());
+    
+    if (assignedProducts.length > 0) {
+      formData.append("assignedProducts", JSON.stringify(assignedProducts));
+    }
+    
+    if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
+      formData.append("productIds", JSON.stringify(selectedProducts));
+    }
+    
+    if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
+      formData.append("collectionIds", JSON.stringify(selectedCollections));
+    }
+    
+    if (newBundle.bundleStyle === 'tier') {
+      formData.append("tierConfig", JSON.stringify(newBundle.tierConfig));
     }
 
-    setTimeout(() => {
-      setShowSuccessBanner(false);
-      setShowErrorBanner(false);
-    }, 3000);
+    console.log('[handleCreateBundle] Submitting form data...');
+    console.log('[handleCreateBundle] FormData entries:', Array.from(formData.entries()));
+    
+    // Use Remix's submit function
+    submit(formData, { method: "post" });
   };
 
   const handleToggleStatus = (bundleId: string, currentStatus: string) => {
@@ -508,10 +471,12 @@ export default function SimpleBundleManagement() {
     </ButtonGroup>,
   ]);
 
+  const isSubmitting = navigation.state === "submitting";
+
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.4 - Direct fetch() API to avoid cache issues"
+      subtitle="🚀 v1.4 - FIXED: Proper Remix form submission"
       primaryAction={
         <Button
           variant="primary"
