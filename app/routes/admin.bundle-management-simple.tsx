@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useLocation } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, useSubmit } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -25,7 +25,6 @@ import {
   EmptyState,
 } from "@shopify/polaris";
 import { PlusIcon } from "@shopify/polaris-icons";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -277,30 +276,12 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const app = useAppBridge();
-  const location = useLocation();
-  const remixActionPath = location.search ? `${location.pathname}${location.search}` : location.pathname;
-  const [embeddedActionPath, setEmbeddedActionPath] = useState(remixActionPath);
+  const submit = useSubmit();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
-  console.log('🟢 [Component] App Bridge:', app ? 'initialized' : 'NOT INITIALIZED');
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const currentUrl = new URL(window.location.href);
-      const fullPath = `${currentUrl.pathname}${currentUrl.search}`;
-      setEmbeddedActionPath(fullPath);
-      console.log('🟦 [ActionPath] Updated to:', fullPath);
-    } else {
-      setEmbeddedActionPath(remixActionPath);
-    }
-  }, [remixActionPath]);
 
-  const resolvedActionPath = embeddedActionPath || remixActionPath;
-
-  
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
   const availableCollections = loaderData.collections || [];
@@ -334,20 +315,16 @@ export default function SimpleBundleManagement() {
 
   // Monitor navigation state changes
   useEffect(() => {
-    console.log('🟡 [Navigation] State changed to:', navigation.state);
     if (navigation.state === 'submitting') {
-      console.log('🟡 [Navigation] Form is submitting...');
-      console.log('🟡 [Navigation] FormData:', navigation.formData ? 'exists' : 'null');
-      if (navigation.formData) {
-        console.log('🟡 [Navigation] Action:', navigation.formData.get('action'));
-      }
+      setIsSubmitting(true);
+      console.log('🟡 [Navigation] Submitting...');
     } else if (navigation.state === 'loading') {
-      console.log('🟡 [Navigation] Loading response...');
+      console.log('🟡 [Navigation] Loading...');
     } else if (navigation.state === 'idle') {
-      console.log('🟡 [Navigation] Idle');
       setIsSubmitting(false);
+      console.log('🟡 [Navigation] Idle');
     }
-  }, [navigation.state, navigation.formData]);
+  }, [navigation.state]);
 
   // Handle actionData responses
   useEffect(() => {
@@ -393,9 +370,8 @@ export default function SimpleBundleManagement() {
     setAssignedProducts([]);
   };
 
-  const handleSubmitForm = async () => {
+  const handleSubmitForm = () => {
     console.log('🔵 [Frontend] ========== handleSubmitForm START ==========');
-    console.log('🔵 [Frontend] App Bridge object:', app);
     console.log('🔵 [Frontend] Bundle name:', newBundle.name);
     console.log('🔵 [Frontend] Selected products:', selectedProducts.length);
     console.log('🔵 [Frontend] Assigned products:', assignedProducts.length);
@@ -408,102 +384,27 @@ export default function SimpleBundleManagement() {
       return;
     }
     
-    console.log('🔵 [Frontend] Setting isSubmitting to true...');
-    setIsSubmitting(true);
+    // Build form data
+    const formData = new FormData();
+    formData.append('action', 'create-bundle');
+    formData.append('productIds', JSON.stringify(selectedProducts));
+    formData.append('collectionIds', JSON.stringify(selectedCollections));
+    formData.append('assignedProducts', JSON.stringify(assignedProducts));
+    formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
+    formData.append('name', newBundle.name);
+    formData.append('description', newBundle.description || '');
+    formData.append('bundleType', newBundle.bundleType);
+    formData.append('bundleStyle', newBundle.bundleStyle);
+    formData.append('allowDeselect', newBundle.allowDeselect ? 'true' : '');
+    formData.append('discountType', newBundle.discountType);
+    formData.append('discountValue', newBundle.discountValue.toString());
+    formData.append('minProducts', newBundle.minProducts.toString());
+    formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
+    formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
+    formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
     
-    try {
-      console.log('🔵 [Frontend] Building FormData...');
-      // Build form data manually
-      const formData = new FormData();
-      formData.append('action', 'create-bundle');
-      formData.append('productIds', JSON.stringify(selectedProducts));
-      formData.append('collectionIds', JSON.stringify(selectedCollections));
-      formData.append('assignedProducts', JSON.stringify(assignedProducts));
-      formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
-      formData.append('name', newBundle.name);
-      formData.append('description', newBundle.description || '');
-      formData.append('bundleType', newBundle.bundleType);
-      formData.append('bundleStyle', newBundle.bundleStyle);
-      formData.append('allowDeselect', newBundle.allowDeselect ? 'true' : '');
-      formData.append('discountType', newBundle.discountType);
-      formData.append('discountValue', newBundle.discountValue.toString());
-      formData.append('minProducts', newBundle.minProducts.toString());
-      formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
-      formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
-      formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
-      
-      console.log('🔵 [Frontend] FormData built successfully');
-      console.log('🔵 [Frontend] FormData entries:');
-      for (const [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
-      }
-      
-      console.log('🔵 [Frontend] Requesting session token from App Bridge...');
-      console.log('🔵 [Frontend] App Bridge object type:', typeof app);
-      console.log('🔵 [Frontend] App has idToken method?', 'idToken' in app);
-      
-      // Try to get the session token with a timeout
-      let sessionToken: string;
-      try {
-        console.log('🔵 [Frontend] Calling app.idToken() with 5s timeout...');
-        const tokenPromise = app.idToken();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('idToken timeout after 5s')), 5000)
-        );
-        sessionToken = await Promise.race([tokenPromise, timeoutPromise]) as string;
-        console.log('🔵 [Frontend] Got session token (first 20 chars):', sessionToken?.substring(0, 20));
-      } catch (tokenError: any) {
-        console.error('❌ [Frontend] idToken() failed:', tokenError.message);
-        throw new Error(`Failed to get session token: ${tokenError.message}`);
-      }
-      
-      // Use authenticated fetch with App Bridge
-      console.log('🔵 [Frontend] POST to:', resolvedActionPath);
-      console.log('🔵 [Frontend] Calling fetch...');
-      
-      const response = await fetch(resolvedActionPath, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`,
-        },
-        body: formData,
-      });
-      
-      console.log('🔵 [Frontend] Fetch completed');
-      console.log('🔵 [Frontend] Response status:', response.status);
-      console.log('🔵 [Frontend] Response ok:', response.ok);
-      
-      const result = await response.json();
-      console.log('🔵 [Frontend] Response data:', result);
-      
-      if (result.success) {
-        console.log('✅ [Frontend] Success!');
-        setShowSuccessBanner(true);
-        setBannerMessage(result.message || "Bundle created successfully!");
-        setShowCreateModal(false);
-        resetForm();
-        setTimeout(() => setShowSuccessBanner(false), 3000);
-        // Trigger a page reload to refresh the bundles list
-        window.location.reload();
-      } else {
-        console.error('❌ [Frontend] Failed:', result.error);
-        setShowErrorBanner(true);
-        setBannerMessage(result.error || "Failed to create bundle");
-        setTimeout(() => setShowErrorBanner(false), 3000);
-      }
-    } catch (error: any) {
-      console.error('❌ [Frontend] Exception caught:', error);
-      console.error('❌ [Frontend] Error name:', error.name);
-      console.error('❌ [Frontend] Error message:', error.message);
-      console.error('❌ [Frontend] Error stack:', error.stack);
-      setShowErrorBanner(true);
-      setBannerMessage('An error occurred: ' + error.message);
-      setTimeout(() => setShowErrorBanner(false), 3000);
-    } finally {
-      console.log('🔵 [Frontend] Setting isSubmitting to false...');
-      setIsSubmitting(false);
-      console.log('🔵 [Frontend] ========== handleSubmitForm END ==========');
-    }
+    console.log('🔵 [Frontend] Submitting with Remix submit()...');
+    submit(formData, { method: 'POST' });
   };
 
   const bundleTypeOptions = [
@@ -517,57 +418,21 @@ export default function SimpleBundleManagement() {
     { label: "Fixed Amount Off", value: "fixed" },
   ];
 
-  const handleToggleStatus = async (bundleId: string, currentStatus: string) => {
-    setIsSubmitting(true);
-    try {
-      const sessionToken = await app.idToken();
-      const formData = new FormData();
-      formData.append('action', 'toggle-status');
-      formData.append('bundleId', bundleId);
-      formData.append('status', currentStatus === 'active' ? 'paused' : 'active');
-      
-      const response = await fetch(resolvedActionPath, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${sessionToken}` },
-        body: formData,
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('Toggle failed:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleToggleStatus = (bundleId: string, currentStatus: string) => {
+    const formData = new FormData();
+    formData.append('action', 'toggle-status');
+    formData.append('bundleId', bundleId);
+    formData.append('status', currentStatus === 'active' ? 'paused' : 'active');
+    submit(formData, { method: 'POST' });
   };
 
-  const handleDelete = async (bundleId: string) => {
+  const handleDelete = (bundleId: string) => {
     if (!confirm("Delete this bundle?")) return;
     
-    setIsSubmitting(true);
-    try {
-      const sessionToken = await app.idToken();
-      const formData = new FormData();
-      formData.append('action', 'delete-bundle');
-      formData.append('bundleId', bundleId);
-      
-      const response = await fetch(resolvedActionPath, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${sessionToken}` },
-        body: formData,
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('Delete failed:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    const formData = new FormData();
+    formData.append('action', 'delete-bundle');
+    formData.append('bundleId', bundleId);
+    submit(formData, { method: 'POST' });
   };
 
   const bundleTableRows = bundles.map((bundle: Bundle) => [
