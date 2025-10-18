@@ -13,9 +13,6 @@ const prismaClientConfig = {
       url: process.env.DATABASE_URL,
     },
   },
-  // Reduce connection pool for serverless
-  // Neon free tier: 5 connections max
-  // Each serverless function gets 1-2 connections
   log: process.env.NODE_ENV === 'development' 
     ? ['query' as const, 'error' as const, 'warn' as const] 
     : ['error' as const],
