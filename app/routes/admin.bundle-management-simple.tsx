@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useSubmit, Form } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { json } from "@remix-run/node";
+import { useLoaderData, useActionData, useNavigation, Form } from "@remix-run/react";
+import { useEffect, useState, useRef } from "react";
 import {
   Page,
   Layout,
@@ -56,29 +56,21 @@ interface Collection {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  console.log('[Loader] Starting bundle management loader...');
+  console.log('[Loader] Starting...');
   
   const authResult = await authenticate.admin(request);
   const shop = authResult.session.shop;
   
-  console.log('[Loader] Authenticated for shop:', shop);
-  
   try {
-    // Load bundles
     const bundles = await (prisma as any).bundle.findMany({
       where: { shop },
       orderBy: { createdAt: 'desc' }
     });
     
-    console.log(`[Loader] Loaded ${bundles.length} bundles`);
-    
-    // Load products and collections
     let products: Product[] = [];
     let collections: Collection[] = [];
     
     try {
-      console.log('[Loader] Fetching products from Shopify GraphQL...');
-      
       const productsResponse = await authResult.admin.graphql(
         `#graphql
         query getProducts {
@@ -125,10 +117,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             };
           });
         
-        console.log(`[Loader] Successfully loaded ${products.length} products`);
+        console.log(`[Loader] Loaded ${products.length} products`);
       }
-    } catch (error: any) {
-      console.error('[Loader] Failed to load products:', error);
+    } catch (error) {
+      console.error('[Loader] Products error:', error);
     }
     
     try {
@@ -160,10 +152,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             productsCount: edge.node.productsCount?.count || 0
           }));
         
-        console.log(`[Loader] Successfully loaded ${collections.length} collections`);
+        console.log(`[Loader] Loaded ${collections.length} collections`);
       }
-    } catch (error: any) {
-      console.error('[Loader] Failed to load collections:', error);
+    } catch (error) {
+      console.error('[Loader] Collections error:', error);
     }
     
     return json({ 
@@ -174,32 +166,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       shop
     });
   } catch (error: any) {
-    console.error('[Bundle Loader] Critical error:', error);
-    
+    console.error('[Loader] Error:', error);
     return json({ 
       success: false, 
       bundles: [],
       products: [],
       collections: [],
-      error: error.message || 'Failed to load data'
+      error: error.message
     });
   }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  console.log('[Action] Received request, method:', request.method);
-  console.log('[Action] Content-Type:', request.headers.get('content-type'));
+  console.log('[Action] ========== ACTION CALLED ==========');
+  console.log('[Action] Method:', request.method);
+  console.log('[Action] URL:', request.url);
   
   const authResult = await authenticate.admin(request);
   const shop = authResult.session.shop;
-  
-  console.log('[Action] Authenticated shop:', shop);
 
   const formData = await request.formData();
   const actionType = formData.get("action") as string;
   
-  console.log('[Action] Action type:', actionType);
-  console.log('[Action] FormData keys:', Array.from(formData.keys()));
+  console.log('[Action] Type:', actionType);
+  console.log('[Action] All form keys:', Array.from(formData.keys()));
 
   try {
     if (actionType === "create-bundle") {
@@ -209,9 +199,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const discountType = formData.get("discountType") as string;
       const discountValue = parseFloat(formData.get("discountValue") as string);
       const minProducts = parseInt(formData.get("minProducts") as string) || 2;
-      const productIds = formData.get("productIds") as string;
-      const collectionIds = formData.get("collectionIds") as string;
-      const assignedProducts = formData.get("assignedProducts") as string;
+      const productIds = formData.get("productIds") as string || "[]";
+      const collectionIds = formData.get("collectionIds") as string || "[]";
+      const assignedProducts = formData.get("assignedProducts") as string || "[]";
       const bundleStyle = formData.get("bundleStyle") as string || "grid";
       const selectMinQty = formData.get("selectMinQty");
       const selectMaxQty = formData.get("selectMaxQty");
@@ -219,37 +209,36 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const allowDeselect = formData.get("allowDeselect") === "true";
       const hideIfNoML = formData.get("hideIfNoML") === "true";
 
-      console.log('[Action] Bundle data:', { name, bundleType, discountType, discountValue });
+      console.log('[Action] Creating bundle:', name);
 
-      if (!name || !bundleType || discountValue < 0) {
-        console.error('[Action] Validation failed');
-        return json({ success: false, error: "Invalid bundle data" }, { status: 400 });
+      if (!name || !bundleType) {
+        return json({ success: false, error: "Name and type required" }, { status: 400 });
       }
 
       const bundle = await (prisma as any).bundle.create({
         data: {
           shop,
           name,
-          description,
+          description: description || "",
           type: bundleType,
           discountType,
-          discountValue,
+          discountValue: discountValue || 0,
           minProducts,
-          productIds: bundleType === 'manual' ? productIds : "[]",
-          collectionIds: bundleType === 'category' ? collectionIds : "[]",
-          assignedProducts: assignedProducts || "[]",
+          productIds,
+          collectionIds,
+          assignedProducts,
           bundleStyle,
           selectMinQty: selectMinQty ? parseInt(selectMinQty as string) : null,
           selectMaxQty: selectMaxQty ? parseInt(selectMaxQty as string) : null,
-          tierConfig: tierConfig || null,
+          tierConfig,
           allowDeselect,
           hideIfNoML,
           status: "draft",
         },
       });
 
-      console.log('[Action] Bundle created successfully:', bundle.id);
-      return json({ success: true, bundle, message: "Bundle created successfully!" });
+      console.log('[Action] ✅ Bundle created:', bundle.id);
+      return json({ success: true, bundle, message: "Bundle created!" });
     }
 
     if (actionType === "toggle-status") {
@@ -261,7 +250,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         data: { status },
       });
 
-      return json({ success: true, bundle, message: "Status updated successfully!" });
+      console.log('[Action] ✅ Status toggled');
+      return json({ success: true, bundle, message: "Status updated!" });
     }
 
     if (actionType === "delete-bundle") {
@@ -271,13 +261,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         where: { id: bundleId, shop },
       });
 
-      return json({ success: true, message: "Bundle deleted successfully!" });
+      console.log('[Action] ✅ Bundle deleted');
+      return json({ success: true, message: "Bundle deleted!" });
     }
 
     return json({ success: false, error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
-    console.error("[Action] Error:", error);
-    return json({ success: false, error: error.message || "Failed to perform action" }, { status: 500 });
+    console.error("[Action] ❌ Error:", error);
+    return json({ success: false, error: error.message }, { status: 500 });
   }
 };
 
@@ -285,16 +276,12 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const submit = useSubmit();
-  
-  console.log('[Frontend] Loader data:', loaderData);
-  console.log('[Frontend] Action data:', actionData);
-  console.log('[Frontend] Navigation state:', navigation.state);
   
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
   const availableCollections = loaderData.collections || [];
   
+  const formRef = useRef<HTMLFormElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -326,17 +313,15 @@ export default function SimpleBundleManagement() {
   // Handle action responses
   useEffect(() => {
     if (actionData) {
-      console.log('[Frontend] Processing action data:', actionData);
       if (actionData.success) {
         setShowSuccessBanner(true);
-        setBannerMessage(actionData.message || "Action completed successfully");
+        setBannerMessage(actionData.message || "Success!");
         setShowCreateModal(false);
         resetForm();
-        
         setTimeout(() => setShowSuccessBanner(false), 3000);
       } else {
         setShowErrorBanner(true);
-        setBannerMessage(actionData.error || "Action failed");
+        setBannerMessage(actionData.error || "Failed");
         setTimeout(() => setShowErrorBanner(false), 3000);
       }
     }
@@ -366,73 +351,17 @@ export default function SimpleBundleManagement() {
     setAssignedProducts([]);
   };
 
-  const handleCreateBundle = () => {
-    console.log('[handleCreateBundle] Starting...');
-    
-    if (!newBundle.name.trim()) {
-      setShowErrorBanner(true);
-      setBannerMessage('Bundle name is required');
-      setTimeout(() => setShowErrorBanner(false), 3000);
-      return;
-    }
-
-    // Create FormData and submit directly with useSubmit
-    const formData = new FormData();
-    formData.append('action', 'create-bundle');
-    formData.append('name', newBundle.name);
-    formData.append('description', newBundle.description);
-    formData.append('bundleType', newBundle.bundleType);
-    formData.append('discountType', newBundle.discountType);
-    formData.append('discountValue', newBundle.discountValue.toString());
-    formData.append('minProducts', newBundle.minProducts.toString());
-    formData.append('bundleStyle', newBundle.bundleStyle);
-    formData.append('selectMinQty', newBundle.selectMinQty.toString());
-    formData.append('selectMaxQty', newBundle.selectMaxQty.toString());
-    formData.append('allowDeselect', newBundle.allowDeselect.toString());
-    formData.append('hideIfNoML', newBundle.hideIfNoML.toString());
-    
-    if (assignedProducts.length > 0) {
-      formData.append('assignedProducts', JSON.stringify(assignedProducts));
-    }
-    
-    if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
-      formData.append('productIds', JSON.stringify(selectedProducts));
-    }
-    
-    if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
-      formData.append('collectionIds', JSON.stringify(selectedCollections));
-    }
-    
-    if (newBundle.bundleStyle === 'tier') {
-      formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
-    }
-
-    console.log('[handleCreateBundle] Submitting with useSubmit()...');
-    submit(formData, { method: 'post', replace: false });
-  };
-
-  const handleToggleStatus = (bundleId: string, currentStatus: string) => {
-    // Find the toggle form and submit it
-    const toggleForm = document.getElementById(`toggle-${bundleId}`) as HTMLFormElement;
-    if (toggleForm) {
-      (toggleForm.elements.namedItem('status') as HTMLInputElement).value = currentStatus === 'active' ? 'paused' : 'active';
-      toggleForm.requestSubmit();
-    }
-  };
-
-  const handleDeleteBundle = (bundleId: string) => {
-    if (confirm("Are you sure you want to delete this bundle?")) {
-      const deleteForm = document.getElementById(`delete-${bundleId}`) as HTMLFormElement;
-      if (deleteForm) {
-        deleteForm.requestSubmit();
-      }
+  const handleSubmitForm = () => {
+    console.log('[Frontend] Submitting form...');
+    if (formRef.current) {
+      formRef.current.requestSubmit();
     }
   };
 
   const bundleTypeOptions = [
-    { label: "Manual Bundle (Select specific products)", value: "manual" },
-    { label: "Category Bundle (All products from categories)", value: "category" },
-    { label: "AI Suggested Bundle (Smart recommendations)", value: "ai_suggested" },
+    { label: "Manual Bundle", value: "manual" },
+    { label: "Category Bundle", value: "category" },
+    { label: "AI Suggested", value: "ai_suggested" },
   ];
 
   const discountTypeOptions = [
@@ -442,30 +371,41 @@ export default function SimpleBundleManagement() {
 
   const bundleTableRows = bundles.map((bundle: Bundle) => [
     bundle.name,
-    bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI Suggested",
+    bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI",
     <Badge tone={bundle.status === "active" ? "success" : bundle.status === "paused" ? "warning" : "info"} key={bundle.id}>
-      {bundle.status === "active" ? "Active" : bundle.status === "paused" ? "Paused" : "Draft"}
+      {bundle.status}
     </Badge>,
     bundle.discountType === "percentage" ? `${bundle.discountValue}% off` : `$${bundle.discountValue} off`,
     bundle.totalPurchases?.toLocaleString?.() || "0",
     `$${(bundle.totalRevenue || 0).toFixed(2)}`,
     <ButtonGroup key={bundle.id}>
-      <Button
-        size="micro"
-        variant={bundle.status === "active" ? "secondary" : "primary"}
-        onClick={() => handleToggleStatus(bundle.id, bundle.status)}
-        loading={navigation.state === "submitting"}
-      >
-        {bundle.status === "active" ? "Pause" : "Activate"}
-      </Button>
-      <Button
-        size="micro"
-        tone="critical"
-        onClick={() => handleDeleteBundle(bundle.id)}
-        loading={navigation.state === "submitting"}
-      >
-        Delete
-      </Button>
+      <Form method="post" style={{ display: 'inline' }}>
+        <input type="hidden" name="action" value="toggle-status" />
+        <input type="hidden" name="bundleId" value={bundle.id} />
+        <input type="hidden" name="status" value={bundle.status === 'active' ? 'paused' : 'active'} />
+        <Button
+          size="micro"
+          variant={bundle.status === "active" ? "secondary" : "primary"}
+          submit
+          loading={navigation.state === "submitting"}
+        >
+          {bundle.status === "active" ? "Pause" : "Activate"}
+        </Button>
+      </Form>
+      <Form method="post" style={{ display: 'inline' }} onSubmit={(e) => {
+        if (!confirm("Delete this bundle?")) e.preventDefault();
+      }}>
+        <input type="hidden" name="action" value="delete-bundle" />
+        <input type="hidden" name="bundleId" value={bundle.id} />
+        <Button
+          size="micro"
+          tone="critical"
+          submit
+          loading={navigation.state === "submitting"}
+        >
+          Delete
+        </Button>
+      </Form>
     </ButtonGroup>,
   ]);
 
@@ -474,7 +414,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.4 - FIXED: Proper Remix form submission"
+      subtitle="🚀 v1.5 - FIXED: Real HTML Form submission"
       primaryAction={
         <Button
           variant="primary"
@@ -504,23 +444,13 @@ export default function SimpleBundleManagement() {
           </Layout.Section>
         )}
         
-        {!loaderData.success && 'error' in loaderData && (
-          <Layout.Section>
-            <Banner tone="critical" title="Failed to load data">
-              <p>{loaderData.error}</p>
-            </Banner>
-          </Layout.Section>
-        )}
-        
         <Layout.Section>
           {bundles.length === 0 ? (
             <Card>
               <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">
-                  Get Started with Bundles
-                </Text>
+                <Text as="h2" variant="headingMd">Get Started</Text>
                 <Text as="p" variant="bodyMd" tone="subdued">
-                  Create your first bundle to start increasing average order value.
+                  Create your first bundle
                 </Text>
               </BlockStack>
             </Card>
@@ -528,15 +458,13 @@ export default function SimpleBundleManagement() {
             <Card>
               <BlockStack gap="400">
                 <InlineStack align="space-between">
-                  <Text as="h2" variant="headingMd">
-                    All Bundles
-                  </Text>
+                  <Text as="h2" variant="headingMd">All Bundles</Text>
                   <Badge tone="info">{bundles.length} Bundle{bundles.length === 1 ? "" : "s"}</Badge>
                 </InlineStack>
 
                 <DataTable
                   columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "text"]}
-                  headings={["Bundle Name", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
+                  headings={["Name", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
                   rows={bundleTableRows}
                 />
               </BlockStack>
@@ -547,21 +475,18 @@ export default function SimpleBundleManagement() {
         <Layout.Section variant="oneThird">
           <Card>
             <BlockStack gap="300">
-              <Text as="h3" variant="headingSm">
-                ✅ Status
-              </Text>
+              <Text as="h3" variant="headingSm">Status</Text>
               <Text as="p" variant="bodyMd">
                 • Products: {availableProducts.length}
                 <br />• Collections: {availableCollections.length}
                 <br />• Bundles: {bundles.length}
-                <br />• Submitting: {isSubmitting ? 'Yes' : 'No'}
               </Text>
             </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>
 
-      {/* Create Bundle Modal */}
+      {/* Modal with real Form */}
       <Modal
         open={showCreateModal}
         onClose={() => !isSubmitting && setShowCreateModal(false)}
@@ -570,7 +495,7 @@ export default function SimpleBundleManagement() {
           content: "Create Bundle",
           disabled: !newBundle.name.trim() || isSubmitting,
           loading: isSubmitting,
-          onAction: handleCreateBundle,
+          onAction: handleSubmitForm,
         }}
         secondaryActions={[
           {
@@ -581,117 +506,88 @@ export default function SimpleBundleManagement() {
         ]}
       >
         <Modal.Section>
-          <FormLayout>
-            <TextField
-              label="Bundle Name"
-              value={newBundle.name}
-              onChange={(value) => setNewBundle({ ...newBundle, name: value })}
-              placeholder="e.g., Summer Beach Essentials"
-              autoComplete="off"
-              disabled={isSubmitting}
-            />
+          <Form method="post" ref={formRef}>
+            <input type="hidden" name="action" value="create-bundle" />
+            <input type="hidden" name="productIds" value={JSON.stringify(selectedProducts)} />
+            <input type="hidden" name="collectionIds" value={JSON.stringify(selectedCollections)} />
+            <input type="hidden" name="assignedProducts" value={JSON.stringify(assignedProducts)} />
+            <input type="hidden" name="tierConfig" value={JSON.stringify(newBundle.tierConfig)} />
+            
+            <FormLayout>
+              <TextField
+                label="Bundle Name"
+                name="name"
+                value={newBundle.name}
+                onChange={(value) => setNewBundle({ ...newBundle, name: value })}
+                placeholder="e.g., Summer Essentials"
+                autoComplete="off"
+                disabled={isSubmitting}
+              />
 
-            <TextField
-              label="Description (Optional)"
-              value={newBundle.description}
-              onChange={(value) => setNewBundle({ ...newBundle, description: value })}
-              placeholder="Brief description"
-              multiline={2}
-              autoComplete="off"
-              disabled={isSubmitting}
-            />
+              <TextField
+                label="Description"
+                name="description"
+                value={newBundle.description}
+                onChange={(value) => setNewBundle({ ...newBundle, description: value })}
+                multiline={2}
+                autoComplete="off"
+                disabled={isSubmitting}
+              />
 
-            <Select
-              label="Bundle Type"
-              options={bundleTypeOptions}
-              value={newBundle.bundleType}
-              onChange={(value) => setNewBundle({ ...newBundle, bundleType: value })}
-              disabled={isSubmitting}
-            />
+              <Select
+                label="Bundle Type"
+                name="bundleType"
+                options={bundleTypeOptions}
+                value={newBundle.bundleType}
+                onChange={(value) => setNewBundle({ ...newBundle, bundleType: value })}
+                disabled={isSubmitting}
+              />
 
-            <Select
-              label="Bundle Display Style"
-              options={[
-                { label: "Grid Layout", value: "grid" },
-                { label: "FBT (Frequently Bought Together)", value: "fbt" },
-                { label: "Quantity Tiers", value: "tier" }
-              ]}
-              value={newBundle.bundleStyle}
-              onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as any })}
-              disabled={isSubmitting}
-            />
+              <Select
+                label="Display Style"
+                name="bundleStyle"
+                options={[
+                  { label: "Grid", value: "grid" },
+                  { label: "FBT", value: "fbt" },
+                  { label: "Tiers", value: "tier" }
+                ]}
+                value={newBundle.bundleStyle}
+                onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as any })}
+                disabled={isSubmitting}
+              />
 
-            {/* Product Assignment */}
-            <Card>
-              <BlockStack gap="300">
-                <Text as="h3" variant="headingSm">Product Assignment</Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Choose which product pages should display this bundle
-                </Text>
-                
-                <Button 
-                  onClick={() => setShowProductPicker(true)}
-                  disabled={availableProducts.length === 0 || isSubmitting}
-                >
-                  {availableProducts.length === 0 
-                    ? "No products available" 
-                    : `Select Products (${assignedProducts.length} selected)`
-                  }
-                </Button>
-                
-                {assignedProducts.length > 0 && (
-                  <BlockStack gap="200">
-                    {assignedProducts.map(id => {
-                      const product = availableProducts.find((p) => p && p.id === id);
-                      return product ? (
-                        <InlineStack key={id} gap="200" blockAlign="center">
-                          <Thumbnail source={product.image} alt={product.title} size="small" />
-                          <Text as="span">{product.title}</Text>
-                          <Button
-                            size="micro"
-                            disabled={isSubmitting}
-                            onClick={() => setAssignedProducts(assignedProducts.filter(pid => pid !== id))}
-                          >
-                            Remove
-                          </Button>
-                        </InlineStack>
-                      ) : null;
-                    })}
-                  </BlockStack>
-                )}
-              </BlockStack>
-            </Card>
-
-            <Checkbox
-              label="Allow customers to deselect items"
-              checked={newBundle.allowDeselect}
-              onChange={(checked) => setNewBundle({ ...newBundle, allowDeselect: checked })}
-              disabled={isSubmitting}
-            />
-
-            <Checkbox
-              label="Hide if no AI recommendations"
-              checked={newBundle.hideIfNoML}
-              onChange={(checked) => setNewBundle({ ...newBundle, hideIfNoML: checked })}
-              disabled={isSubmitting}
-            />
-
-            {/* Manual Bundle Product Selection */}
-            {newBundle.bundleType === "manual" && (
               <Card>
                 <BlockStack gap="300">
-                  <Text as="h3" variant="headingSm">
-                    Select Products for Bundle
-                  </Text>
-                  
-                  {availableProducts.length === 0 ? (
-                    <EmptyState
-                      heading="No products available"
-                      image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                    >
-                      <p>Add products to your store first</p>
-                    </EmptyState>
-                  ) : (
+                  <Text as="h3" variant="headingSm">Product Assignment</Text>
+                  <Button 
+                    onClick={() => setShowProductPicker(true)}
+                    disabled={availableProducts.length === 0 || isSubmitting}
+                  >
+                    {`Select Products (${assignedProducts.length})`}
+                  </Button>
+                </BlockStack>
+              </Card>
+
+              <Checkbox
+                label="Allow deselect"
+                name="allowDeselect"
+                checked={newBundle.allowDeselect}
+                onChange={(checked) => setNewBundle({ ...newBundle, allowDeselect: checked })}
+                disabled={isSubmitting}
+              />
+
+              <Checkbox
+                label="Hide if no AI recs"
+                name="hideIfNoML"
+                checked={newBundle.hideIfNoML}
+                onChange={(checked) => setNewBundle({ ...newBundle, hideIfNoML: checked })}
+                disabled={isSubmitting}
+              />
+
+              {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Text as="h3" variant="headingSm">Select Products</Text>
                     <ResourceList
                       items={availableProducts.slice(0, 25)}
                       renderItem={(product: Product) => {
@@ -710,47 +606,25 @@ export default function SimpleBundleManagement() {
                             }}
                           >
                             <InlineStack gap="300">
-                              <Checkbox 
-                                label="" 
-                                checked={isSelected} 
-                                onChange={() => {}}
-                                disabled={isSubmitting}
-                              />
+                              <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSubmitting} />
                               <Thumbnail source={product.image} alt={product.title} size="small" />
-                              <BlockStack gap="100">
-                                <Text as="h3" variant="bodyMd">{product.title}</Text>
-                                <Text as="p" variant="bodySm" tone="subdued">${product.price}</Text>
-                              </BlockStack>
+                              <Text as="span">{product.title}</Text>
                             </InlineStack>
                           </ResourceItem>
                         );
                       }}
                     />
-                  )}
+                    {selectedProducts.length > 0 && (
+                      <Banner tone="success">{selectedProducts.length} selected</Banner>
+                    )}
+                  </BlockStack>
+                </Card>
+              )}
 
-                  {selectedProducts.length > 0 && (
-                    <Banner tone="success">
-                      {selectedProducts.length} product{selectedProducts.length === 1 ? "" : "s"} selected
-                    </Banner>
-                  )}
-                </BlockStack>
-              </Card>
-            )}
-
-            {/* Category Bundle */}
-            {newBundle.bundleType === "category" && (
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingSm">Select Collections</Text>
-                  
-                  {availableCollections.length === 0 ? (
-                    <EmptyState
-                      heading="No collections available"
-                      image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                    >
-                      <p>Create collections in your store first</p>
-                    </EmptyState>
-                  ) : (
+              {newBundle.bundleType === "category" && availableCollections.length > 0 && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Text as="h3" variant="headingSm">Select Collections</Text>
                     <ResourceList
                       items={availableCollections}
                       renderItem={(collection: Collection) => {
@@ -770,56 +644,54 @@ export default function SimpleBundleManagement() {
                           >
                             <InlineStack gap="300">
                               <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSubmitting} />
-                              <BlockStack gap="100">
-                                <Text as="h3" variant="bodyMd">{collection.title}</Text>
-                                <Text as="p" variant="bodySm" tone="subdued">
-                                  {collection.productsCount} products
-                                </Text>
-                              </BlockStack>
+                              <Text as="span">{collection.title}</Text>
                             </InlineStack>
                           </ResourceItem>
                         );
                       }}
                     />
-                  )}
+                    {selectedCollections.length > 0 && (
+                      <Banner tone="success">{selectedCollections.length} selected</Banner>
+                    )}
+                  </BlockStack>
+                </Card>
+              )}
 
-                  {selectedCollections.length > 0 && (
-                    <Banner tone="success">
-                      {selectedCollections.length} collection{selectedCollections.length === 1 ? "" : "s"} selected
-                    </Banner>
-                  )}
-                </BlockStack>
-              </Card>
-            )}
+              <InlineStack gap="400">
+                <Select
+                  label="Discount Type"
+                  name="discountType"
+                  options={discountTypeOptions}
+                  value={newBundle.discountType}
+                  onChange={(value) => setNewBundle({ ...newBundle, discountType: value })}
+                  disabled={isSubmitting}
+                />
+                <TextField
+                  label="Value"
+                  name="discountValue"
+                  type="number"
+                  value={newBundle.discountValue.toString()}
+                  onChange={(value) => setNewBundle({ ...newBundle, discountValue: parseFloat(value) || 0 })}
+                  suffix={newBundle.discountType === "percentage" ? "%" : "$"}
+                  autoComplete="off"
+                  disabled={isSubmitting}
+                />
+              </InlineStack>
 
-            <InlineStack gap="400">
-              <Select
-                label="Discount Type"
-                options={discountTypeOptions}
-                value={newBundle.discountType}
-                onChange={(value) => setNewBundle({ ...newBundle, discountType: value })}
-                disabled={isSubmitting}
-              />
               <TextField
-                label="Discount Value"
+                label="Min Products"
+                name="minProducts"
                 type="number"
-                value={newBundle.discountValue.toString()}
-                onChange={(value) => setNewBundle({ ...newBundle, discountValue: parseFloat(value) || 0 })}
-                suffix={newBundle.discountType === "percentage" ? "%" : "$"}
+                value={newBundle.minProducts.toString()}
+                onChange={(value) => setNewBundle({ ...newBundle, minProducts: parseInt(value) || 2 })}
                 autoComplete="off"
                 disabled={isSubmitting}
               />
-            </InlineStack>
 
-            <TextField
-              label="Minimum Products"
-              type="number"
-              value={newBundle.minProducts.toString()}
-              onChange={(value) => setNewBundle({ ...newBundle, minProducts: parseInt(value) || 2 })}
-              autoComplete="off"
-              disabled={isSubmitting}
-            />
-          </FormLayout>
+              <input type="hidden" name="selectMinQty" value={newBundle.selectMinQty} />
+              <input type="hidden" name="selectMaxQty" value={newBundle.selectMaxQty} />
+            </FormLayout>
+          </Form>
         </Modal.Section>
       </Modal>
 
@@ -827,7 +699,7 @@ export default function SimpleBundleManagement() {
       <Modal
         open={showProductPicker}
         onClose={() => setShowProductPicker(false)}
-        title="Select Products to Show Bundle On"
+        title="Select Products"
         primaryAction={{
           content: "Done",
           onAction: () => setShowProductPicker(false),
@@ -835,16 +707,9 @@ export default function SimpleBundleManagement() {
       >
         <Modal.Section>
           <BlockStack gap="300">
-            <Text as="p" variant="bodyMd">
-              Select which product pages should display this bundle
-            </Text>
-            
             {availableProducts.length === 0 ? (
-              <EmptyState
-                heading="No products available"
-                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-              >
-                <p>Add products to your store first</p>
+              <EmptyState heading="No products" image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png">
+                <p>Add products to your store</p>
               </EmptyState>
             ) : (
               <ResourceList
@@ -865,10 +730,7 @@ export default function SimpleBundleManagement() {
                       <InlineStack gap="300">
                         <Checkbox label="" checked={isSelected} onChange={() => {}} />
                         <Thumbnail source={product.image} alt={product.title} size="small" />
-                        <BlockStack gap="100">
-                          <Text as="h3" variant="bodyMd">{product.title}</Text>
-                          <Text as="p" variant="bodySm" tone="subdued">${product.price}</Text>
-                        </BlockStack>
+                        <Text as="span">{product.title}</Text>
                       </InlineStack>
                     </ResourceItem>
                   );
@@ -878,21 +740,6 @@ export default function SimpleBundleManagement() {
           </BlockStack>
         </Modal.Section>
       </Modal>
-
-      {/* Hidden forms for toggle/delete actions for each bundle */}
-      {bundles.map((bundle: Bundle) => (
-        <div key={bundle.id} style={{ display: 'none' }}>
-          <Form method="post" id={`toggle-${bundle.id}`}>
-            <input type="hidden" name="action" value="toggle-status" />
-            <input type="hidden" name="bundleId" value={bundle.id} />
-            <input type="hidden" name="status" />
-          </Form>
-          <Form method="post" id={`delete-${bundle.id}`}>
-            <input type="hidden" name="action" value="delete-bundle" />
-            <input type="hidden" name="bundleId" value={bundle.id} />
-          </Form>
-        </div>
-      ))}
     </Page>
   );
 }
