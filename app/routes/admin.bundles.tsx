@@ -524,10 +524,7 @@ export default function BundlesAdmin() {
 
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={InfoIcon} tone="info" />
-                    <Text as="h2" variant="headingMd">Bundle types</Text>
-                  </InlineStack>
+                  <Text as="h2" variant="headingMd">Bundle types</Text>
                   <BlockStack gap="300">
                     <InlineStack gap="300" blockAlign="start">
                       <Box>
