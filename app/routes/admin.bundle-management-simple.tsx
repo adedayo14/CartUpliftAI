@@ -396,13 +396,20 @@ export default function SimpleBundleManagement() {
   };
 
   const handleCreateBundle = async () => {
+    console.log('[handleCreateBundle] CALLED - Starting bundle creation');
+    console.log('[handleCreateBundle] Bundle name:', newBundle.name);
+    console.log('[handleCreateBundle] Bundle type:', newBundle.bundleType);
+    console.log('[handleCreateBundle] Selected products:', selectedProducts);
+    
     if (!newBundle.name.trim()) {
+      console.log('[handleCreateBundle] Validation failed - no bundle name');
       setShowErrorBanner(true);
       setBannerMessage('Bundle name is required');
       setTimeout(() => setShowErrorBanner(false), 3000);
       return;
     }
 
+    console.log('[handleCreateBundle] Setting isSubmitting to true');
     setIsSubmitting(true);
     setShowSuccessBanner(false);
     setShowErrorBanner(false);
@@ -427,30 +434,43 @@ export default function SimpleBundleManagement() {
         tierConfig: newBundle.bundleStyle === 'tier' ? JSON.stringify(newBundle.tierConfig) : null
       };
 
+      console.log('[handleCreateBundle] Payload prepared:', payload);
+      console.log('[handleCreateBundle] Sending POST to:', window.location.pathname);
+
       const response = await fetch(window.location.pathname, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
+      console.log('[handleCreateBundle] Response received, status:', response.status);
       const data = await response.json();
+      console.log('[handleCreateBundle] Response data:', data);
+      console.log('[handleCreateBundle] Response data:', data);
       
       if (data.success) {
+        console.log('[handleCreateBundle] SUCCESS! Bundle created:', data.message);
         setShowSuccessBanner(true);
         setBannerMessage(data.message || "Bundle created successfully");
         setShowCreateModal(false);
         resetForm();
-        // Reload the page to show the new bundle
-        window.location.reload();
+        
+        console.log('[handleCreateBundle] Reloading page in 500ms...');
+        // Small delay to let user see success message before reload
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
+        console.log('[handleCreateBundle] FAILED:', data.error);
         setShowErrorBanner(true);
         setBannerMessage(data.error || "Failed to create bundle");
       }
     } catch (error: any) {
-      console.error('[Create Bundle] Error:', error);
+      console.error('[handleCreateBundle] EXCEPTION:', error);
       setShowErrorBanner(true);
       setBannerMessage(error.message || "Failed to create bundle");
     } finally {
+      console.log('[handleCreateBundle] Finally block - setting isSubmitting to false');
       setIsSubmitting(false);
     }
 
