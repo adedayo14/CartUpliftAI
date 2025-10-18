@@ -64,10 +64,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log('[Loader] Authenticated for shop:', shop);
   
   try {
-    // Load bundles
+    // Load bundles with correct relation name
     const bundles = await (prisma as any).bundle.findMany({
       where: { shop },
-      include: { products: true },
+      include: { bundles: true },  // Correct relation name from schema
       orderBy: { createdAt: 'desc' }
     });
     
