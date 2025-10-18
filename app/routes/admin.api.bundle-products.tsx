@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
+import { authenticate, unauthenticated } from "../shopify.server";
 
 /**
  * Admin API endpoint to fetch products for bundle creation
@@ -10,11 +10,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log('🔥 Bundle Products API: Request received');
   
   try {
-    const { admin, session } = await authenticate.admin(request);
     const url = new URL(request.url);
     const query = url.searchParams.get("query") || "";
-    
-    console.log('🔥 Fetching products for shop:', session.shop);
+    const shopParam = url.searchParams.get("shop");
+
+    let adminClient: any;
+    let shopDomain: string | undefined;
+
+    if (shopParam) {
+      console.log('🔥 Using unauthenticated admin client for shop param:', shopParam);
+      const { admin } = await unauthenticated.admin(shopParam);
+      adminClient = admin;
+      shopDomain = shopParam;
+    } else {
+      const { admin, session } = await authenticate.admin(request);
+      adminClient = admin;
+      shopDomain = session.shop;
+      console.log('🔥 Authenticated admin session for shop:', shopDomain);
+    }
 
     const graphqlQuery = `
       #graphql
@@ -47,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     `;
 
-    const response = await admin.graphql(graphqlQuery, { 
+    const response = await adminClient.graphql(graphqlQuery, { 
       variables: { query: query || "status:active" } 
     });
     
@@ -73,7 +86,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     const products = responseJson.data?.products?.edges || [];
     
-    console.log(`🔥 Successfully fetched ${products.length} products`);
+  console.log(`🔥 Successfully fetched ${products.length} products for ${shopDomain}`);
 
     return json({
       success: true,

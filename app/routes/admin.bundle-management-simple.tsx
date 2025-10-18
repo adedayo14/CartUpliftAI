@@ -56,7 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       orderBy: { createdAt: 'desc' }
     });
     
-    return json({ success: true, bundles });
+  return json({ success: true, bundles, shop });
   } catch (error) {
     console.error('[Bundle Loader] Failed to load bundles:', error);
     return json({ 
@@ -159,6 +159,10 @@ export default function SimpleBundleManagement() {
 
   // Handle both bundle and product data from loader
   const bundles = (loaderData as any).bundles || [];
+  const shopDomain = (loaderData as any).shop as string | undefined;
+  const productApiUrl = shopDomain
+    ? `/admin/api/bundle-products?shop=${encodeURIComponent(shopDomain)}`
+    : '/admin/api/bundle-products';
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -205,10 +209,10 @@ export default function SimpleBundleManagement() {
     
     if (showCreateModal && newBundle.bundleType === 'manual' && 
         !(productFetcher.data as any)?.products && productFetcher.state === 'idle') {
-      console.log('[Bundle] Loading products from admin API...');
+  console.log('[Bundle] Loading products from admin API...', { productApiUrl });
       
-      // Use admin API endpoint (proper authentication)
-      productFetcher.load('/admin/api/bundle-products');
+  // Use admin API endpoint (proper authentication)
+  productFetcher.load(productApiUrl);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCreateModal, newBundle.bundleType, (productFetcher.data as any), productFetcher.state]);
@@ -629,7 +633,7 @@ export default function SimpleBundleManagement() {
               onChange={(value) => {
                 setNewBundle({ ...newBundle, bundleType: value });
                 if (value === "manual" && availableProducts.length === 0) {
-                  productFetcher.load('/admin/api/bundle-products');
+                  productFetcher.load(productApiUrl);
                 }
               }}
               helpText="Choose how products are selected for this bundle"
@@ -749,7 +753,7 @@ export default function SimpleBundleManagement() {
                     // In a real implementation, this would open Shopify's ResourcePicker
                     // For now, we'll use the product selection from the manual bundle section
                     if (availableProducts.length === 0) {
-                      productFetcher.load('/admin/api/bundle-products');
+                      productFetcher.load(productApiUrl);
                     }
                   }}
                 >
@@ -810,14 +814,14 @@ export default function SimpleBundleManagement() {
                   ) : productLoadError ? (
                     <Banner tone="critical" title="Failed to load products">
                       <p>{productLoadError}</p>
-                      <Button onClick={() => productFetcher.load('/admin/api/bundle-products')}>
+                      <Button onClick={() => productFetcher.load(productApiUrl)}>
                         Retry
                       </Button>
                     </Banner>
                   ) : (productFetcher.data && !(productFetcher.data as any).success) ? (
                     <Banner tone="warning" title="API returned error">
                       <p>Response: {JSON.stringify(productFetcher.data)}</p>
-                      <Button onClick={() => productFetcher.load('/admin/api/bundle-products')}>
+                      <Button onClick={() => productFetcher.load(productApiUrl)}>
                         Retry
                       </Button>
                     </Banner>
@@ -827,7 +831,7 @@ export default function SimpleBundleManagement() {
                       action={{
                         content: "Load Products",
                         onAction: () => {
-                          productFetcher.load('/admin/api/bundle-products');
+                          productFetcher.load(productApiUrl);
                         },
                       }}
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
