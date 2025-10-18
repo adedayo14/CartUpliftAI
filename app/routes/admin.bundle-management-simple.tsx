@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, useFetcher, useLocation } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, useLocation, useRevalidator } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -25,6 +25,7 @@ import {
   EmptyState,
 } from "@shopify/polaris";
 import { PlusIcon } from "@shopify/polaris-icons";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -276,15 +277,15 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const fetcher = useFetcher<typeof action>();
+  const app = useAppBridge();
   const location = useLocation();
   const remixActionPath = location.search ? `${location.pathname}${location.search}` : location.pathname;
   const [embeddedActionPath, setEmbeddedActionPath] = useState(remixActionPath);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
-  console.log('🔷 [Fetcher] state:', fetcher.state);
-  console.log('🔷 [Fetcher] data:', fetcher.data);
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const currentUrl = new URL(window.location.href);
@@ -343,35 +344,14 @@ export default function SimpleBundleManagement() {
       console.log('🟡 [Navigation] Loading response...');
     } else if (navigation.state === 'idle') {
       console.log('🟡 [Navigation] Idle');
+      setIsSubmitting(false);
     }
   }, [navigation.state, navigation.formData]);
 
-  // Handle fetcher responses (prioritize fetcher over actionData)
-  useEffect(() => {
-    console.log('🔷 [Fetcher] State changed to:', fetcher.state);
-    console.log('🔷 [Fetcher] Data:', fetcher.data);
-    
-    if (fetcher.state === 'idle' && fetcher.data) {
-      if (fetcher.data.success) {
-        console.log('✅ [Fetcher] Success!');
-        setShowSuccessBanner(true);
-        setBannerMessage((fetcher.data as any).message || "Bundle created successfully!");
-        setShowCreateModal(false);
-        resetForm();
-        setTimeout(() => setShowSuccessBanner(false), 3000);
-      } else {
-        console.error('❌ [Fetcher] Failed:', (fetcher.data as any).error);
-        setShowErrorBanner(true);
-        setBannerMessage((fetcher.data as any).error || "Failed to create bundle");
-        setTimeout(() => setShowErrorBanner(false), 3000);
-      }
-    }
-  }, [fetcher.state, fetcher.data]);
-
-  // Keep actionData handler as backup (for other actions)
+  // Handle actionData responses
   useEffect(() => {
     console.log('🟣 [ActionData] Changed:', actionData);
-    if (actionData && !fetcher.data) {
+    if (actionData) {
       if (actionData.success) {
         console.log('✅ [ActionData] Success!');
         setShowSuccessBanner(true);
@@ -386,7 +366,7 @@ export default function SimpleBundleManagement() {
         setTimeout(() => setShowErrorBanner(false), 3000);
       }
     }
-  }, [actionData, fetcher.data]);
+  }, [actionData]);
 
   const resetForm = () => {
     setNewBundle({
@@ -412,8 +392,8 @@ export default function SimpleBundleManagement() {
     setAssignedProducts([]);
   };
 
-  const handleSubmitForm = () => {
-    console.log('🔵 [Frontend] handleSubmitForm called with useFetcher');
+  const handleSubmitForm = async () => {
+    console.log('🔵 [Frontend] handleSubmitForm called with App Bridge');
     console.log('🔵 [Frontend] Bundle name:', newBundle.name);
     console.log('🔵 [Frontend] Selected products:', selectedProducts.length);
     console.log('🔵 [Frontend] Assigned products:', assignedProducts.length);
@@ -426,38 +406,75 @@ export default function SimpleBundleManagement() {
       return;
     }
     
-    // Build form data manually
-    const formData = new FormData();
-    formData.append('action', 'create-bundle');
-    formData.append('productIds', JSON.stringify(selectedProducts));
-    formData.append('collectionIds', JSON.stringify(selectedCollections));
-    formData.append('assignedProducts', JSON.stringify(assignedProducts));
-    formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
-    formData.append('name', newBundle.name);
-    formData.append('description', newBundle.description || '');
-    formData.append('bundleType', newBundle.bundleType);
-    formData.append('bundleStyle', newBundle.bundleStyle);
-    formData.append('allowDeselect', newBundle.allowDeselect ? 'true' : '');
-    formData.append('discountType', newBundle.discountType);
-    formData.append('discountValue', newBundle.discountValue.toString());
-    formData.append('minProducts', newBundle.minProducts.toString());
-    formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
-    formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
-    formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
+    setIsSubmitting(true);
     
-    console.log('🔵 [Frontend] FormData built, calling fetcher.submit()...');
-    console.log('🔵 [Frontend] FormData entries:');
-    for (const [key, value] of formData.entries()) {
-      console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
+    try {
+      // Build form data manually
+      const formData = new FormData();
+      formData.append('action', 'create-bundle');
+      formData.append('productIds', JSON.stringify(selectedProducts));
+      formData.append('collectionIds', JSON.stringify(selectedCollections));
+      formData.append('assignedProducts', JSON.stringify(assignedProducts));
+      formData.append('tierConfig', JSON.stringify(newBundle.tierConfig));
+      formData.append('name', newBundle.name);
+      formData.append('description', newBundle.description || '');
+      formData.append('bundleType', newBundle.bundleType);
+      formData.append('bundleStyle', newBundle.bundleStyle);
+      formData.append('allowDeselect', newBundle.allowDeselect ? 'true' : '');
+      formData.append('discountType', newBundle.discountType);
+      formData.append('discountValue', newBundle.discountValue.toString());
+      formData.append('minProducts', newBundle.minProducts.toString());
+      formData.append('selectMinQty', newBundle.selectMinQty?.toString() || '');
+      formData.append('selectMaxQty', newBundle.selectMaxQty?.toString() || '');
+      formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
+      
+      console.log('🔵 [Frontend] FormData built, calling authenticated fetch...');
+      console.log('🔵 [Frontend] FormData entries:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value);
+      }
+      
+      // Get the session token from App Bridge
+      const sessionToken = await app.idToken();
+      console.log('🔵 [Frontend] Got session token');
+      
+      // Use authenticated fetch with App Bridge
+      console.log('🔵 [Frontend] POST to:', resolvedActionPath);
+      const response = await fetch(resolvedActionPath, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionToken}`,
+        },
+        body: formData,
+      });
+      
+      console.log('🔵 [Frontend] Response status:', response.status);
+      const result = await response.json();
+      console.log('🔵 [Frontend] Response data:', result);
+      
+      if (result.success) {
+        console.log('✅ [Frontend] Success!');
+        setShowSuccessBanner(true);
+        setBannerMessage(result.message || "Bundle created successfully!");
+        setShowCreateModal(false);
+        resetForm();
+        setTimeout(() => setShowSuccessBanner(false), 3000);
+        // Trigger a page reload to refresh the bundles list
+        window.location.reload();
+      } else {
+        console.error('❌ [Frontend] Failed:', result.error);
+        setShowErrorBanner(true);
+        setBannerMessage(result.error || "Failed to create bundle");
+        setTimeout(() => setShowErrorBanner(false), 3000);
+      }
+    } catch (error: any) {
+      console.error('❌ [Frontend] Exception:', error);
+      setShowErrorBanner(true);
+      setBannerMessage('An error occurred: ' + error.message);
+      setTimeout(() => setShowErrorBanner(false), 3000);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    // Use fetcher.submit() to bypass navigation issues
-    console.log('🔵 [Frontend] fetcher action path:', resolvedActionPath);
-    fetcher.submit(formData, {
-      method: 'post',
-      action: resolvedActionPath,
-    });
-    console.log('🔵 [Frontend] fetcher.submit() called successfully');
   };
 
   const bundleTypeOptions = [
@@ -470,6 +487,59 @@ export default function SimpleBundleManagement() {
     { label: "Percentage Off", value: "percentage" },
     { label: "Fixed Amount Off", value: "fixed" },
   ];
+
+  const handleToggleStatus = async (bundleId: string, currentStatus: string) => {
+    setIsSubmitting(true);
+    try {
+      const sessionToken = await app.idToken();
+      const formData = new FormData();
+      formData.append('action', 'toggle-status');
+      formData.append('bundleId', bundleId);
+      formData.append('status', currentStatus === 'active' ? 'paused' : 'active');
+      
+      const response = await fetch(resolvedActionPath, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` },
+        body: formData,
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Toggle failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (bundleId: string) => {
+    if (!confirm("Delete this bundle?")) return;
+    
+    setIsSubmitting(true);
+    try {
+      const sessionToken = await app.idToken();
+      const formData = new FormData();
+      formData.append('action', 'delete-bundle');
+      formData.append('bundleId', bundleId);
+      
+      const response = await fetch(resolvedActionPath, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` },
+        body: formData,
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const bundleTableRows = bundles.map((bundle: Bundle) => [
     bundle.name,
@@ -484,36 +554,21 @@ export default function SimpleBundleManagement() {
       <Button
         size="micro"
         variant={bundle.status === "active" ? "secondary" : "primary"}
-        onClick={() => {
-          const formData = new FormData();
-          formData.append('action', 'toggle-status');
-          formData.append('bundleId', bundle.id);
-          formData.append('status', bundle.status === 'active' ? 'paused' : 'active');
-          fetcher.submit(formData, { method: 'post', action: resolvedActionPath });
-        }}
-        loading={fetcher.state === "submitting"}
+        onClick={() => handleToggleStatus(bundle.id, bundle.status)}
+        loading={isSubmitting}
       >
         {bundle.status === "active" ? "Pause" : "Activate"}
       </Button>
       <Button
         size="micro"
         tone="critical"
-        onClick={() => {
-          if (confirm("Delete this bundle?")) {
-            const formData = new FormData();
-            formData.append('action', 'delete-bundle');
-            formData.append('bundleId', bundle.id);
-            fetcher.submit(formData, { method: 'post', action: resolvedActionPath });
-          }
-        }}
-        loading={fetcher.state === "submitting"}
+        onClick={() => handleDelete(bundle.id)}
+        loading={isSubmitting}
       >
         Delete
       </Button>
     </ButtonGroup>,
   ]);
-
-  const isSubmitting = navigation.state === "submitting";
 
   return (
     <Page
@@ -563,7 +618,7 @@ export default function SimpleBundleManagement() {
               <BlockStack gap="400">
                 <InlineStack align="space-between">
                   <Text as="h2" variant="headingMd">All Bundles</Text>
-                  <Badge tone="info">{bundles.length} Bundle{bundles.length === 1 ? "" : "s"}</Badge>
+                  <Badge tone="info">{`${bundles.length} Bundle${bundles.length === 1 ? "" : "s"}`}</Badge>
                 </InlineStack>
 
                 <DataTable
