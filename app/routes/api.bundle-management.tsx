@@ -262,10 +262,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const collectionIds = (body.categoryIds as string) || (body.collectionIds as string);
       const productIds = (body.productIds as string);
       const minProducts = body.minProducts ? parseInt(String(body.minProducts)) : 2;
-      const maxProducts = body.maxProducts ? parseInt(String(body.maxProducts)) : null;
-      const aiAutoApprove = String(body.aiAutoApprove) === 'true';
-      const aiDiscountMax = body.aiDiscountMax ? parseFloat(String(body.aiDiscountMax)) : null;
-      const displayTitle = (body.displayTitle as string);
       
       // NEW FIELDS - Enhanced bundle features
       const assignedProducts = (body.assignedProducts as string) || null;
@@ -274,7 +270,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const selectMaxQty = body.selectMaxQty ? parseInt(String(body.selectMaxQty)) : null;
       const tierConfig = (body.tierConfig as string) || null;
       const allowDeselect = body.allowDeselect !== undefined ? String(body.allowDeselect) === 'true' : true;
-      const mainProductId = (body.mainProductId as string) || null;
       const hideIfNoML = body.hideIfNoML !== undefined ? String(body.hideIfNoML) === 'true' : false;
 
       if (!name || !type || discountValue < 0) {
