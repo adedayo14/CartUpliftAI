@@ -7,6 +7,7 @@
   class BundleManager {
     constructor() {
       this.bundles = [];
+      this.currentProductId = null;
       this.init();
     }
 
@@ -18,90 +19,107 @@
         });
       }
 
-      // Find all bundle blocks on the page
-      this.detectBundles();
+      // Find bundle widget containers
+      const widgets = document.querySelectorAll('[data-bundle-widget]');
+      
+      if (widgets.length === 0) {
+        console.log('🎁 No bundle widgets found on this page');
+        return;
+      }
 
-      // Initialize each bundle
-      this.bundles.forEach(bundle => bundle.init());
+      // Get current product ID from widget
+      const firstWidget = widgets[0];
+      this.currentProductId = firstWidget.dataset.productId;
+
+      if (!this.currentProductId) {
+        console.log('🎁 No product ID found, hiding bundle widgets');
+        widgets.forEach(w => w.style.display = 'none');
+        return;
+      }
+
+      console.log(`🎁 Loading bundles for product: ${this.currentProductId}`);
+
+      // Fetch bundles from backend API
+      await this.loadBundles();
+
+      // Render bundles in each widget container
+      widgets.forEach((widget, index) => {
+        if (this.bundles.length > 0) {
+          this.renderBundlesInWidget(widget, index);
+        } else {
+          widget.style.display = 'none';
+        }
+      });
 
       console.log(`🎁 Initialized ${this.bundles.length} bundle(s) on this page`);
     }
 
-    detectBundles() {
-      const bundleElements = document.querySelectorAll('.cartuplift-bundle-block');
-      
-      bundleElements.forEach(element => {
-        // Read configuration from script tag
-        const configScript = element.querySelector('script[data-bundle-config]');
-        if (!configScript) {
-          console.warn('🎁 Bundle block missing config script:', element);
+    async loadBundles() {
+      try {
+        // Call backend API to get bundles for this product
+        const response = await fetch(`/apps/cart-uplift/api/bundles?product_id=${this.currentProductId}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.warn('🎁 Failed to load bundles:', response.status);
           return;
         }
 
-        try {
-          const config = JSON.parse(configScript.textContent);
-          
-          // Check if bundle should be shown on current product
-          if (!this.shouldShowBundle(config)) {
-            console.log(`🎁 Bundle "${config.bundleName}" hidden (not assigned to this product)`);
-            element.style.display = 'none';
-            return;
-          }
-
-          // Create bundle instance
-          const bundle = new ProductBundle(element, config);
-          this.bundles.push(bundle);
-        } catch (error) {
-          console.error('🎁 Failed to parse bundle config:', error);
+        const data = await response.json();
+        
+        if (data.success && data.bundles) {
+          this.bundles = data.bundles;
+          console.log(`🎁 Loaded ${this.bundles.length} bundles from backend`);
         }
-      });
-
-      // Sort bundles by priority (lower number = higher priority)
-      this.bundles.sort((a, b) => a.config.priority - b.config.priority);
+      } catch (error) {
+        console.error('🎁 Error loading bundles:', error);
+      }
     }
 
-    shouldShowBundle(config) {
-      // If showEverywhere is true, always show
-      if (config.showEverywhere) {
-        return true;
+    renderBundlesInWidget(widget, widgetIndex) {
+      const loadingEl = widget.querySelector('.cartuplift-bundle-loading');
+      if (loadingEl) loadingEl.remove();
+
+      const priority = parseInt(widget.dataset.bundlePriority) || 5;
+      const title = widget.dataset.bundleTitle;
+
+      // Add section title if provided
+      if (title) {
+        const heading = document.createElement('h2');
+        heading.className = 'cartuplift-bundles-heading';
+        heading.textContent = title;
+        heading.style.cssText = 'margin: 0 0 20px 0; font-size: 24px; font-weight: 700;';
+        widget.appendChild(heading);
       }
 
-      // Check if current product matches assigned products
-      const currentProductId = config.currentProductId;
-      if (!currentProductId) {
-        console.log('🎁 No current product ID, hiding bundle');
-        return false;
-      }
-
-      // Check if product ID is in showOnProducts list
-      if (config.showOnProducts && config.showOnProducts.length > 0) {
-        const productIdString = String(currentProductId);
-        const shouldShow = config.showOnProducts.some(id => String(id) === productIdString);
-        console.log(`🎁 Product ${productIdString} in assignment list:`, shouldShow, config.showOnProducts);
-        return shouldShow;
-      }
-
-      // If no assignment specified, hide bundle
-      return false;
+      // Render each bundle
+      this.bundles.forEach((bundleData, index) => {
+        const bundle = new ProductBundle(widget, bundleData, index);
+        bundle.init();
+      });
     }
   }
 
   // Individual Product Bundle
   class ProductBundle {
-    constructor(element, config) {
-      this.element = element;
-      this.config = config;
-      this.container = element.querySelector('[data-bundle-container]');
-      this.footer = element.querySelector('[data-bundle-footer]');
+    constructor(containerElement, bundleData, index) {
+      this.containerElement = containerElement;
+      this.config = bundleData; // Data from backend API
+      this.index = index;
+      this.element = null; // Will create dynamically
       this.selectedProducts = [];
-      this.products = [];
+      this.products = bundleData.products || []; // Products already loaded from backend
     }
 
     async init() {
-      console.log(`🎁 Initializing bundle: ${this.config.bundleName}`, this.config);
+      console.log(`🎁 Initializing bundle: ${this.config.name}`, this.config);
 
-      // Load product data
-      await this.loadProducts();
+      // Create bundle DOM element
+      this.createElement();
 
       // Render based on bundle type
       this.render();
@@ -110,88 +128,57 @@
       this.trackEvent('view');
     }
 
-    async loadProducts() {
-      // Products come from Liquid - already in config
-      if (this.config.products && this.config.products.length > 0) {
-        // Fetch full product details from Shopify
-        this.products = await this.fetchProductDetails(this.config.products);
-      } else if (this.config.bundleType === 'ai') {
-        // Fetch AI recommendations
-        this.products = await this.fetchAIRecommendations();
-      } else if (this.config.collections && this.config.collections.length > 0) {
-        // Fetch products from collections
-        this.products = await this.fetchCollectionProducts(this.config.collections);
+    createElement() {
+      this.element = document.createElement('div');
+      this.element.className = 'cartuplift-bundle';
+      this.element.dataset.bundleId = this.config.id;
+      this.element.style.cssText = 'margin-bottom: 40px; padding: 24px; border: 1px solid #e0e0e0; border-radius: 12px; background: #fff;';
+
+      // Bundle header
+      const header = document.createElement('div');
+      header.className = 'cartuplift-bundle-header';
+      header.style.cssText = 'margin-bottom: 20px;';
+
+      const title = document.createElement('h3');
+      title.textContent = this.config.displayTitle || this.config.name;
+      title.style.cssText = 'margin: 0 0 8px 0; font-size: 20px; font-weight: 600;';
+      header.appendChild(title);
+
+      if (this.config.description) {
+        const desc = document.createElement('p');
+        desc.textContent = this.config.description;
+        desc.style.cssText = 'margin: 0; font-size: 14px; color: #666;';
+        header.appendChild(desc);
       }
 
-      console.log(`🎁 Loaded ${this.products.length} products for bundle`);
-    }
+      this.element.appendChild(header);
 
-    async fetchProductDetails(liquidProducts) {
-      // liquidProducts is an array from Liquid's product_list
-      // Format: [{ id: "gid://shopify/Product/123", handle: "product-handle", ... }]
-      
-      const products = [];
-      
-      for (const liquidProduct of liquidProducts) {
-        try {
-          // Extract numeric ID from GID
-          const productId = liquidProduct.id.split('/').pop();
-          const handle = liquidProduct.handle;
-          
-          // Fetch product JSON from Shopify
-          const response = await fetch(`/products/${handle}.js`);
-          const productData = await response.json();
-          
-          products.push({
-            id: productId,
-            handle: handle,
-            title: productData.title,
-            price: productData.price,
-            comparePrice: productData.compare_at_price,
-            available: productData.available,
-            image: productData.featured_image,
-            variants: productData.variants,
-            url: `/products/${handle}`
-          });
-        } catch (error) {
-          console.error(`🎁 Failed to load product ${liquidProduct.handle}:`, error);
-        }
-      }
-      
-      return products;
-    }
+      // Products container
+      const container = document.createElement('div');
+      container.className = 'cartuplift-bundle-products';
+      this.element.appendChild(container);
+      this.container = container;
 
-    async fetchAIRecommendations() {
-      // TODO: Call your ML API endpoint
-      console.log('🎁 Fetching AI recommendations...');
-      // For now, return empty array
-      return [];
-    }
+      // Footer container
+      const footer = document.createElement('div');
+      footer.className = 'cartuplift-bundle-footer';
+      this.element.appendChild(footer);
+      this.footer = footer;
 
-    async fetchCollectionProducts(collections) {
-      // TODO: Fetch products from collections
-      console.log('🎁 Fetching collection products...', collections);
-      // For now, return empty array
-      return [];
+      // Add to parent
+      this.containerElement.appendChild(this.element);
     }
 
     render() {
       if (this.products.length === 0) {
-        if (this.config.hideIfNoML) {
-          this.element.style.display = 'none';
-          return;
-        }
-        this.container.innerHTML = '<p>No products available for this bundle.</p>';
+        this.container.innerHTML = '<p style="color: #999;">No products available for this bundle.</p>';
         return;
       }
 
-      // Remove loading state
-      const loadingEl = this.container.querySelector('.cartuplift-bundle-loading');
-      if (loadingEl) loadingEl.remove();
-
       // Render based on bundle type and style
-      switch (this.config.bundleType) {
+      switch (this.config.type) {
         case 'choose_x_from_y':
+        case 'category':
           this.renderChooseXFromY();
           break;
         case 'manual':
@@ -203,9 +190,6 @@
         case 'quantity_tiers':
           this.renderQuantityTiers();
           break;
-        case 'collection':
-          this.renderChooseXFromY(); // Same UI as choose_x_from_y
-          break;
         default:
           this.renderFixedBundle();
       }
@@ -215,16 +199,17 @@
     }
 
     renderChooseXFromY() {
-      const { selectMinQty, selectMaxQty, selectionPrompt, bundleStyle } = this.config;
+      const selectMinQty = this.config.selectMinQty || this.config.minProducts || 2;
+      const selectMaxQty = this.config.selectMaxQty || this.config.maxProducts || 5;
+      const bundleStyle = this.config.bundleStyle || 'grid';
       
       // Show selection prompt
-      const promptText = selectionPrompt
-        .replace('{min}', selectMinQty)
-        .replace('{max}', selectMaxQty);
+      const promptText = `Choose ${selectMinQty} to ${selectMaxQty} items`;
       
       const promptEl = document.createElement('p');
       promptEl.className = 'cartuplift-bundle-prompt';
       promptEl.textContent = promptText;
+      promptEl.style.cssText = 'margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #333;';
       this.container.appendChild(promptEl);
 
       // Render products based on style
@@ -236,6 +221,8 @@
         this.renderListLayout();
       } else if (bundleStyle === 'fbt') {
         this.renderFBTLayout();
+      } else {
+        this.renderGridLayout(); // Default
       }
     }
 
@@ -313,8 +300,11 @@
       
       card.style.cssText = cardStyle;
 
+      const type = this.config.type || this.config.bundleType;
+      const allowDeselect = this.config.allowDeselect !== false;
+
       // Checkbox (for choose_x_from_y)
-      if (this.config.bundleType === 'choose_x_from_y' || this.config.bundleType === 'collection') {
+      if (type === 'choose_x_from_y' || type === 'category') {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'cartuplift-bundle-checkbox';
@@ -358,7 +348,7 @@
       card.appendChild(info);
 
       // Click handler (for non-checkbox selections)
-      if (this.config.bundleType === 'manual' || !this.config.allowDeselect) {
+      if (type === 'manual' || !allowDeselect) {
         card.addEventListener('click', () => {
           const checkbox = card.querySelector('.cartuplift-bundle-checkbox');
           if (checkbox) {
@@ -439,7 +429,8 @@
     }
 
     handleProductSelection(product, index, isChecked) {
-      const { selectMinQty, selectMaxQty } = this.config;
+      const selectMinQty = this.config.selectMinQty || this.config.minProducts || 2;
+      const selectMaxQty = this.config.selectMaxQty || this.config.maxProducts || 5;
 
       if (isChecked) {
         // Check if max selection reached
@@ -517,11 +508,12 @@
       // Add to cart button
       const button = document.createElement('button');
       button.className = 'cartuplift-bundle-add-button';
-      button.textContent = this.config.addButtonText || 'Add Bundle to Cart';
+      button.textContent = 'Add Bundle to Cart';
       button.style.cssText = 'width: 100%; padding: 16px; background: #000; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s;';
       
       // Validate selection
-      const { selectMinQty, selectMaxQty } = this.config;
+      const selectMinQty = this.config.selectMinQty || this.config.minProducts || 2;
+      const selectMaxQty = this.config.selectMaxQty || this.config.maxProducts || 5;
       const isValid = this.selectedProducts.length >= selectMinQty && this.selectedProducts.length <= selectMaxQty;
       
       if (!isValid) {
@@ -547,43 +539,49 @@
       let originalPrice = 0;
       let discountedPrice = 0;
 
+      const bundleType = this.config.type || this.config.bundleType;
+      const discountType = this.config.discountType || 'percentage';
+      const discountValue = this.config.discountValue || 0;
+
       // Calculate based on bundle type
-      if (this.config.bundleType === 'quantity_tiers') {
+      if (bundleType === 'quantity_tiers') {
         // Tier pricing based on quantity
         const quantity = this.selectedProducts.length;
-        const tiers = this.config.tiers
-          .filter(t => t !== null)
-          .map(tierStr => {
-            const [qty, discount] = tierStr.split(':').map(Number);
-            return { qty, discount };
-          })
-          .sort((a, b) => b.qty - a.qty); // Sort descending
+        const tierConfig = this.config.tierConfig;
+        
+        if (tierConfig) {
+          try {
+            const tiers = JSON.parse(tierConfig);
+            let applicableDiscount = 0;
+            
+            // Find applicable tier (sorted descending)
+            for (const tier of tiers.sort((a, b) => b.qty - a.qty)) {
+              if (quantity >= tier.qty) {
+                applicableDiscount = tier.discount;
+                break;
+              }
+            }
 
-        // Find applicable tier
-        let applicableDiscount = 0;
-        for (const tier of tiers) {
-          if (quantity >= tier.qty) {
-            applicableDiscount = tier.discount;
-            break;
+            // Calculate prices
+            this.selectedProducts.forEach(p => {
+              originalPrice += p.price;
+            });
+
+            discountedPrice = originalPrice * (1 - applicableDiscount / 100);
+          } catch (e) {
+            console.error('Failed to parse tier config:', e);
           }
         }
-
-        // Calculate prices
-        this.selectedProducts.forEach(p => {
-          originalPrice += p.price;
-        });
-
-        discountedPrice = originalPrice * (1 - applicableDiscount / 100);
       } else {
         // Standard discount
         this.selectedProducts.forEach(p => {
           originalPrice += p.price;
         });
 
-        if (this.config.discountType === 'percentage') {
-          discountedPrice = originalPrice * (1 - this.config.discountValue / 100);
+        if (discountType === 'percentage') {
+          discountedPrice = originalPrice * (1 - discountValue / 100);
         } else {
-          discountedPrice = originalPrice - (this.config.discountValue * 100); // Convert to cents
+          discountedPrice = originalPrice - (discountValue * 100); // Convert to cents
         }
       }
 
@@ -666,9 +664,9 @@
     trackEvent(eventType) {
       // Track to backend analytics
       const data = {
-        bundleId: this.config.bundleId,
-        bundleName: this.config.bundleName,
-        bundleType: this.config.bundleType,
+        bundleId: this.config.id,
+        bundleName: this.config.name,
+        bundleType: this.config.type || this.config.bundleType,
         event: eventType,
         products: this.selectedProducts.map(p => p.id),
         timestamp: Date.now()

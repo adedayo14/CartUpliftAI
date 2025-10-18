@@ -1,383 +1,57 @@
 {% comment %}
   Cart Uplift - Product Bundle Block
-  Hybrid Architecture: Theme placement + Backend analytics
+  NOTE: Theme app extension blocks limited to 6 settings max
+  Full bundle config managed in backend, block just triggers display
   Version: 1.0.0
 {% endcomment %}
 
 <script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
 
 {%- liquid
-  # Generate unique bundle ID from block ID
-  assign bundle_id = block.id | prepend: 'bundle-'
+  # Simple block - just displays bundles managed in backend
+  assign bundle_enabled = block.settings.bundle_enabled
   
-  # Check if bundle is enabled
-  unless block.settings.bundle_enabled
+  unless bundle_enabled
     comment
-      Bundle is disabled - render nothing
+      Bundle display disabled
     endcomment
   endunless
 -%}
 
-{% if block.settings.bundle_enabled %}
-  {%- comment -%} Bundle Container {%- endcomment -%}
+{% if bundle_enabled %}
   <div 
-    class="cartuplift-bundle-block"
-    data-bundle-id="{{ bundle_id }}"
-    data-bundle-name="{{ block.settings.bundle_name | escape }}"
-    data-bundle-type="{{ block.settings.bundle_type }}"
-    data-bundle-style="{{ block.settings.bundle_style }}"
-    data-discount-type="{{ block.settings.discount_type }}"
-    data-discount-value="{{ block.settings.discount_value }}"
-    data-select-min="{{ block.settings.select_min_qty }}"
-    data-select-max="{{ block.settings.select_max_qty }}"
-    data-allow-deselect="{{ block.settings.allow_deselect }}"
-    data-hide-if-no-ml="{{ block.settings.hide_if_no_ml }}"
-    data-priority="{{ block.settings.priority }}"
-    data-show-everywhere="{{ block.settings.show_everywhere }}"
-    data-tier-1="{{ block.settings.tier_1 }}"
-    data-tier-2="{{ block.settings.tier_2 }}"
-    data-tier-3="{{ block.settings.tier_3 }}"
-    data-products='{{ block.settings.bundle_products | json }}'
-    data-collections='{{ block.settings.bundle_collections | json }}'
-    data-show-on-products='{{ block.settings.show_on_products | map: "id" | json }}'
+    class="cartuplift-bundle-wrapper"
+    data-bundle-widget="true"
+    data-product-id="{% if product %}{{ product.id }}{% endif %}"
+    data-bundle-title="{{ block.settings.bundle_title | escape }}"
+    data-bundle-priority="{{ block.settings.priority }}"
   >
-    {%- comment -%} Bundle Header {%- endcomment -%}
-    <div class="cartuplift-bundle-header">
-      {% if block.settings.display_title != blank %}
-        <h3 class="cartuplift-bundle-title">{{ block.settings.display_title }}</h3>
-      {% elsif block.settings.bundle_name != blank %}
-        <h3 class="cartuplift-bundle-title">{{ block.settings.bundle_name }}</h3>
-      {% endif %}
-      
-      {% if block.settings.description != blank %}
-        <p class="cartuplift-bundle-description">{{ block.settings.description }}</p>
-      {% endif %}
+    {%- comment -%} JavaScript will load bundles from backend API based on product ID {%- endcomment -%}
+    <div class="cartuplift-bundle-loading">
+      <p>Loading available bundles...</p>
     </div>
-
-    {%- comment -%} Bundle Products Container (populated by JavaScript) {%- endcomment -%}
-    <div class="cartuplift-bundle-products" data-bundle-container>
-      {%- comment -%}
-        JavaScript (cart-uplift.js) will:
-        1. Read data attributes above
-        2. Fetch product details if needed
-        3. Render appropriate UI based on bundle_type and bundle_style
-        4. Handle product selection
-        5. Calculate discounted price
-        6. Provide "Add Bundle to Cart" button
-      {%- endcomment -%}
-      
-      {%- comment -%} Loading State {%- endcomment -%}
-      <div class="cartuplift-bundle-loading">
-        <p>Loading bundle products...</p>
-      </div>
-    </div>
-
-    {%- comment -%} Bundle Footer (Price Summary, populated by JS) {%- endcomment -%}
-    <div class="cartuplift-bundle-footer" data-bundle-footer>
-      {%- comment -%} JavaScript will inject:
-        - Original total price
-        - Discounted bundle price
-        - Savings amount/percentage
-        - Add to Cart button with custom text from block.settings.add_button_text
-      {%- endcomment -%}
-    </div>
-
-    {%- comment -%} Hidden Settings for JavaScript {%- endcomment -%}
-    <script type="application/json" data-bundle-config>
-      {
-        "bundleId": {{ bundle_id | json }},
-        "bundleName": {{ block.settings.bundle_name | json }},
-        "bundleType": {{ block.settings.bundle_type | json }},
-        "bundleStyle": {{ block.settings.bundle_style | json }},
-        "discountType": {{ block.settings.discount_type | json }},
-        "discountValue": {{ block.settings.discount_value | json }},
-        "selectMinQty": {{ block.settings.select_min_qty | json }},
-        "selectMaxQty": {{ block.settings.select_max_qty | json }},
-        "allowDeselect": {{ block.settings.allow_deselect | json }},
-        "hideIfNoML": {{ block.settings.hide_if_no_ml | json }},
-        "priority": {{ block.settings.priority | json }},
-        "showEverywhere": {{ block.settings.show_everywhere | json }},
-        "displayTitle": {{ block.settings.display_title | default: block.settings.bundle_name | json }},
-        "description": {{ block.settings.description | json }},
-        "addButtonText": {{ block.settings.add_button_text | json }},
-        "savingsBadgeText": {{ block.settings.savings_badge_text | json }},
-        "selectionPrompt": {{ block.settings.selection_prompt | json }},
-        "tiers": [
-          {% if block.settings.tier_1 != blank %}{{ block.settings.tier_1 | json }}{% else %}null{% endif %},
-          {% if block.settings.tier_2 != blank %}{{ block.settings.tier_2 | json }}{% else %}null{% endif %},
-          {% if block.settings.tier_3 != blank %}{{ block.settings.tier_3 | json }}{% else %}null{% endif %}
-        ],
-        "products": {{ block.settings.bundle_products | json }},
-        "collections": {{ block.settings.bundle_collections | json }},
-        "showOnProducts": {{ block.settings.show_on_products | map: "id" | json }},
-        "currentProductId": {% if product %}{{ product.id | json }}{% else %}null{% endif %}
-      }
-    </script>
   </div>
 {% endif %}
 
 {% schema %}
 {
-  "name": "Product Bundle",
+  "name": "Product Bundles",
   "target": "section",
-  "templates": ["product", "collection", "page", "index"],
+  "templates": ["product", "collection"],
   "settings": [
-    {
-      "type": "header",
-      "content": "Bundle Identification"
-    },
-    {
-      "type": "text",
-      "id": "bundle_name",
-      "label": "Bundle name",
-      "default": "Bundle Deal",
-      "info": "Internal name for tracking (also shown to customers if no custom title set)"
-    },
     {
       "type": "checkbox",
       "id": "bundle_enabled",
-      "label": "Enable bundle",
+      "label": "Enable bundles",
       "default": true,
-      "info": "Turn off to temporarily hide this bundle without deleting"
-    },
-    {
-      "type": "header",
-      "content": "Bundle Type & Products"
-    },
-    {
-      "type": "select",
-      "id": "bundle_type",
-      "label": "Bundle type",
-      "options": [
-        {
-          "value": "manual",
-          "label": "Fixed Bundle (all products included)"
-        },
-        {
-          "value": "choose_x_from_y",
-          "label": "Choose X from Y (customer picks products)"
-        },
-        {
-          "value": "collection",
-          "label": "Collection Bundle (from collections)"
-        },
-        {
-          "value": "ai",
-          "label": "AI Recommended"
-        },
-        {
-          "value": "bogo",
-          "label": "BOGO (Buy One Get One)"
-        },
-        {
-          "value": "quantity_tiers",
-          "label": "Quantity Tiers (buy more, save more)"
-        }
-      ],
-      "default": "choose_x_from_y",
-      "info": "How customers interact with the bundle"
-    },
-    {
-      "type": "product_list",
-      "id": "bundle_products",
-      "label": "Bundle products",
-      "limit": 30,
-      "info": "Select up to 30 products for this bundle"
-    },
-    {
-      "type": "collection_list",
-      "id": "bundle_collections",
-      "label": "Bundle collections",
-      "limit": 5,
-      "info": "For collection-based bundles only"
-    },
-    {
-      "type": "header",
-      "content": "Bundle Assignment (Where to Show)"
-    },
-    {
-      "type": "product_list",
-      "id": "show_on_products",
-      "label": "Show bundle on these products",
-      "limit": 50,
-      "info": "Leave empty + enable 'Show everywhere' to display on all pages"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_everywhere",
-      "label": "Show on all product pages",
-      "default": false,
-      "info": "Overrides specific product selection above"
-    },
-    {
-      "type": "header",
-      "content": "Selection Rules (Choose X from Y)"
-    },
-    {
-      "type": "range",
-      "id": "select_min_qty",
-      "label": "Minimum products to select",
-      "min": 1,
-      "max": 20,
-      "step": 1,
-      "default": 2,
-      "info": "Customer must choose at least this many"
-    },
-    {
-      "type": "range",
-      "id": "select_max_qty",
-      "label": "Maximum products allowed",
-      "min": 1,
-      "max": 30,
-      "step": 1,
-      "default": 5,
-      "info": "Customer can select up to this many"
-    },
-    {
-      "type": "checkbox",
-      "id": "allow_deselect",
-      "label": "Allow deselecting items",
-      "default": true,
-      "info": "Let customers uncheck pre-selected items (FBT/Grid styles)"
-    },
-    {
-      "type": "header",
-      "content": "Discount Configuration"
-    },
-    {
-      "type": "select",
-      "id": "discount_type",
-      "label": "Discount type",
-      "options": [
-        {
-          "value": "percentage",
-          "label": "Percentage off"
-        },
-        {
-          "value": "fixed",
-          "label": "Fixed amount off"
-        }
-      ],
-      "default": "percentage",
-      "info": "How discount is calculated"
-    },
-    {
-      "type": "range",
-      "id": "discount_value",
-      "label": "Discount amount",
-      "min": 0,
-      "max": 50,
-      "step": 1,
-      "default": 15,
-      "unit": "%",
-      "info": "Discount percentage or dollar amount"
-    },
-    {
-      "type": "header",
-      "content": "Quantity Tiers (for tier bundles only)"
+      "info": "Show product bundles on this page"
     },
     {
       "type": "text",
-      "id": "tier_1",
-      "label": "Tier 1 (qty:discount)",
-      "default": "1:0",
-      "placeholder": "1:0",
-      "info": "Format: quantity:discount% (e.g., '1:0' means 1 item = 0% off)"
-    },
-    {
-      "type": "text",
-      "id": "tier_2",
-      "label": "Tier 2 (qty:discount)",
-      "default": "2:10",
-      "placeholder": "2:10",
-      "info": "Format: quantity:discount% (e.g., '2:10' means 2 items = 10% off)"
-    },
-    {
-      "type": "text",
-      "id": "tier_3",
-      "label": "Tier 3 (qty:discount)",
-      "default": "5:20",
-      "placeholder": "5:20",
-      "info": "Format: quantity:discount% (e.g., '5:20' means 5+ items = 20% off)"
-    },
-    {
-      "type": "header",
-      "content": "Display Style"
-    },
-    {
-      "type": "select",
-      "id": "bundle_style",
-      "label": "Display style",
-      "options": [
-        {
-          "value": "grid",
-          "label": "Grid (checkable cards)"
-        },
-        {
-          "value": "fbt",
-          "label": "Frequently Bought Together"
-        },
-        {
-          "value": "carousel",
-          "label": "Carousel/Slider"
-        },
-        {
-          "value": "list",
-          "label": "Vertical List"
-        }
-      ],
-      "default": "grid",
-      "info": "How products are displayed"
-    },
-    {
-      "type": "text",
-      "id": "display_title",
-      "label": "Custom heading",
-      "placeholder": "Complete the Look",
-      "info": "Override bundle name for customer display"
-    },
-    {
-      "type": "textarea",
-      "id": "description",
-      "label": "Bundle description",
-      "placeholder": "Save 20% when you bundle these items together!",
-      "info": "Promotional text shown above products"
-    },
-    {
-      "type": "header",
-      "content": "Labels & Messaging"
-    },
-    {
-      "type": "text",
-      "id": "add_button_text",
-      "label": "Add to cart button text",
-      "default": "Add Bundle to Cart",
-      "info": "Text shown on bundle purchase button"
-    },
-    {
-      "type": "text",
-      "id": "savings_badge_text",
-      "label": "Savings badge template",
-      "default": "Save {amount}!",
-      "info": "Use {amount} for dollar value, {percent} for percentage"
-    },
-    {
-      "type": "text",
-      "id": "selection_prompt",
-      "label": "Selection prompt template",
-      "default": "Choose {min} to {max} items",
-      "info": "Shown for 'Choose X from Y' bundles. Use {min} and {max} placeholders"
-    },
-    {
-      "type": "header",
-      "content": "Advanced Options"
-    },
-    {
-      "type": "checkbox",
-      "id": "hide_if_no_ml",
-      "label": "Hide if no ML recommendations",
-      "default": false,
-      "info": "Only show bundle when AI finds product recommendations"
+      "id": "bundle_title",
+      "label": "Section heading",
+      "default": "Bundle & Save",
+      "info": "Optional heading above bundles"
     },
     {
       "type": "range",
@@ -387,21 +61,7 @@
       "max": 10,
       "step": 1,
       "default": 5,
-      "info": "Order if multiple bundles on same page (1 = highest)"
-    }
-  ],
-  "presets": [
-    {
-      "name": "Product Bundle",
-      "settings": {
-        "bundle_name": "Bundle Deal",
-        "bundle_type": "choose_x_from_y",
-        "bundle_style": "grid",
-        "discount_type": "percentage",
-        "discount_value": 15,
-        "select_min_qty": 2,
-        "select_max_qty": 5
-      }
+      "info": "Order if multiple bundle blocks on same page (1 = highest)"
     }
   ]
 }
