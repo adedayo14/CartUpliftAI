@@ -29,8 +29,10 @@ export default function AppLayout() {
       {/* Shopify App Design System: App Nav */}
       <s-app-nav>
         <s-link href="/app" rel="home">Home</s-link>
-        <s-link href="/admin/dashboard">Analytics</s-link>
-        <s-link href="/app/settings">Settings</s-link>
+        <s-link href="/admin/dashboard">Analytics & Performance</s-link>
+        <s-link href="/admin/ab-testing">A/B Testing</s-link>
+        <s-link href="/admin/settings">Settings</s-link>
+        <s-link href="/admin/bundle-management-simple">Manage Products & Bundles</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>

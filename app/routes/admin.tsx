@@ -1,8 +1,7 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
+import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
-import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
 import { authenticate } from "../shopify.server";
@@ -27,15 +26,7 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey || "ba2c932cf6717c8fb6207fcc8111fe70"}>
       <AppBridgeInitializer apiKey={apiKey} />
       <SessionStatus />
-      <NavMenu>
-        <Link to="/admin" rel="home">
-          Home
-        </Link>
-        <Link to="/admin/dashboard">📊 Analytics & Performance</Link>
-        <Link to="/admin/ab-testing">🧪 A/B Testing</Link>
-        <Link to="/admin/settings">⚙️ Settings</Link>
-        <Link to="/admin/manage">🎛️ Manage Products & Bundles</Link>
-      </NavMenu>
+      {/* Navigation now handled by parent app.tsx layout with s-app-nav */}
       <Outlet />
     </AppProvider>
   );
