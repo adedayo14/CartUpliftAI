@@ -410,8 +410,11 @@ export default function SimpleBundleManagement() {
     console.log('[handleCreateBundle] Submitting form data...');
     console.log('[handleCreateBundle] FormData entries:', Array.from(formData.entries()));
     
-    // Use Remix's submit function
-    submit(formData, { method: "post" });
+    // Use Remix's submit function with explicit action
+    submit(formData, { 
+      method: "post",
+      action: "/admin/bundle-management-simple"
+    });
   };
 
   const handleToggleStatus = (bundleId: string, currentStatus: string) => {
