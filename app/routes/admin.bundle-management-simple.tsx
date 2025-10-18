@@ -595,7 +595,7 @@ export default function SimpleBundleManagement() {
         ]}
       >
         <Modal.Section>
-          <createFetcher.Form method="post" ref={formRef} onSubmit={handleCreateFormSubmit}>
+          <createFetcher.Form method="post" action="?index" ref={formRef} onSubmit={handleCreateFormSubmit}>
             <input type="hidden" name="action" value="create-bundle" />
             <input type="hidden" name="productIds" value={JSON.stringify(selectedProducts)} />
             <input type="hidden" name="collectionIds" value={JSON.stringify(selectedCollections)} />

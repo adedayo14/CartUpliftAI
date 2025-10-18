@@ -1,4 +1,4 @@
-# Bundle Product/Collection Loading Fix - Summary
+ked to # Bundle Product/Collection Loading Fix - Summary
 
 ## Issue Description
 When creating bundles in the admin interface, the product and collection selection was stuck in an infinite loading state. The UI would show:
