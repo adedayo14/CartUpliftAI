@@ -205,13 +205,10 @@ export default function SimpleBundleManagement() {
     
     if (showCreateModal && newBundle.bundleType === 'manual' && 
         !(productFetcher.data as any)?.products && productFetcher.state === 'idle') {
-      console.log('[Bundle] Loading products...');
+      console.log('[Bundle] Loading products from admin API...');
       
-      // Use API endpoint to fetch products
-      const apiUrl = `/api/bundle-management?action=products`;
-      // Pass token via header by using fetcher.submit with method GET is not possible; use load directly
-      // We can't add headers with load; fallback: simple GET without headers (admin session cookie will authorize)
-      productFetcher.load(apiUrl);
+      // Use admin API endpoint (proper authentication)
+      productFetcher.load('/admin/api/bundle-products');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCreateModal, newBundle.bundleType, (productFetcher.data as any), productFetcher.state]);
@@ -632,7 +629,7 @@ export default function SimpleBundleManagement() {
               onChange={(value) => {
                 setNewBundle({ ...newBundle, bundleType: value });
                 if (value === "manual" && availableProducts.length === 0) {
-                  productFetcher.load('/api/bundle-management?action=products');
+                  productFetcher.load('/admin/api/bundle-products');
                 }
               }}
               helpText="Choose how products are selected for this bundle"
@@ -752,7 +749,7 @@ export default function SimpleBundleManagement() {
                     // In a real implementation, this would open Shopify's ResourcePicker
                     // For now, we'll use the product selection from the manual bundle section
                     if (availableProducts.length === 0) {
-                      productFetcher.load('/api/bundle-management?action=products');
+                      productFetcher.load('/admin/api/bundle-products');
                     }
                   }}
                 >
@@ -813,14 +810,14 @@ export default function SimpleBundleManagement() {
                   ) : productLoadError ? (
                     <Banner tone="critical" title="Failed to load products">
                       <p>{productLoadError}</p>
-                      <Button onClick={() => productFetcher.load('/api/bundle-management?action=products')}>
+                      <Button onClick={() => productFetcher.load('/admin/api/bundle-products')}>
                         Retry
                       </Button>
                     </Banner>
                   ) : (productFetcher.data && !(productFetcher.data as any).success) ? (
                     <Banner tone="warning" title="API returned error">
                       <p>Response: {JSON.stringify(productFetcher.data)}</p>
-                      <Button onClick={() => productFetcher.load('/api/bundle-management?action=products')}>
+                      <Button onClick={() => productFetcher.load('/admin/api/bundle-products')}>
                         Retry
                       </Button>
                     </Banner>
@@ -830,7 +827,7 @@ export default function SimpleBundleManagement() {
                       action={{
                         content: "Load Products",
                         onAction: () => {
-                          productFetcher.load('/api/bundle-management?action=products');
+                          productFetcher.load('/admin/api/bundle-products');
                         },
                       }}
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
