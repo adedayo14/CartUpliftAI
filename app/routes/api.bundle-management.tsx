@@ -234,7 +234,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  console.log('[Bundle API Action] Request received');
+  
+  let session;
+  try {
+    const auth = await authenticate.admin(request);
+    session = auth.session;
+    console.log('[Bundle API Action] Authenticated shop:', session.shop);
+  } catch (authError) {
+    console.error('[Bundle API Action] Authentication failed:', authError);
+    return json({ success: false, error: 'Authentication failed' }, { status: 401 });
+  }
+
   // Support both JSON and FormData bodies
   let actionType: any;
   let body: any = {};
@@ -243,7 +254,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
       body = await request.json();
       actionType = body.action;
-    } catch (_e) {
+      console.log('[Bundle API Action] Action type:', actionType);
+    } catch (e) {
+      console.error('[Bundle API Action] JSON parse error:', e);
       return json({ success: false, error: 'Invalid JSON' }, { status: 400 });
     }
   } else {
@@ -368,7 +381,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return json({ success: false, error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    console.error("Bundle management action error:", error);
-    return json({ success: false, error: "Failed to perform action" }, { status: 500 });
+    console.error("[Bundle API Action] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to perform action";
+    return json({ success: false, error: errorMessage }, { status: 500 });
   }
 };

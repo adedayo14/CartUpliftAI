@@ -331,7 +331,22 @@ export default function BundlesAdmin() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
         body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      
+      // Check if response is ok and has JSON content
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[handleCreateBundle] Server error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}. ${errorText.substring(0, 100)}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('[handleCreateBundle] JSON parse error:', jsonError);
+        throw new Error('Invalid response from server. Please check your connection and try again.');
+      }
+
       if (data.success) {
         triggerBanner("success", "Bundle created successfully!");
         setShowCreateModal(false);
@@ -371,7 +386,21 @@ export default function BundlesAdmin() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
         body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[handleToggleStatus] Server error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('[handleToggleStatus] JSON parse error:', jsonError);
+        throw new Error('Invalid response from server');
+      }
+
       if (data.success) {
         const nextStatus = payload.status;
         const updatedBundle = data.bundle as Bundle | undefined;
@@ -400,7 +429,21 @@ export default function BundlesAdmin() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
         body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[handleDelete] Server error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('[handleDelete] JSON parse error:', jsonError);
+        throw new Error('Invalid response from server');
+      }
+
       if (data.success) {
         triggerBanner("success", "Bundle deleted!");
         setBundleList((prev) => prev.filter((b) => b.id !== bundleId));
