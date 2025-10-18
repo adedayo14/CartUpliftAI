@@ -278,9 +278,20 @@ export default function SimpleBundleManagement() {
   const navigation = useNavigation();
   const submit = useSubmit();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionPath, setActionPath] = useState('/admin/bundle-management-simple');
   
   console.log('🟢 [Component] Render - navigation.state:', navigation.state);
   console.log('🟢 [Component] actionData:', actionData);
+
+  // Capture the full URL with query params on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const path = `${url.pathname}${url.search}`;
+      setActionPath(path);
+      console.log('🔧 [Action Path] Set to:', path);
+    }
+  }, []);
 
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
@@ -404,7 +415,8 @@ export default function SimpleBundleManagement() {
     formData.append('hideIfNoML', newBundle.hideIfNoML ? 'true' : '');
     
     console.log('🔵 [Frontend] Submitting with Remix submit()...');
-    submit(formData, { method: 'POST' });
+    console.log('🔵 [Frontend] Action path:', actionPath);
+    submit(formData, { method: 'POST', action: actionPath });
   };
 
   const bundleTypeOptions = [
@@ -423,7 +435,7 @@ export default function SimpleBundleManagement() {
     formData.append('action', 'toggle-status');
     formData.append('bundleId', bundleId);
     formData.append('status', currentStatus === 'active' ? 'paused' : 'active');
-    submit(formData, { method: 'POST' });
+    submit(formData, { method: 'POST', action: actionPath });
   };
 
   const handleDelete = (bundleId: string) => {
@@ -432,7 +444,7 @@ export default function SimpleBundleManagement() {
     const formData = new FormData();
     formData.append('action', 'delete-bundle');
     formData.append('bundleId', bundleId);
-    submit(formData, { method: 'POST' });
+    submit(formData, { method: 'POST', action: actionPath });
   };
 
   const bundleTableRows = bundles.map((bundle: Bundle) => [
