@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import {
   Page,
@@ -23,7 +23,6 @@ import {
   Thumbnail,
   Checkbox,
   EmptyState,
-  Spinner,
 } from "@shopify/polaris";
 import { PlusIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
@@ -43,46 +42,123 @@ interface Bundle {
   createdAt: string;
 }
 
+interface Product {
+  id: string;
+  title: string;
+  price: string;
+  image: string;
+}
+
+interface Collection {
+  id: string;
+  title: string;
+  productsCount: number;
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // Load bundles only (product/collection fetching moved to API endpoints)
   const authResult = await authenticate.admin(request);
   const shop = authResult.session.shop;
+  
   try {
+    // Load bundles
     const bundles = await (prisma as any).bundle.findMany({
       where: { shop },
-      include: {
-        products: true
-      },
+      include: { products: true },
       orderBy: { createdAt: 'desc' }
     });
     
-  return json({ success: true, bundles, shop });
-  } catch (error) {
-    console.error('[Bundle Loader] Failed to load bundles:', error);
+    // Load products directly from Shopify
+    let products: Product[] = [];
+    let collections: Collection[] = [];
+    
+    try {
+      const productsResponse = await authResult.admin.graphql(`
+        query getProducts {
+          products(first: 50) {
+            edges {
+              node {
+                id
+                title
+                priceRangeV2 {
+                  minVariantPrice {
+                    amount
+                  }
+                }
+                featuredImage {
+                  url
+                }
+              }
+            }
+          }
+        }
+      `);
+      
+      const productsData = await productsResponse.json();
+      products = productsData.data.products.edges.map((edge: any) => ({
+        id: edge.node.id,
+        title: edge.node.title,
+        price: edge.node.priceRangeV2.minVariantPrice.amount,
+        image: edge.node.featuredImage?.url || ""
+      }));
+    } catch (error) {
+      console.error('[Loader] Failed to load products:', error);
+    }
+    
+    try {
+      const collectionsResponse = await authResult.admin.graphql(`
+        query getCollections {
+          collections(first: 50) {
+            edges {
+              node {
+                id
+                title
+                productsCount
+              }
+            }
+          }
+        }
+      `);
+      
+      const collectionsData = await collectionsResponse.json();
+      collections = collectionsData.data.collections.edges.map((edge: any) => ({
+        id: edge.node.id,
+        title: edge.node.title,
+        productsCount: edge.node.productsCount
+      }));
+    } catch (error) {
+      console.error('[Loader] Failed to load collections:', error);
+    }
+    
     return json({ 
       success: true, 
-      bundles: [], 
-      error: 'Failed to load bundles'
+      bundles, 
+      products,
+      collections,
+      shop 
+    });
+  } catch (error) {
+    console.error('[Bundle Loader] Failed to load data:', error);
+    return json({ 
+      success: false, 
+      bundles: [],
+      products: [],
+      collections: [],
+      error: 'Failed to load data'
     });
   }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  // Check if shop parameter is provided (bypass auth pattern)
   const formData = await request.formData();
   const shopParam = formData.get("shop") as string;
   
   let shop: string;
   
   if (shopParam) {
-    // Use shop parameter to bypass hanging auth
     shop = shopParam;
-    console.log('[Bundle Action] Using shop parameter:', shop);
   } else {
-    // Fall back to regular auth
     const { session } = await authenticate.admin(request);
     shop = session.shop;
-    console.log('[Bundle Action] Using authenticated session:', shop);
   }
   
   const actionType = formData.get("action");
@@ -95,16 +171,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const discountType = formData.get("discountType") as string;
       const discountValue = parseFloat(formData.get("discountValue") as string);
       const minProducts = parseInt(formData.get("minProducts") as string) || 2;
-      const productIds = (formData.get("productIds") as string) || "[]";
-      const collectionIds = (formData.get("collectionIds") as string) || "[]";
+      const productIds = formData.get("productIds") as string;
+      const collectionIds = formData.get("collectionIds") as string;
+      const assignedProducts = formData.get("assignedProducts") as string;
+      const bundleStyle = formData.get("bundleStyle") as string || "grid";
+      const selectMinQty = formData.get("selectMinQty");
+      const selectMaxQty = formData.get("selectMaxQty");
+      const tierConfig = formData.get("tierConfig") as string;
+      const allowDeselect = formData.get("allowDeselect") === "true";
+      const hideIfNoML = formData.get("hideIfNoML") === "true";
 
       if (!name || !bundleType || discountValue < 0) {
         return json({ success: false, error: "Invalid bundle data" }, { status: 400 });
       }
 
-  const bundle = await (prisma as any).bundle.create({
+      const bundle = await (prisma as any).bundle.create({
         data: {
-          shop: shop,
+          shop,
           name,
           description,
           type: bundleType,
@@ -113,34 +196,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           minProducts,
           productIds: bundleType === 'manual' ? productIds : "[]",
           collectionIds: bundleType === 'category' ? collectionIds : "[]",
+          assignedProducts: assignedProducts || "[]",
+          bundleStyle,
+          selectMinQty: selectMinQty ? parseInt(selectMinQty as string) : null,
+          selectMaxQty: selectMaxQty ? parseInt(selectMaxQty as string) : null,
+          tierConfig: tierConfig || null,
+          allowDeselect,
+          hideIfNoML,
           status: "draft",
         },
       });
 
-      console.log('[Bundle Action] Bundle created successfully:', bundle.id);
-      return json({ success: true, bundle });
+      return json({ success: true, bundle, message: "Bundle created successfully" });
     }
 
     if (actionType === "toggle-status") {
       const bundleId = formData.get("bundleId") as string;
       const status = formData.get("status") as string;
 
-  const bundle = await (prisma as any).bundle.update({
-        where: { id: bundleId, shop: shop },
+      const bundle = await (prisma as any).bundle.update({
+        where: { id: bundleId, shop },
         data: { status },
       });
 
-      return json({ success: true, bundle });
+      return json({ success: true, bundle, message: "Status updated" });
     }
 
     if (actionType === "delete-bundle") {
       const bundleId = formData.get("bundleId") as string;
 
-  await (prisma as any).bundle.delete({
-        where: { id: bundleId, shop: shop },
+      await (prisma as any).bundle.delete({
+        where: { id: bundleId, shop },
       });
 
-      console.log('[Bundle Action] Bundle deleted successfully:', bundleId);
       return json({ success: true, message: "Bundle deleted successfully" });
     }
 
@@ -153,16 +241,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
-  const productFetcher = useFetcher<any>();
-  const collectionsFetcher = useFetcher<any>();
-  const revalidator = useRevalidator();
-
-  // Handle both bundle and product data from loader
-  const bundles = (loaderData as any).bundles || [];
-  // Use admin API endpoint for proper authentication in embedded apps
-  const productApiUrl = '/admin/api/bundle-data?action=products';
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  
+  const bundles = loaderData.bundles || [];
+  const availableProducts = loaderData.products || [];
+  const availableCollections = loaderData.collections || [];
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showProductPicker, setShowProductPicker] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [assignedProducts, setAssignedProducts] = useState<string[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [bannerMessage, setBannerMessage] = useState("");
@@ -174,11 +264,7 @@ export default function SimpleBundleManagement() {
     discountType: "percentage",
     discountValue: 10,
     minProducts: 2,
-    maxProducts: 10,
-    status: "active",
-    // NEW FIELDS - Enhanced bundle features
     bundleStyle: "grid" as "grid" | "fbt" | "tier",
-    assignedProducts: [] as string[],
     selectMinQty: 2,
     selectMaxQty: 10,
     allowDeselect: true,
@@ -189,74 +275,30 @@ export default function SimpleBundleManagement() {
       { qty: 5, discount: 20 }
     ]
   });
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
-  const [availableCollections, setAvailableCollections] = useState<any[]>([]);
-  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
-  // (no SSR-unsafe UI in this page; no client flag needed)
-
-  // Auto-load products when modal opens with manual type (via API endpoint)
+  // Handle action data responses
   useEffect(() => {
-    console.log('[Bundle] Auto-load check:', {
-      showCreateModal,
-      bundleType: newBundle.bundleType,
-      hasProducts: !!(productFetcher.data as any)?.products,
-      productsLength: (productFetcher.data as any)?.products?.length || 0,
-      fetcherState: productFetcher.state
-    });
-    
-    if (showCreateModal && newBundle.bundleType === 'manual' && 
-        !(productFetcher.data as any)?.products && productFetcher.state === 'idle') {
-  console.log('[Bundle] Loading products from admin API...', { productApiUrl });
-      
-  // Use admin API endpoint (proper authentication)
-  productFetcher.load(productApiUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCreateModal, newBundle.bundleType, (productFetcher.data as any), productFetcher.state]);
-
-  // Auto-load collections when modal opens with category type (via API endpoint)
-  useEffect(() => {
-    if (showCreateModal && newBundle.bundleType === 'category' && 
-        availableCollections.length === 0 && !isLoadingCollections) {
-      console.log('🔥 Loading collections via API fetcher...');
-      setIsLoadingCollections(true);
-      // GET collections via API; admin route handles auth automatically
-      collectionsFetcher.load('/admin/api/bundle-data?action=categories');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCreateModal, newBundle.bundleType, availableCollections.length, isLoadingCollections]);
-
-  // Handle collections fetcher response
-  useEffect(() => {
-    if (collectionsFetcher.state === 'idle' && collectionsFetcher.data) {
-      const data = collectionsFetcher.data as any;
-      if (data.success && data.categories) {
-        setAvailableCollections(data.categories);
+    if (actionData) {
+      if (actionData.success) {
+        setShowSuccessBanner(true);
+        const message = 'message' in actionData ? actionData.message : "Action completed successfully";
+        setBannerMessage(message || "Action completed successfully");
+        if (message?.includes("created")) {
+          setShowCreateModal(false);
+          resetForm();
+        }
+      } else {
+        setShowErrorBanner(true);
+        const error = 'error' in actionData ? actionData.error : "Action failed";
+        setBannerMessage(error || "Action failed");
       }
-      setIsLoadingCollections(false);
+      
+      setTimeout(() => {
+        setShowSuccessBanner(false);
+        setShowErrorBanner(false);
+      }, 3000);
     }
-  }, [collectionsFetcher.state, collectionsFetcher.data]);
-
-  // Handle product fetcher state - with logging
-  useEffect(() => {
-    console.log('[Bundle] Product fetcher state changed:', {
-      state: productFetcher.state,
-      hasData: !!productFetcher.data,
-      success: (productFetcher.data as any)?.success,
-      productsCount: (productFetcher.data as any)?.products?.length || 0,
-      error: (productFetcher.data as any)?.error,
-      fullData: productFetcher.data
-    });
-  }, [productFetcher.state, productFetcher.data]);
-  
-  const isLoadingProducts = productFetcher.state !== 'idle';
-  const productLoadError = productFetcher.data && !(productFetcher.data as any).success 
-    ? (productFetcher.data as any).error 
-    : null;
-  const availableProducts = (productFetcher.data as any)?.products || [];
-
-  // We no longer use actionFetcher for mutations; using direct fetch and revalidation
+  }, [actionData]);
 
   const resetForm = () => {
     setNewBundle({
@@ -266,10 +308,7 @@ export default function SimpleBundleManagement() {
       discountType: "percentage",
       discountValue: 10,
       minProducts: 2,
-      maxProducts: 10,
-      status: "active",
       bundleStyle: "grid",
-      assignedProducts: [],
       selectMinQty: 2,
       selectMaxQty: 10,
       allowDeselect: true,
@@ -282,6 +321,7 @@ export default function SimpleBundleManagement() {
     });
     setSelectedProducts([]);
     setSelectedCollections([]);
+    setAssignedProducts([]);
   };
 
   const handleCreateBundle = async () => {
@@ -292,77 +332,51 @@ export default function SimpleBundleManagement() {
       return;
     }
 
-    const url = new URL(window.location.href);
-    const idToken = url.searchParams.get('id_token') || '';
-
-    const payload: any = {
-      action: 'create-bundle',
-      name: newBundle.name,
-      description: newBundle.description,
-      type: newBundle.bundleType,
-      discountType: newBundle.discountType,
-      discountValue: Number(newBundle.discountValue),
-      minProducts: Number(newBundle.minProducts),
-      maxProducts: Number(newBundle.maxProducts),
-      status: newBundle.status,
-      // NEW FIELDS - Enhanced bundle features
-      bundleStyle: newBundle.bundleStyle,
-      assignedProducts: newBundle.assignedProducts.length > 0 
-        ? JSON.stringify(newBundle.assignedProducts) 
-        : null,
-      selectMinQty: newBundle.bundleType === 'category' ? Number(newBundle.selectMinQty) : null,
-      selectMaxQty: newBundle.bundleType === 'category' ? Number(newBundle.selectMaxQty) : null,
-      tierConfig: newBundle.bundleStyle === 'tier' 
-        ? JSON.stringify(newBundle.tierConfig) 
-        : null,
-      allowDeselect: newBundle.allowDeselect,
-      hideIfNoML: newBundle.hideIfNoML,
-      mainProductId: newBundle.assignedProducts.length > 0 ? newBundle.assignedProducts[0] : null,
-    };
+    const formData = new FormData();
+    formData.append("action", "create-bundle");
+    formData.append("name", newBundle.name);
+    formData.append("description", newBundle.description);
+    formData.append("bundleType", newBundle.bundleType);
+    formData.append("discountType", newBundle.discountType);
+    formData.append("discountValue", newBundle.discountValue.toString());
+    formData.append("minProducts", newBundle.minProducts.toString());
+    formData.append("bundleStyle", newBundle.bundleStyle);
+    formData.append("selectMinQty", newBundle.selectMinQty.toString());
+    formData.append("selectMaxQty", newBundle.selectMaxQty.toString());
+    formData.append("allowDeselect", newBundle.allowDeselect.toString());
+    formData.append("hideIfNoML", newBundle.hideIfNoML.toString());
+    
+    if (assignedProducts.length > 0) {
+      formData.append("assignedProducts", JSON.stringify(assignedProducts));
+    }
+    
     if (newBundle.bundleType === 'manual' && selectedProducts.length > 0) {
-      payload.productIds = JSON.stringify(selectedProducts);
+      formData.append("productIds", JSON.stringify(selectedProducts));
     }
+    
     if (newBundle.bundleType === 'category' && selectedCollections.length > 0) {
-      // API expects categoryIds
-      payload.categoryIds = JSON.stringify(selectedCollections);
+      formData.append("collectionIds", JSON.stringify(selectedCollections));
+    }
+    
+    if (newBundle.bundleStyle === 'tier') {
+      formData.append("tierConfig", JSON.stringify(newBundle.tierConfig));
     }
 
-    try {
-      console.log('[Bundle] Submitting create bundle request to /api/bundle-management ...');
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const response = await fetch('/api/bundle-management', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      console.log('[Bundle] Response status:', response.status);
-      if (!response.ok) {
-        const text = await response.text();
-        console.error('[Bundle] Error response:', text);
-        throw new Error('Failed to create bundle');
-      }
-
-      const result = await response.json();
-      console.log('[Bundle] Bundle created:', result);
-      setShowSuccessBanner(true);
-      setBannerMessage('Bundle created successfully');
-      setShowCreateModal(false);
-      resetForm();
-  try { revalidator.revalidate(); } catch (e) { console.warn('Revalidate failed', e); }
-    } catch (error) {
-      console.error('[Bundle] Fetch error:', error);
-      setShowErrorBanner(true);
-      setBannerMessage('Failed to create bundle');
-      setTimeout(() => setShowErrorBanner(false), 5000);
+    // Submit using native form submission (triggers Remix action)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    for (const [key, value] of formData.entries()) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value.toString();
+      form.appendChild(input);
     }
+    
+    document.body.appendChild(form);
+    form.submit();
   };
 
   const bundleTypeOptions = [
@@ -383,45 +397,29 @@ export default function SimpleBundleManagement() {
       {bundle.status === "active" ? "Active" : bundle.status === "paused" ? "Paused" : "Draft"}
     </Badge>,
     bundle.discountType === "percentage" ? `${bundle.discountValue}% off` : `$${bundle.discountValue} off`,
-    (bundle.totalPurchases as any)?.toLocaleString?.() || "0",
+    bundle.totalPurchases?.toLocaleString?.() || "0",
     `$${(bundle.totalRevenue || 0).toFixed(2)}`,
     <ButtonGroup key={bundle.id}>
       <Button
         size="micro"
         variant={bundle.status === "active" ? "secondary" : "primary"}
-        onClick={async () => {
-          const url = new URL(window.location.href);
-          const idToken = url.searchParams.get('id_token') || '';
-          const payload = { action: 'toggle-status', bundleId: bundle.id, status: bundle.status === 'active' ? 'paused' : 'active' };
-          try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            const response = await fetch('/api/bundle-management', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-              body: JSON.stringify(payload),
-              signal: controller.signal,
-            });
-            clearTimeout(timeout);
-            if (response.ok) {
-              setShowSuccessBanner(true);
-              setBannerMessage('Bundle status updated');
-              try { revalidator.revalidate(); } catch (e) { console.warn('Revalidate failed', e); }
-            } else {
-              setShowErrorBanner(true);
-              setBannerMessage('Failed to update status');
-              setTimeout(() => setShowErrorBanner(false), 4000);
-            }
-          } catch (error) {
-            console.error('[Bundle] Toggle error:', error);
-            setShowErrorBanner(true);
-            setBannerMessage('Failed to update status');
-            setTimeout(() => setShowErrorBanner(false), 4000);
+        onClick={() => {
+          const formData = new FormData();
+          formData.append("action", "toggle-status");
+          formData.append("bundleId", bundle.id);
+          formData.append("status", bundle.status === 'active' ? 'paused' : 'active');
+          
+          const form = document.createElement('form');
+          form.method = 'POST';
+          for (const [key, value] of formData.entries()) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value.toString();
+            form.appendChild(input);
           }
+          document.body.appendChild(form);
+          form.submit();
         }}
       >
         {bundle.status === "active" ? "Pause" : "Activate"}
@@ -429,40 +427,23 @@ export default function SimpleBundleManagement() {
       <Button
         size="micro"
         tone="critical"
-        onClick={async () => {
+        onClick={() => {
           if (confirm("Are you sure you want to delete this bundle?")) {
-            const url = new URL(window.location.href);
-            const idToken = url.searchParams.get('id_token') || '';
-            const payload = { action: 'delete-bundle', bundleId: bundle.id };
-            try {
-              const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 10000);
-              const response = await fetch('/api/bundle-management', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-                  'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify(payload),
-                signal: controller.signal,
-              });
-              clearTimeout(timeout);
-              if (response.ok) {
-                setShowSuccessBanner(true);
-                setBannerMessage('Bundle deleted successfully');
-                try { revalidator.revalidate(); } catch (e) { console.warn('Revalidate failed', e); }
-              } else {
-                setShowErrorBanner(true);
-                setBannerMessage('Failed to delete bundle');
-                setTimeout(() => setShowErrorBanner(false), 4000);
-              }
-            } catch (error) {
-              console.error('[Bundle] Delete error:', error);
-              setShowErrorBanner(true);
-              setBannerMessage('Failed to delete bundle');
-              setTimeout(() => setShowErrorBanner(false), 4000);
+            const formData = new FormData();
+            formData.append("action", "delete-bundle");
+            formData.append("bundleId", bundle.id);
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            for (const [key, value] of formData.entries()) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = key;
+              input.value = value.toString();
+              form.appendChild(input);
             }
+            document.body.appendChild(form);
+            form.submit();
           }
         }}
       >
@@ -471,10 +452,12 @@ export default function SimpleBundleManagement() {
     </ButtonGroup>,
   ]);
 
+  const isSubmitting = navigation.state === "submitting";
+
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.1 - Fixed authentication & loading (Oct 18, 2025)"
+      subtitle="🚀 v1.2 - FIXED: Products load from loader, working product picker"
       primaryAction={
         <Button
           variant="primary"
@@ -503,6 +486,7 @@ export default function SimpleBundleManagement() {
             </Banner>
           </Layout.Section>
         )}
+        
         <Layout.Section>
           {bundles.length === 0 ? (
             <Card>
@@ -513,14 +497,6 @@ export default function SimpleBundleManagement() {
                 <Text as="p" variant="bodyMd" tone="subdued">
                   Create your first bundle to start increasing average order value through strategic product combinations.
                 </Text>
-                <Banner>
-                  <Text as="p" variant="bodyMd">
-                    <strong>Bundle Types:</strong>
-                    <br />• <strong>Manual:</strong> Handpick specific products
-                    <br />• <strong>Category:</strong> Auto-bundle from categories
-                    <br />• <strong>AI Suggested:</strong> Smart recommendations with approval workflow
-                  </Text>
-                </Banner>
               </BlockStack>
             </Card>
           ) : (
@@ -547,60 +523,33 @@ export default function SimpleBundleManagement() {
           <Card>
             <BlockStack gap="300">
               <Text as="h3" variant="headingSm">
-                🎯 Bundle Strategy
+                ✅ Status
               </Text>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                Bundles work seamlessly with your theme embed to show customers relevant product combinations at the perfect moment.
-              </Text>
-              <BlockStack gap="200">
-                <Banner tone="info">
-                  <Text as="p" variant="bodySm">
-                    <strong>Backend:</strong> Complex logic, product selection, discount rules, approval workflows
-                  </Text>
-                </Banner>
-                <Banner tone="success">
-                  <Text as="p" variant="bodySm">
-                    <strong>Theme Embed:</strong> Smart display, customer interaction, cart integration
-                  </Text>
-                </Banner>
-              </BlockStack>
-            </BlockStack>
-          </Card>
-
-          <Card>
-            <BlockStack gap="300">
-              <Text as="h3" variant="headingSm">
-                💡 Best Practices
-              </Text>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                • Start with 10-15% discounts
-                <br />• Use AI bundles for cross-sell discovery
-                <br />• Test manual bundles for key products
-                <br />• Monitor performance in Dashboard
-                <br />• A/B test different discount rates
+              <Text as="p" variant="bodyMd">
+                • Products: {availableProducts.length} loaded
+                <br />• Collections: {availableCollections.length} loaded
+                <br />• Bundles: {bundles.length} total
               </Text>
             </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>
 
+      {/* Create Bundle Modal */}
       <Modal
         open={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-        }}
+        onClose={() => setShowCreateModal(false)}
         title="Create New Bundle"
         primaryAction={{
           content: "Create Bundle",
-          disabled: !newBundle.name.trim(),
+          disabled: !newBundle.name.trim() || isSubmitting,
+          loading: isSubmitting,
           onAction: handleCreateBundle,
         }}
         secondaryActions={[
           {
             content: "Cancel",
-            onAction: () => {
-              setShowCreateModal(false);
-            },
+            onAction: () => setShowCreateModal(false),
           },
         ]}
       >
@@ -612,14 +561,13 @@ export default function SimpleBundleManagement() {
               onChange={(value) => setNewBundle({ ...newBundle, name: value })}
               placeholder="e.g., Summer Beach Essentials"
               autoComplete="off"
-              helpText="This name will be shown to customers"
             />
 
             <TextField
               label="Description (Optional)"
               value={newBundle.description}
               onChange={(value) => setNewBundle({ ...newBundle, description: value })}
-              placeholder="Brief description of the bundle"
+              placeholder="Brief description"
               multiline={2}
               autoComplete="off"
             />
@@ -628,251 +576,107 @@ export default function SimpleBundleManagement() {
               label="Bundle Type"
               options={bundleTypeOptions}
               value={newBundle.bundleType}
-              onChange={(value) => {
-                setNewBundle({ ...newBundle, bundleType: value });
-                if (value === "manual" && availableProducts.length === 0) {
-                  productFetcher.load(productApiUrl);
-                }
-              }}
-              helpText="Choose how products are selected for this bundle"
+              onChange={(value) => setNewBundle({ ...newBundle, bundleType: value })}
             />
 
             <Select
               label="Bundle Display Style"
               options={[
-                { label: "Grid Layout (Checkable Cards)", value: "grid" },
+                { label: "Grid Layout", value: "grid" },
                 { label: "FBT (Frequently Bought Together)", value: "fbt" },
-                { label: "Quantity Tiers (Buy More, Save More)", value: "tier" }
+                { label: "Quantity Tiers", value: "tier" }
               ]}
               value={newBundle.bundleStyle}
-              onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as "grid" | "fbt" | "tier" })}
-              helpText="How the bundle will be displayed to customers"
+              onChange={(value) => setNewBundle({ ...newBundle, bundleStyle: value as any })}
             />
 
-            {newBundle.bundleStyle === "tier" && (
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingSm">Quantity Tier Pricing</Text>
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    Set different discounts based on quantity purchased
-                  </Text>
-                  
-                  {newBundle.tierConfig.map((tier, index) => (
-                    <InlineStack key={index} gap="200" align="start">
-                      <TextField
-                        label="Quantity"
-                        type="number"
-                        value={String(tier.qty)}
-                        onChange={(value) => {
-                          const newTiers = [...newBundle.tierConfig];
-                          newTiers[index].qty = parseInt(value) || 1;
-                          setNewBundle({ ...newBundle, tierConfig: newTiers });
-                        }}
-                        autoComplete="off"
-                      />
-                      <TextField
-                        label="Discount %"
-                        type="number"
-                        value={String(tier.discount)}
-                        onChange={(value) => {
-                          const newTiers = [...newBundle.tierConfig];
-                          newTiers[index].discount = parseFloat(value) || 0;
-                          setNewBundle({ ...newBundle, tierConfig: newTiers });
-                        }}
-                        suffix="%"
-                        autoComplete="off"
-                      />
-                      {newBundle.tierConfig.length > 1 && (
-                        <Button
-                          variant="plain"
-                          tone="critical"
-                          onClick={() => {
-                            const newTiers = newBundle.tierConfig.filter((_, i) => i !== index);
-                            setNewBundle({ ...newBundle, tierConfig: newTiers });
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </InlineStack>
-                  ))}
-                  
-                  <Button
-                    onClick={() => {
-                      const lastTier = newBundle.tierConfig[newBundle.tierConfig.length - 1];
-                      const newTiers = [
-                        ...newBundle.tierConfig,
-                        { qty: lastTier.qty + 5, discount: lastTier.discount + 5 }
-                      ];
-                      setNewBundle({ ...newBundle, tierConfig: newTiers });
-                    }}
-                  >
-                    Add Tier
-                  </Button>
-                </BlockStack>
-              </Card>
-            )}
-
-            {newBundle.bundleType === "category" && (
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingSm">Category Selection Rules</Text>
-                  <InlineStack gap="200">
-                    <TextField
-                      label="Minimum Products to Select"
-                      type="number"
-                      value={String(newBundle.selectMinQty)}
-                      onChange={(value) => setNewBundle({ ...newBundle, selectMinQty: parseInt(value) || 2 })}
-                      helpText="Customer must select at least this many"
-                      autoComplete="off"
-                    />
-                    <TextField
-                      label="Maximum Products Allowed"
-                      type="number"
-                      value={String(newBundle.selectMaxQty)}
-                      onChange={(value) => setNewBundle({ ...newBundle, selectMaxQty: parseInt(value) || 10 })}
-                      helpText="Customer can select up to this many"
-                      autoComplete="off"
-                    />
-                  </InlineStack>
-                </BlockStack>
-              </Card>
-            )}
-
+            {/* Product Assignment Section - FIXED */}
             <Card>
               <BlockStack gap="300">
                 <Text as="h3" variant="headingSm">Product Assignment</Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Choose which product pages should display this bundle. Leave empty to use only AI recommendations.
+                  Choose which product pages should display this bundle
                 </Text>
                 
-                <Button
-                  onClick={() => {
-                    // In a real implementation, this would open Shopify's ResourcePicker
-                    // For now, we'll use the product selection from the manual bundle section
-                    if (availableProducts.length === 0) {
-                      productFetcher.load(productApiUrl);
-                    }
-                  }}
-                >
-                  {`Select Products (${newBundle.assignedProducts.length} selected)`}
+                <Button onClick={() => setShowProductPicker(true)}>
+                  {`Select Products (${assignedProducts.length} selected)`}
                 </Button>
                 
-                {newBundle.assignedProducts.length > 0 && (
-                  <Text as="p" variant="bodySm">
-                    Bundle will show on {newBundle.assignedProducts.length} product page(s)
-                  </Text>
+                {assignedProducts.length > 0 && (
+                  <BlockStack gap="200">
+                    {assignedProducts.map(id => {
+                      const product = availableProducts.find((p) => p && p.id === id);
+                      return product ? (
+                        <InlineStack key={id} gap="200" blockAlign="center">
+                          <Thumbnail source={product.image} alt={product.title} size="small" />
+                          <Text as="span">{product.title}</Text>
+                          <Button
+                            size="micro"
+                            onClick={() => setAssignedProducts(assignedProducts.filter(pid => pid !== id))}
+                          >
+                            Remove
+                          </Button>
+                        </InlineStack>
+                      ) : null;
+                    })}
+                  </BlockStack>
                 )}
               </BlockStack>
             </Card>
 
             <Checkbox
-              label="Allow customers to deselect items (FBT/Grid only)"
+              label="Allow customers to deselect items"
               checked={newBundle.allowDeselect}
               onChange={(checked) => setNewBundle({ ...newBundle, allowDeselect: checked })}
-              helpText="If unchecked, all items must be added together"
-              disabled={newBundle.bundleStyle === "tier"}
             />
 
             <Checkbox
-              label="Hide bundle if no AI recommendations found"
+              label="Hide if no AI recommendations"
               checked={newBundle.hideIfNoML}
               onChange={(checked) => setNewBundle({ ...newBundle, hideIfNoML: checked })}
-              helpText="Only show this bundle when AI finds product recommendations"
             />
 
+            {/* Manual Bundle Product Selection */}
             {newBundle.bundleType === "manual" && (
               <Card>
                 <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text as="h3" variant="headingSm">
-                      Select Products for Bundle
-                    </Text>
-                    {!isLoadingProducts && (
-                      <Button 
-                        size="micro" 
-                        onClick={() => {
-                          console.log('[Bundle] Manual reload triggered');
-                          productFetcher.load(productApiUrl);
-                        }}
-                      >
-                        Reload Products
-                      </Button>
-                    )}
-                  </InlineStack>
+                  <Text as="h3" variant="headingSm">
+                    Select Products for Bundle
+                  </Text>
                   
-                  {isLoadingProducts ? (
-                    <BlockStack align="center" gap="300">
-                      <Spinner size="large" />
-                      <Text as="p">Loading products...</Text>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Fetcher state: {productFetcher.state}
-                      </Text>
-                    </BlockStack>
-                  ) : productLoadError ? (
-                    <Banner tone="critical" title="Failed to load products">
-                      <p>{productLoadError}</p>
-                      <Button onClick={() => productFetcher.load(productApiUrl)}>
-                        Retry
-                      </Button>
-                    </Banner>
-                  ) : (productFetcher.data && !(productFetcher.data as any).success) ? (
-                    <Banner tone="warning" title="API returned error">
-                      <p>Response: {JSON.stringify(productFetcher.data)}</p>
-                      <Button onClick={() => productFetcher.load(productApiUrl)}>
-                        Retry
-                      </Button>
-                    </Banner>
-                  ) : availableProducts.length === 0 ? (
+                  {availableProducts.length === 0 ? (
                     <EmptyState
-                      heading="No products found"
-                      action={{
-                        content: "Load Products",
-                        onAction: () => {
-                          productFetcher.load(productApiUrl);
-                        },
-                      }}
+                      heading="No products available"
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                     >
-                      <p>Click to load your store's products for bundle selection.</p>
+                      <p>Add products to your store first</p>
                     </EmptyState>
                   ) : (
                     <ResourceList
-                      items={availableProducts.slice(0, 25)}
+                      items={availableProducts.filter((p): p is NonNullable<typeof p> => p !== null).slice(0, 25) as any}
                       renderItem={(product: any) => {
                         const isSelected = selectedProducts.includes(product.id);
-                        const toggleSelection = () => {
-                          console.log('[Bundle] Product clicked:', product.id, 'Currently selected:', isSelected);
-                          if (isSelected) {
-                            const newSelection = selectedProducts.filter((id: string) => id !== product.id);
-                            console.log('[Bundle] Removing product. New selection:', newSelection);
-                            setSelectedProducts(newSelection);
-                          } else {
-                            const newSelection = [...selectedProducts, product.id];
-                            console.log('[Bundle] Adding product. New selection:', newSelection);
-                            setSelectedProducts(newSelection);
-                          }
-                        };
-                        
                         return (
                           <ResourceItem
                             id={product.id}
-                            onClick={toggleSelection}
+                            onClick={() => {
+                              setSelectedProducts(
+                                isSelected
+                                  ? selectedProducts.filter(id => id !== product.id)
+                                  : [...selectedProducts, product.id]
+                              );
+                            }}
                           >
                             <InlineStack gap="300">
                               <Checkbox 
                                 label="" 
                                 checked={isSelected} 
-                                onChange={toggleSelection}
+                                onChange={() => {}}
                               />
-                              <Thumbnail source={product.image || ""} alt={product.title} size="small" />
+                              <Thumbnail source={product.image} alt={product.title} size="small" />
                               <BlockStack gap="100">
-                                <Text as="h3" variant="bodyMd">
-                                  {product.title}
-                                </Text>
-                                <Text as="p" variant="bodySm" tone="subdued">
-                                  ${product.price || "0.00"}
-                                </Text>
+                                <Text as="h3" variant="bodyMd">{product.title}</Text>
+                                <Text as="p" variant="bodySm" tone="subdued">${product.price}</Text>
                               </BlockStack>
                             </InlineStack>
                           </ResourceItem>
@@ -883,84 +687,62 @@ export default function SimpleBundleManagement() {
 
                   {selectedProducts.length > 0 && (
                     <Banner tone="success">
-                      <Text as="p" variant="bodyMd">
-                        {selectedProducts.length} product{selectedProducts.length === 1 ? "" : "s"} selected for this bundle
-                      </Text>
+                      {selectedProducts.length} product{selectedProducts.length === 1 ? "" : "s"} selected
                     </Banner>
                   )}
                 </BlockStack>
               </Card>
             )}
 
+            {/* Category Bundle Collection Selection */}
             {newBundle.bundleType === "category" && (
               <Card>
                 <BlockStack gap="300">
                   <Text as="h3" variant="headingSm">
-                    Select Collections for Bundle
-                  </Text>
-                  <Text as="p" tone="subdued">
-                    Choose which collections should be included in this category bundle. All products from selected collections will be eligible for bundling.
+                    Select Collections
                   </Text>
                   
-                  {isLoadingCollections || collectionsFetcher.state !== "idle" ? (
-                    <BlockStack align="center" gap="300">
-                      <Spinner size="large" />
-                      <Text as="p">Loading collections...</Text>
-                    </BlockStack>
-                  ) : availableCollections.length === 0 ? (
+                  {availableCollections.length === 0 ? (
                     <EmptyState
-                      heading="No collections found"
+                      heading="No collections available"
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                      action={{
-                        content: "Reload Collections",
-                        onAction: () => {
-                          setIsLoadingCollections(true);
-                          collectionsFetcher.load('/admin/api/bundle-data?action=categories');
-                        },
-                      }}
                     >
-                      <p>No collections available in your store. Create some collections first.</p>
+                      <p>Create collections in your store first</p>
                     </EmptyState>
                   ) : (
                     <ResourceList
-                      items={availableCollections}
-                      renderItem={(collection: any) => (
-                        <ResourceItem
-                          id={collection.id}
-                          onClick={() => {
-                            const isSelected = selectedCollections.includes(collection.id);
-                            if (isSelected) {
-                              setSelectedCollections(selectedCollections.filter((id: string) => id !== collection.id));
-                            } else {
-                              setSelectedCollections([...selectedCollections, collection.id]);
-                            }
-                          }}
-                        >
-                          <InlineStack gap="300">
-                            <Checkbox 
-                              label="" 
-                              checked={selectedCollections.includes(collection.id)} 
-                              onChange={() => {}} 
-                            />
-                            <BlockStack gap="100">
-                              <Text as="h3" variant="bodyMd">
-                                {collection.title}
-                              </Text>
-                              <Text as="p" variant="bodySm" tone="subdued">
-                                {collection.productsCount} products
-                              </Text>
-                            </BlockStack>
-                          </InlineStack>
-                        </ResourceItem>
-                      )}
+                      items={availableCollections.filter((c): c is NonNullable<typeof c> => c !== null) as any}
+                      renderItem={(collection: any) => {
+                        const isSelected = selectedCollections.includes(collection.id);
+                        return (
+                          <ResourceItem
+                            id={collection.id}
+                            onClick={() => {
+                              setSelectedCollections(
+                                isSelected
+                                  ? selectedCollections.filter(id => id !== collection.id)
+                                  : [...selectedCollections, collection.id]
+                              );
+                            }}
+                          >
+                            <InlineStack gap="300">
+                              <Checkbox label="" checked={isSelected} onChange={() => {}} />
+                              <BlockStack gap="100">
+                                <Text as="h3" variant="bodyMd">{collection.title}</Text>
+                                <Text as="p" variant="bodySm" tone="subdued">
+                                  {collection.productsCount} products
+                                </Text>
+                              </BlockStack>
+                            </InlineStack>
+                          </ResourceItem>
+                        );
+                      }}
                     />
                   )}
-                  
+
                   {selectedCollections.length > 0 && (
                     <Banner tone="success">
-                      <Text as="p" variant="bodyMd">
-                        {selectedCollections.length} collection{selectedCollections.length === 1 ? '' : 's'} selected for this bundle
-                      </Text>
+                      {selectedCollections.length} collection{selectedCollections.length === 1 ? "" : "s"} selected
                     </Banner>
                   )}
                 </BlockStack>
@@ -975,7 +757,7 @@ export default function SimpleBundleManagement() {
                 onChange={(value) => setNewBundle({ ...newBundle, discountType: value })}
               />
               <TextField
-                label={newBundle.discountType === "percentage" ? "Discount %" : "Discount $"}
+                label="Discount Value"
                 type="number"
                 value={newBundle.discountValue.toString()}
                 onChange={(value) => setNewBundle({ ...newBundle, discountValue: parseFloat(value) || 0 })}
@@ -989,24 +771,65 @@ export default function SimpleBundleManagement() {
               type="number"
               value={newBundle.minProducts.toString()}
               onChange={(value) => setNewBundle({ ...newBundle, minProducts: parseInt(value) || 2 })}
-              helpText="Minimum number of products required for bundle discount"
               autoComplete="off"
             />
-
-            <Banner tone="info">
-              <Text as="p" variant="bodyMd">
-                {newBundle.bundleType === "manual" && selectedProducts.length > 0
-                  ? `Ready to create bundle with ${selectedProducts.length} selected product${selectedProducts.length === 1 ? "" : "s"}.`
-                  : newBundle.bundleType === "manual"
-                  ? "Please select products above for your manual bundle."
-                  : newBundle.bundleType === "category" && selectedCollections.length > 0
-                  ? `Ready to create category bundle with ${selectedCollections.length} collection${selectedCollections.length === 1 ? "" : "s"}.`
-                  : newBundle.bundleType === "category"
-                  ? "Please select collections above for your category bundle."
-                  : "AI bundles use machine learning to create intelligent product combinations."}
-              </Text>
-            </Banner>
           </FormLayout>
+        </Modal.Section>
+      </Modal>
+
+      {/* Product Picker Modal for Assignment - FIXED */}
+      <Modal
+        open={showProductPicker}
+        onClose={() => setShowProductPicker(false)}
+        title="Select Products to Show Bundle On"
+        primaryAction={{
+          content: "Done",
+          onAction: () => setShowProductPicker(false),
+        }}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text as="p" variant="bodyMd">
+              Select which product pages should display this bundle
+            </Text>
+            
+            {availableProducts.length === 0 ? (
+              <EmptyState
+                heading="No products available"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>Add products to your store first</p>
+              </EmptyState>
+            ) : (
+              <ResourceList
+                items={availableProducts.filter((p): p is NonNullable<typeof p> => p !== null).slice(0, 50) as any}
+                renderItem={(product: any) => {
+                  const isSelected = assignedProducts.includes(product.id);
+                  return (
+                    <ResourceItem
+                      id={product.id}
+                      onClick={() => {
+                        setAssignedProducts(
+                          isSelected
+                            ? assignedProducts.filter(id => id !== product.id)
+                            : [...assignedProducts, product.id]
+                        );
+                      }}
+                    >
+                      <InlineStack gap="300">
+                        <Checkbox label="" checked={isSelected} onChange={() => {}} />
+                        <Thumbnail source={product.image} alt={product.title} size="small" />
+                        <BlockStack gap="100">
+                          <Text as="h3" variant="bodyMd">{product.title}</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">${product.price}</Text>
+                        </BlockStack>
+                      </InlineStack>
+                    </ResourceItem>
+                  );
+                }}
+              />
+            )}
+          </BlockStack>
         </Modal.Section>
       </Modal>
     </Page>
