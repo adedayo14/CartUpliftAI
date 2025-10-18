@@ -464,7 +464,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v2.0 - API-based submission (working pattern)"
+      subtitle="🚀 v2.1 - Cache busted"
       primaryAction={
         <Button
           variant="primary"
