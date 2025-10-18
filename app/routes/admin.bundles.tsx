@@ -348,7 +348,7 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        triggerBanner("success", "Bundle created successfully!");
+        // Silent success - no banner
         setShowCreateModal(false);
         resetForm();
         if (data.bundle) setBundleList((prev) => [data.bundle as Bundle, ...prev]);
@@ -445,7 +445,7 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        triggerBanner("success", "Bundle deleted!");
+        // Silent success - no banner
         setBundleList((prev) => prev.filter((b) => b.id !== bundleId));
         revalidator.revalidate();
       } else {
