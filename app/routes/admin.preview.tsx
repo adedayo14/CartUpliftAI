@@ -353,7 +353,7 @@ export default function PreviewCart() {
                   <Button fullWidth url="/admin/settings">
                     Configure Free Shipping
                   </Button>
-                  <Button fullWidth url="/admin/manage">
+                  <Button fullWidth url="/admin/bundles">
                     Manage Bundles
                   </Button>
                   <Button fullWidth url="/admin/dashboard">
