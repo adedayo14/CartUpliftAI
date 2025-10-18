@@ -503,7 +503,7 @@ export default function SimpleBundleManagement() {
   return (
     <Page
       title="Bundle Management"
-      subtitle="🚀 v1.7 - Fetcher submission flow"
+      subtitle="🚀 v1.8 - Database connection optimized"
       primaryAction={
         <Button
           variant="primary"
