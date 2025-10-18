@@ -72,6 +72,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let collections: Collection[] = [];
     
     try {
+      console.log('[Loader] Fetching products from Shopify...');
       const productsResponse = await authResult.admin.graphql(`
         query getProducts {
           products(first: 50) {
@@ -94,17 +95,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       `);
       
       const productsData = await productsResponse.json();
-      products = productsData.data.products.edges.map((edge: any) => ({
-        id: edge.node.id,
-        title: edge.node.title,
-        price: edge.node.priceRangeV2.minVariantPrice.amount,
-        image: edge.node.featuredImage?.url || ""
-      }));
+      console.log('[Loader] Products response:', JSON.stringify(productsData, null, 2));
+      
+      if (productsData.data?.products?.edges) {
+        products = productsData.data.products.edges.map((edge: any) => ({
+          id: edge.node.id,
+          title: edge.node.title,
+          price: edge.node.priceRangeV2.minVariantPrice.amount,
+          image: edge.node.featuredImage?.url || ""
+        }));
+        console.log(`[Loader] Successfully loaded ${products.length} products`);
+      } else {
+        console.warn('[Loader] No products found in response');
+      }
     } catch (error) {
       console.error('[Loader] Failed to load products:', error);
     }
     
     try {
+      console.log('[Loader] Fetching collections from Shopify...');
       const collectionsResponse = await authResult.admin.graphql(`
         query getCollections {
           collections(first: 50) {
@@ -120,11 +129,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       `);
       
       const collectionsData = await collectionsResponse.json();
-      collections = collectionsData.data.collections.edges.map((edge: any) => ({
-        id: edge.node.id,
-        title: edge.node.title,
-        productsCount: edge.node.productsCount
-      }));
+      console.log('[Loader] Collections response:', JSON.stringify(collectionsData, null, 2));
+      
+      if (collectionsData.data?.collections?.edges) {
+        collections = collectionsData.data.collections.edges.map((edge: any) => ({
+          id: edge.node.id,
+          title: edge.node.title,
+          productsCount: edge.node.productsCount
+        }));
+        console.log(`[Loader] Successfully loaded ${collections.length} collections`);
+      } else {
+        console.warn('[Loader] No collections found in response');
+      }
     } catch (error) {
       console.error('[Loader] Failed to load collections:', error);
     }
@@ -243,6 +259,14 @@ export default function SimpleBundleManagement() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  
+  console.log('[Frontend] Loader data received:', {
+    bundlesCount: loaderData.bundles?.length || 0,
+    productsCount: loaderData.products?.length || 0,
+    collectionsCount: loaderData.collections?.length || 0,
+    hasProducts: !!loaderData.products,
+    products: loaderData.products
+  });
   
   const bundles = loaderData.bundles || [];
   const availableProducts = loaderData.products || [];
