@@ -35,7 +35,7 @@ export default function AppLayout() {
           <s-link href="/app" rel="home">Home</s-link>
           <s-link href="/admin/dashboard">Analytics</s-link>
           <s-link href="/app/settings">Settings</s-link>
-          <s-link href="/admin/bundle-management-simple">Bundles</s-link>
+          <s-link href="/admin/bundles">Bundles</s-link>
           <s-link href="/app/ab-testing">A/B Testing</s-link>
         </s-app-nav>
       )}
