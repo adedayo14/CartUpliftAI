@@ -1597,13 +1597,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
           const opts = Array.isArray(firstVariant?.selectedOptions)
             ? firstVariant.selectedOptions.map((o: any) => ({ name: o?.name, value: o?.value }))
             : [];
+          // Convert price to cents for consistency with manual bundles
+          const priceInCents = Math.round(parseFloat(firstVariant?.price || '0') * 100);
+          console.log(`[BUNDLES API] ML Bundle Product ${product.title}: GraphQL price="${firstVariant?.price}", converted to cents=${priceInCents}`);
+          
           return {
             id: String(product.id).replace('gid://shopify/Product/', ''),
             variant_id: String(firstVariant.id).replace('gid://shopify/ProductVariant/', ''),
             variant_title: firstVariant?.title,
             options: opts,
             title: product.title,
-            price: parseFloat(firstVariant?.price || '0'),
+            price: priceInCents,
             image: product.media?.edges?.[0]?.node?.image?.url || undefined
           };
         };
@@ -1770,7 +1774,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
           const regularTotal = bundleProducts.reduce((sum, p) => sum + ((p && typeof p.price === 'number') ? p.price : 0), 0);
           // Discount policy: higher if we have 2 complements
           const discountPercent = bundleProducts.length >= 3 ? 15 : 10;
-          const bundlePrice = +(regularTotal * (1 - discountPercent / 100)).toFixed(2);
+          // Since prices are now in cents, keep calculation in cents (no toFixed needed)
+          const bundlePrice = Math.round(regularTotal * (1 - discountPercent / 100));
+          console.log(`[BUNDLES API] ML Bundle pricing: regularTotal=${regularTotal} cents, bundlePrice=${bundlePrice} cents, discountPercent=${discountPercent}%`);
           bundles.push({
             id: `bundle_dynamic_${productId}`,
             name: 'Perfect Match Bundle',
@@ -1779,7 +1785,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             regular_total: regularTotal,
             bundle_price: bundlePrice,
             discount_percent: discountPercent,
-            savings_amount: +(regularTotal - bundlePrice).toFixed(2),
+            savings_amount: regularTotal - bundlePrice, // Keep in cents for consistency
             discount_code: discountPercent >= 15 ? 'BUNDLE_MATCH_15' : 'BUNDLE_MATCH_10',
             status: 'active',
             source: 'orders_based',
