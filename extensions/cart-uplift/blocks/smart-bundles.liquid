@@ -1,22 +1,13 @@
 {% comment %}
   Cart Uplift - Product Bundle Block  
-  NOTE: Theme app extension blocks limited to 6 settings max
-  Full bundle config managed in backend, block just triggers display
-  Version: 3.0.0 - Separated CSS and JS for better performance
+  Version: 3.0.1 - Fixed FOUC and tier rendering
 {% endcomment %}
 
-<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}">
-<script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
+{%- comment -%} Load CSS with preload to prevent FOUC {%- endcomment -%}
+{{ 'cart-bundles.css' | asset_url | stylesheet_tag: preload: true }}
 
 {%- liquid
-  # Simple block - just displays bundles managed in backend
   assign bundle_enabled = block.settings.bundle_enabled
-  
-  unless bundle_enabled
-    comment
-      Bundle display disabled
-    endcomment
-  endunless
 -%}
 
 {% if bundle_enabled %}
@@ -26,13 +17,25 @@
     data-product-id="{% if product %}{{ product.id }}{% endif %}"
     data-bundle-title="{{ block.settings.bundle_title | escape }}"
     data-bundle-priority="{{ block.settings.priority }}"
+    style="opacity: 0; transition: opacity 0.3s;"
   >
-    {%- comment -%} JavaScript will load bundles from backend API based on product ID {%- endcomment -%}
     <div class="cartuplift-bundle-loading" style="padding: 20px; text-align: center; color: #666;">
-      <p style="margin: 0 0 8px 0;">🎁 Loading bundles for product {{ product.id }}...</p>
-      <p style="margin: 0; font-size: 12px; color: #999;">Check browser console (F12) for details</p>
+      <p style="margin: 0;">🎁 Loading bundles...</p>
     </div>
   </div>
+  
+  {%- comment -%} Load JS at the end {%- endcomment -%}
+  <script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
+  
+  {%- comment -%} Show widget once CSS loaded {%- endcomment -%}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const widget = document.querySelector('[data-bundle-widget]');
+      if (widget) {
+        widget.style.opacity = '1';
+      }
+    });
+  </script>
 {% endif %}
 
 {% schema %}
@@ -43,12 +46,35 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "⚙️ **Configure bundles in your Cart Uplift admin dashboard.** This block displays bundles you've created for each product. Bundle display styles (Grid, FBT, List, Carousel, Tier) are managed in the admin app, not here."
+      "content": "⚙️ **Configure bundles in your Cart Uplift admin dashboard.** This block displays bundles you've created for each product."
     },
     {
       "type": "checkbox",
       "id": "bundle_enabled",
       "label": "Enable bundles",
+      "default": true,
+      "info": "Show product bundles on this page"
+    },
+    {
+      "type": "text",
+      "id": "bundle_title",
+      "label": "Section heading",
+      "default": "Bundle & Save",
+      "info": "Optional heading above bundles"
+    },
+    {
+      "type": "range",
+      "id": "priority",
+      "label": "Display priority",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 5,
+      "info": "Order if multiple bundle blocks on same page"
+    }
+  ]
+}
+{% endschema %}
       "default": true,
       "info": "Show product bundles on this page"
     },

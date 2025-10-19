@@ -582,36 +582,76 @@
         firstProduct: this.products[0]
       });
 
+      // Parse tiers from config
       if (this.config.tiers && Array.isArray(this.config.tiers)) {
         tiers = this.config.tiers
-          .filter(t => t !== null)
+          .filter(t => t !== null && t !== undefined && t !== '')
           .map(tierStr => {
-            const [qty, discount] = tierStr.split(':').map(Number);
+            const [qty, discount] = String(tierStr).split(':').map(Number);
             return { qty, discount };
           })
+          .filter(t => !isNaN(t.qty) && !isNaN(t.discount))
           .sort((a, b) => a.qty - b.qty);
       } else if (this.config.tierConfig) {
         try {
           tiers = JSON.parse(this.config.tierConfig);
         } catch (e) {
           console.error('🎁 Failed to parse tier config:', e);
+          return [];
         }
       }
 
-      console.log('🎁 Parsed tiers before pricing:', tiers);
+      console.log('🎁 Parsed raw tiers:', tiers);
 
-      const result = tiers.map(tier => {
+      // For tier bundles, we need at least ONE product to calculate pricing
+      // The tier bundle uses the SAME product repeated at different quantities
+      if (tiers.length === 0) {
+        console.warn('🎁 No valid tiers found');
+        return [];
+      }
+
+      // Get base product for pricing calculation
+      // For quantity tiers, we typically use the CURRENT product, not bundle products
+      let baseProduct = null;
+      let basePrice = 0;
+
+      if (this.products && this.products.length > 0) {
+        // Use first product from bundle config
+        baseProduct = this.products[0];
+        basePrice = baseProduct.price;
+        console.log('🎁 Using bundle product for tier pricing:', baseProduct.title, basePrice);
+      } else {
+        // FALLBACK: If no products in bundle, try to get current product from page
+        console.warn('🎁 No products in bundle config, attempting to use current product');
+        
+        // Try to get product from the widget's data attribute
+        const widget = document.querySelector('[data-bundle-widget]');
+        const productId = widget ? widget.dataset.productId : null;
+        
+        if (productId) {
+          console.warn('🎁 Current product ID available but no product data loaded');
+          console.warn('🎁 Backend should include product data in bundle config for tier bundles');
+        }
+        
+        // If still no product, show error
+        if (basePrice === 0) {
+          console.error('🎁 ❌ Cannot calculate tier pricing: no product data available');
+          console.error('🎁 ❌ Backend must include at least 1 product in tier bundle config');
+          return [];
+        }
+      }
+
+      // Calculate pricing for each tier
+      const result = tiers.map((tier, index) => {
         const quantity = tier.qty;
         const discount = tier.discount;
-        const baseProduct = this.products[0];
-        const basePrice = baseProduct ? baseProduct.price : 0;
-        
-        console.log(`🎁 Tier ${quantity}: basePrice=${basePrice}, discount=${discount}%`);
         
         const originalTotal = basePrice * quantity;
         const discountedTotal = originalTotal * (1 - discount / 100);
         const savings = originalTotal - discountedTotal;
         const unitPrice = discountedTotal / quantity;
+        
+        console.log(`🎁 Tier ${index + 1}: qty=${quantity}, discount=${discount}%, original=${this.currencySymbol}${(originalTotal/100).toFixed(2)}, final=${this.currencySymbol}${(discountedTotal/100).toFixed(2)}`);
         
         return {
           quantity,
