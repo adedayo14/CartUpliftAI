@@ -413,6 +413,7 @@
         gap: 16px; 
         margin: 20px 0;
       `;
+      console.log('🎨 GRID LAYOUT: Created grid container with multi-column layout');
 
       this.products.forEach((product, index) => {
         const card = this.createGridProductCard(product, index, isChoosable);
@@ -513,7 +514,8 @@
 
       const list = document.createElement('div');
       list.className = 'cartuplift-bundle-list';
-      list.style.cssText = 'display: flex; flex-direction: column; gap: 12px; margin: 20px 0;';
+      list.style.cssText = 'display: flex !important; flex-direction: column !important; gap: 12px; margin: 20px 0; width: 100%;';
+      console.log('🎨 LIST LAYOUT: Created list container with column flex-direction');
 
       this.products.forEach((product, index) => {
         const card = this.createListProductCard(product, index, isChoosable);
