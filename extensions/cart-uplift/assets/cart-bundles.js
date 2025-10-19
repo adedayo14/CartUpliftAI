@@ -1175,8 +1175,13 @@
           variantId = product.id;
         }
         
+        console.log(`🎁 Product "${product.title}": Using variant ID ${variantId} (from variant_id: ${product.variant_id})`);
+        
+        // Ensure variant ID is numeric for Shopify Cart API
+        const numericVariantId = String(variantId).replace(/[^0-9]/g, '');
+        
         return {
-          id: variantId,
+          id: numericVariantId,
           quantity: 1,
           properties: {
             '_bundle_id': this.config.id,
@@ -1185,6 +1190,8 @@
         };
       });
 
+      console.log('🎁 Cart items to add:', JSON.stringify(items, null, 2));
+      
       try {
         // Add all items to cart via Shopify Cart API
         const response = await fetch('/cart/add.js', {
@@ -1195,8 +1202,11 @@
           body: JSON.stringify({ items })
         });
 
+        console.log('🎁 Cart add response status:', response.status);
+        
         if (response.ok) {
-          console.log('🎁 Bundle added to cart successfully');
+          const result = await response.json();
+          console.log('🎁 Bundle added to cart successfully:', result);
           
           // Show success message
           this.showSuccessMessage();
@@ -1221,12 +1231,24 @@
             }
           }
         } else {
-          const error = await response.json();
-          throw new Error(error.description || 'Failed to add bundle to cart');
+          const errorText = await response.text();
+          console.error('🎁 Cart add error response:', errorText);
+          let error;
+          try {
+            error = JSON.parse(errorText);
+          } catch (e) {
+            error = { description: errorText };
+          }
+          throw new Error(error.description || error.message || `HTTP ${response.status}: ${errorText}`);
         }
       } catch (error) {
         console.error('🎁 Failed to add bundle to cart:', error);
-        alert('Failed to add bundle to cart. Please try again.');
+        console.error('🎁 Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+        alert(`Failed to add bundle to cart: ${error.message}. Please check the console for details.`);
       }
     }
 
