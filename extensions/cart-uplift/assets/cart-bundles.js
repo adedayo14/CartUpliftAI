@@ -79,13 +79,13 @@
         }
 
         const data = await response.json();
-        console.log('🎁 API Response:', data);
+        console.log('🎁 API Response (full):', JSON.stringify(data, null, 2));
         
         if (data.success && data.bundles) {
           this.bundles = data.bundles;
           this.currency = data.currency || 'USD';
           console.log(`🎁 Loaded ${this.bundles.length} bundles from backend:`, this.bundles);
-          console.log(`🎁 Currency: ${this.currency}`);
+          console.log(`🎁 Currency from API: ${data.currency}, Using: ${this.currency}`);
         } else {
           console.log('🎁 No bundles returned or API returned error:', data);
         }
