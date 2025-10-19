@@ -469,9 +469,16 @@
     // Radio buttons with bulk pricing
     // ========================================
     renderQuantityTier() {
+      console.log('🎁 Rendering quantity tier bundle');
+      console.log('🎁 Config:', this.config);
+      console.log('🎁 Products:', this.products);
+      
       const tiers = this.parseTierConfig();
       
+      console.log(`🎁 Parsed ${tiers.length} tiers`);
+      
       if (tiers.length === 0) {
+        console.warn('🎁 No tiers found, showing error message');
         this.container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No quantity tiers configured.</p>';
         return;
       }
@@ -480,19 +487,23 @@
       tierContainer.className = 'cartuplift-bundle-tiers';
 
       tiers.forEach((tier, tierIndex) => {
+        console.log(`🎁 Creating tier option ${tierIndex + 1}/${tiers.length}:`, tier);
         const option = this.createTierOption(tier, tierIndex, tiers.length);
         tierContainer.appendChild(option);
       });
 
       this.container.appendChild(tierContainer);
+      console.log('🎁 Tier container appended to bundle container');
 
       // Default select first tier
       if (tiers.length > 0) {
         this.selectedQuantityTier = tiers[0];
+        console.log('🎁 Selected first tier:', this.selectedQuantityTier);
         const firstRadio = tierContainer.querySelector('input[type="radio"]');
         if (firstRadio) {
           firstRadio.checked = true;
           firstRadio.closest('.cartuplift-tier-option').classList.add('selected');
+          console.log('🎁 First radio button checked');
         }
       }
     }
@@ -561,6 +572,16 @@
     parseTierConfig() {
       let tiers = [];
 
+      console.log('🎁 Parsing tier config:', {
+        hasTiers: !!this.config.tiers,
+        tiersIsArray: Array.isArray(this.config.tiers),
+        tiers: this.config.tiers,
+        hasTierConfig: !!this.config.tierConfig,
+        tierConfig: this.config.tierConfig,
+        productsLength: this.products.length,
+        firstProduct: this.products[0]
+      });
+
       if (this.config.tiers && Array.isArray(this.config.tiers)) {
         tiers = this.config.tiers
           .filter(t => t !== null)
@@ -573,15 +594,20 @@
         try {
           tiers = JSON.parse(this.config.tierConfig);
         } catch (e) {
-          console.error('Failed to parse tier config:', e);
+          console.error('🎁 Failed to parse tier config:', e);
         }
       }
 
-      return tiers.map(tier => {
+      console.log('🎁 Parsed tiers before pricing:', tiers);
+
+      const result = tiers.map(tier => {
         const quantity = tier.qty;
         const discount = tier.discount;
         const baseProduct = this.products[0];
         const basePrice = baseProduct ? baseProduct.price : 0;
+        
+        console.log(`🎁 Tier ${quantity}: basePrice=${basePrice}, discount=${discount}%`);
+        
         const originalTotal = basePrice * quantity;
         const discountedTotal = originalTotal * (1 - discount / 100);
         const savings = originalTotal - discountedTotal;
@@ -598,6 +624,9 @@
           description: tier.description || `${quantity} ${quantity === 1 ? 'item' : 'items'}`
         };
       });
+
+      console.log('🎁 Final tier options:', result);
+      return result;
     }
 
     createTierOption(tier, index, totalTiers) {
