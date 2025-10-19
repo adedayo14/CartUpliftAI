@@ -1149,12 +1149,20 @@
 
       // Prepare cart items
       const items = this.selectedProducts.map(product => {
-        const variant = product.variants && product.variants[0] 
-          ? product.variants[0] 
-          : { id: product.id };
+        // Support both formats: variant_id (from proxy API) or variants array
+        let variantId;
+        if (product.variant_id) {
+          variantId = product.variant_id;
+        } else if (product.variantId) {
+          variantId = product.variantId;
+        } else if (product.variants && product.variants[0]) {
+          variantId = product.variants[0].id;
+        } else {
+          variantId = product.id;
+        }
         
         return {
-          id: variant.id,
+          id: variantId,
           quantity: 1,
           properties: {
             '_bundle_id': this.config.id,
