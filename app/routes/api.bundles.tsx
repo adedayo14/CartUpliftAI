@@ -76,6 +76,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     // Step 1: Check for manual bundles assigned to this product
+    console.log('[Bundles API] Looking for bundles for product:', productId);
+    
+    // First, get ALL bundles to see what's in the database
+    const allBundles = await prisma.bundle.findMany({
+      where: { shop },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        status: true,
+        assignedProducts: true,
+        productIds: true,
+        bundleStyle: true
+      }
+    });
+    
+    console.log('[Bundles API] All bundles in database:', JSON.stringify(allBundles, null, 2));
+    
     const manualBundles = await prisma.bundle.findMany({
       where: {
         shop,

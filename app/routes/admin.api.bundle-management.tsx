@@ -309,7 +309,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           tierConfig,
           allowDeselect,
           hideIfNoML,
-          status: 'draft'
+          status: 'active'  // Start as active so it shows immediately
         }
       });
 
