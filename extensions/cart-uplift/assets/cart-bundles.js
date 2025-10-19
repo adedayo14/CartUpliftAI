@@ -9,7 +9,12 @@
       this.bundles = [];
       this.currency = 'USD'; // Default currency
       this.currencySymbols = {
-        'USD': '$', 'GBP': '£', 'EUR': '€', 'CAD': '$', 'AUD': '$', 'JPY': '¥', 'INR': '₹'
+        'USD': '$', 'GBP': '£', 'EUR': '€', 'CAD': '$', 'AUD': '$', 'JPY': '¥', 'INR': '₹',
+        'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr', 'PLN': 'zł', 'CZK': 'Kč',
+        'HUF': 'Ft', 'BGN': 'лв', 'RON': 'lei', 'HRK': 'kn', 'RSD': 'din', 'RUB': '₽',
+        'BRL': 'R$', 'MXN': '$', 'ARS': '$', 'CLP': '$', 'COP': '$', 'PEN': 'S/',
+        'CNY': '¥', 'KRW': '₩', 'THB': '฿', 'VND': '₫', 'MYR': 'RM', 'SGD': '$',
+        'PHP': '₱', 'IDR': 'Rp', 'NZD': '$', 'ZAR': 'R', 'ILS': '₪', 'TRY': '₺'
       };
       this.currentProductId = null;
       this.init();
@@ -60,14 +65,18 @@
 
     async loadBundles() {
       try {
-        // Call backend API to get bundles for this product
-        const apiUrl = `/apps/cart-uplift/api/bundles?product_id=${this.currentProductId}`;
+        // Call backend API to get bundles for this product (with cache-busting)
+        const timestamp = Date.now();
+        const apiUrl = `/apps/cart-uplift/api/bundles?product_id=${this.currentProductId}&_t=${timestamp}`;
         console.log(`🎁 Fetching bundles from: ${apiUrl}`);
         
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
 
@@ -86,6 +95,7 @@
           this.currency = data.currency || 'USD';
           console.log(`🎁 Loaded ${this.bundles.length} bundles from backend:`, this.bundles);
           console.log(`🎁 Currency from API: ${data.currency}, Using: ${this.currency}`);
+          console.log(`🎁 Currency symbol for ${this.currency}: ${this.currencySymbols[this.currency] || '$'}`);
         } else {
           console.log('🎁 No bundles returned or API returned error:', data);
         }
@@ -488,7 +498,7 @@
       
       if (product.comparePrice && product.comparePrice > product.price) {
         const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>${this.currencySymbol}${priceValue.toFixed(2)}`;
       }
       
       card.appendChild(price);
@@ -588,7 +598,7 @@
       
       if (product.comparePrice && product.comparePrice > product.price) {
         const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 8px; font-size: 15px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 8px; font-size: 15px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>${this.currencySymbol}${priceValue.toFixed(2)}`;
       }
       
       info.appendChild(price);
@@ -692,7 +702,7 @@
       
       if (product.comparePrice && product.comparePrice > product.price) {
         const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>${this.currencySymbol}${priceValue.toFixed(2)}`;
       }
       
       card.appendChild(price);

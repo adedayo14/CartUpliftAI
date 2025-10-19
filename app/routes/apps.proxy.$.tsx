@@ -1871,7 +1871,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
               name: bundle.name,
               description: bundle.description || '',
               type: bundle.type,
-              bundleStyle: bundle.bundleStyle || 'grid',
+              bundleStyle: bundle.bundleStyle || 'fbt',
               discountType: bundle.discountType,
               discountValue: bundle.discountValue,
               products: validProducts,
@@ -1922,8 +1922,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       console.log(`[BUNDLES API] === REAL PRODUCTS BUNDLE SYSTEM COMPLETED ===`);
       console.log(`[BUNDLES API] Generated ${bundles.length} ML bundles using real products:`, bundles.map(b => ({ id: b.id, name: b.name, products: b.products?.length || 0 })));
 
+      // Get shop currency for ML bundles as well
+      let currencyCode = 'USD';
+      try {
+        const shopResponse = await admin.graphql(`#graphql
+          query { shop { currencyCode } }
+        `);
+        const shopData: any = await shopResponse.json();
+        currencyCode = shopData.data?.shop?.currencyCode || 'USD';
+      } catch (_err) {
+        console.warn('[BUNDLES API] Failed to fetch currency for ML bundles, defaulting to USD');
+      }
+
       // Return with success: true format
-      const payload = { success: true, bundles, reason: bundles.length ? 'ok' : 'no_candidates' };
+      const payload = { success: true, bundles, currency: currencyCode, reason: bundles.length ? 'ok' : 'no_candidates' };
       console.log(`[BUNDLES API] Returning payload:`, payload);
       return json(payload, {
         headers: {
@@ -1932,7 +1944,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
           'X-Bundles-Reason': bundles.length ? 'ok' : 'no_candidates',
           'X-Bundles-Context': context,
           'X-Bundles-Shop': shopStr,
-          'X-Bundles-Source': 'ml'
+          'X-Bundles-Source': 'ml',
+          'X-Bundles-Currency': currencyCode
         }
       });
     } catch (err: unknown) {
