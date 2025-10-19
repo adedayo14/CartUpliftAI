@@ -1837,13 +1837,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
                   const product = data?.data?.product;
                   const variant = product?.variants?.edges?.[0]?.node;
                   if (product && variant) {
+                    // Shopify GraphQL returns prices as decimal strings like "699.95"
+                    // Frontend expects prices in cents, so multiply by 100
+                    const priceInCents = Math.round(parseFloat(variant.price || '0') * 100);
+                    const comparePriceInCents = variant.compareAtPrice ? Math.round(parseFloat(variant.compareAtPrice) * 100) : undefined;
+                    
+                    console.log(`[BUNDLES API] Product ${product.title}: GraphQL price="${variant.price}", converted to cents=${priceInCents}`);
+                    
                     return {
                       id: pid,
                       variant_id: String(variant.id).replace('gid://shopify/ProductVariant/', ''),
                       title: product.title,
                       handle: product.handle,
-                      price: Math.round(parseFloat(variant.price || '0') * 100), // Convert to cents for consistency
-                      comparePrice: variant.compareAtPrice ? Math.round(parseFloat(variant.compareAtPrice) * 100) : undefined,
+                      price: priceInCents,
+                      comparePrice: comparePriceInCents,
                       image: product.media?.edges?.[0]?.node?.image?.url
                     };
                   }
@@ -1863,8 +1870,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
             const regularTotal = validProducts.reduce((sum, p: any) => sum + p.price, 0);
             const bundlePrice = bundle.discountType === 'percentage'
               ? regularTotal * (1 - bundle.discountValue / 100)
-              : regularTotal - bundle.discountValue;
+              : regularTotal - (bundle.discountValue * 100); // Convert discount value to cents for fixed amounts
             const discountPercent = regularTotal > 0 ? Math.round(((regularTotal - bundlePrice) / regularTotal) * 100) : 0;
+            
+            console.log(`[BUNDLES API] Bundle "${bundle.name}" pricing: regularTotal=${regularTotal} cents, bundlePrice=${bundlePrice} cents, discountPercent=${discountPercent}%`);
             
             return {
               id: bundle.id,
