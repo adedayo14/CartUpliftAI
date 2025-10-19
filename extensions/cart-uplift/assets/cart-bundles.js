@@ -213,6 +213,8 @@
 
       const bundleStyle = this.config.bundleStyle || 'fbt';
       const bundleType = this.config.type || 'manual';
+      
+      console.log(`🎨 Bundle "${this.config.name}" - Style from config: "${this.config.bundleStyle}", Using: "${bundleStyle}"`);
 
       // Render based on display style
       switch (bundleStyle) {

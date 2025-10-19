@@ -1809,6 +1809,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         if (manualBundles.length > 0) {
           // Manual bundles exist - use them instead of ML bundles
           const formattedManualBundles = await Promise.all(manualBundles.map(async (bundle) => {
+            console.log(`[BUNDLES API] Processing bundle "${bundle.name}" - bundleStyle from DB: "${bundle.bundleStyle}"`);
+            
             // Parse productIds from JSON string
             let productIds: string[] = [];
             try {
@@ -1896,7 +1898,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
               `);
               const shopData: any = await shopResponse.json();
               currencyCode = shopData.data?.shop?.currencyCode || 'GBP';
-            } catch (err) {
+            } catch (_err) {
               console.warn('[BUNDLES API] Failed to fetch currency, defaulting to GBP');
             }
             
