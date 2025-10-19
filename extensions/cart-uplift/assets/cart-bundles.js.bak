@@ -481,11 +481,11 @@
       price.style.cssText = 'margin: 0; font-size: 15px; font-weight: 600;';
       
       const priceValue = product.price / 100;
-      price.textContent = `${this.currencySymbol}${priceValue.toFixed(2)}`;
+      price.textContent = `$${priceValue.toFixed(2)}`;
       
       if (product.comparePrice && product.comparePrice > product.price) {
         const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">$${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
       }
       
       card.appendChild(price);
@@ -580,11 +580,11 @@
       price.style.cssText = 'margin: 0; font-size: 17px; font-weight: 700;';
       
       const priceValue = product.price / 100;
-      price.textContent = `${this.currencySymbol}${priceValue.toFixed(2)}`;
+      price.textContent = `$${priceValue.toFixed(2)}`;
       
       if (product.comparePrice && product.comparePrice > product.price) {
         const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 8px; font-size: 15px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 8px; font-size: 15px;">$${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
       }
       
       info.appendChild(price);
@@ -684,11 +684,11 @@
       price.style.cssText = 'margin: 0; font-size: 15px; font-weight: 600;';
       
       const priceValue = product.price / 100;
-      price.textContent = `${this.currencySymbol}${priceValue.toFixed(2)}`;
+      price.textContent = `$${priceValue.toFixed(2)}`;
       
       if (product.comparePrice && product.comparePrice > product.price) {
         const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">${this.currencySymbol}${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span style="text-decoration: line-through; color: #999; margin-right: 6px; font-size: 13px;">$${compareValue.toFixed(2)}</span>$${priceValue.toFixed(2)}`;
       }
       
       card.appendChild(price);
@@ -896,13 +896,13 @@
 
       const discountedPrice = document.createElement('p');
       discountedPrice.style.cssText = 'margin: 0; font-size: 24px; font-weight: 700; color: #4CAF50;';
-      discountedPrice.textContent = `${this.currencySymbol}${(tier.discountedPrice / 100).toFixed(2)}`;
+      discountedPrice.textContent = `$${(tier.discountedPrice / 100).toFixed(2)}`;
       right.appendChild(discountedPrice);
 
       if (tier.discount > 0) {
         const originalPrice = document.createElement('p');
         originalPrice.style.cssText = 'margin: 0; font-size: 16px; color: #999; text-decoration: line-through;';
-        originalPrice.textContent = `${this.currencySymbol}${(tier.originalPrice / 100).toFixed(2)}`;
+        originalPrice.textContent = `$${(tier.originalPrice / 100).toFixed(2)}`;
         right.appendChild(originalPrice);
       }
 
@@ -993,7 +993,7 @@
         
         let savingsText = this.config.savingsBadgeText || 'Save {amount}!';
         savingsText = savingsText
-          .replace('{amount}', `${this.currencySymbol}${(savings / 100).toFixed(2)}`)
+          .replace('{amount}', `$${(savings / 100).toFixed(2)}`)
           .replace('{percent}', `${savingsPercent}%`);
         
         savingsBadge.textContent = savingsText;
@@ -1012,13 +1012,13 @@
 
       const finalPrice = document.createElement('span');
       finalPrice.style.cssText = 'font-size: 32px; font-weight: 700; color: #1a1a1a;';
-      finalPrice.textContent = `${this.currencySymbol}${(discountedPrice / 100).toFixed(2)}`;
+      finalPrice.textContent = `$${(discountedPrice / 100).toFixed(2)}`;
       priceDisplay.appendChild(finalPrice);
 
       if (savings > 0 && originalPrice > 0) {
         const originalPriceEl = document.createElement('span');
         originalPriceEl.style.cssText = 'font-size: 20px; color: #999; text-decoration: line-through;';
-        originalPriceEl.textContent = `${this.currencySymbol}${(originalPrice / 100).toFixed(2)}`;
+        originalPriceEl.textContent = `$${(originalPrice / 100).toFixed(2)}`;
         priceDisplay.appendChild(originalPriceEl);
       }
 

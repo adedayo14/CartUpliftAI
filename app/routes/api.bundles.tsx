@@ -61,6 +61,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { session, admin } = await authenticate.admin(request);
     const shop = session.shop;
 
+    // Get shop currency
+    let currencyCode = 'USD';
+    try {
+      const shopResponse = await admin.graphql(`
+        #graphql
+        query {
+          shop {
+            currencyCode
+          }
+        }
+      `);
+      const shopData = await shopResponse.json();
+      currencyCode = shopData.data?.shop?.currencyCode || 'USD';
+    } catch (err) {
+      console.warn('[Bundles API] Failed to fetch currency, defaulting to USD');
+    }
+
     // Get settings to check if bundles are enabled
     const settings = await prisma.settings.findUnique({
       where: { shop }
@@ -194,6 +211,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         success: true,
         bundles: formattedBundles,
         source: 'manual',
+        currency: currencyCode,
         settings: {
           defaultDiscount: settings.defaultBundleDiscount,
           autoApply: settings.autoApplyBundleDiscounts
@@ -263,6 +281,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         success: true,
         bundles: formattedAIBundles,
         source: 'ai',
+        currency: currencyCode,
         confidence: mlBundles.bundles[0]?.status === 'active' ? 'high' : 'medium',
         settings: {
           defaultDiscount: settings.defaultBundleDiscount,
@@ -276,6 +295,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({
       success: true,
       bundles: [],
+      currency: currencyCode,
       source: 'none',
       message: 'No bundles available for this product'
     });
