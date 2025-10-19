@@ -4,8 +4,8 @@
 {% endcomment %}
 
 {%- comment -%} Load CSS and JS assets with cache busting {%- endcomment -%}
-{{ 'cart-bundles.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'cart-bundles.js' | asset_url }}?v=3.1.0" defer></script>
+<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}?v={{ 'now' | date: '%s' }}">
+<script src="{{ 'cart-bundles.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
 
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
