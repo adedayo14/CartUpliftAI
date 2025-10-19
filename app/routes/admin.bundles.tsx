@@ -955,12 +955,18 @@ export default function BundlesAdmin() {
               <ResourceList
                 items={availableProducts.slice(0, 50)}
                 renderItem={(product: Product) => {
-                  const isSelected = assignedProducts.includes(product.id);
+                  // Strip gid://shopify/Product/ prefix for comparison
+                  const numericId = product.id.replace('gid://shopify/Product/', '');
+                  const isSelected = assignedProducts.includes(numericId);
                   return (
                     <ResourceItem 
                       id={product.id} 
                       onClick={() => {
-                        setAssignedProducts(isSelected ? assignedProducts.filter(id => id !== product.id) : [...assignedProducts, product.id]);
+                        setAssignedProducts(
+                          isSelected 
+                            ? assignedProducts.filter(id => id !== numericId) 
+                            : [...assignedProducts, numericId]
+                        );
                       }}
                     >
                       <InlineStack gap="300" blockAlign="center">
