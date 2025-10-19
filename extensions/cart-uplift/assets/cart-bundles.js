@@ -209,17 +209,42 @@
     }
 
     // ========================================
-    // STYLE 1: CLEAN HORIZONTAL
-    // Like "Just for you" / Amazon FBT
+    // STYLE 1: CLEAN HORIZONTAL (Amazon FBT Style)
+    // All products in a row with summary on the right
     // ========================================
     renderCleanHorizontal() {
       const container = document.createElement('div');
       container.className = 'cartuplift-bundle-clean';
 
-      this.products.forEach((product, index) => {
-        const item = document.createElement('div');
-        item.className = 'cartuplift-clean-item';
+      // Products wrapper (left side - scrollable on mobile)
+      const productsWrapper = document.createElement('div');
+      productsWrapper.className = 'bundle-products-wrapper';
 
+      this.products.forEach((product, index) => {
+        // Create product card
+        const item = document.createElement('div');
+        item.className = 'cartuplift-clean-item selected';
+        item.dataset.index = index;
+        item.dataset.variantId = product.variant_id;
+
+        // Add checkbox for selection
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.dataset.index = index;
+        checkbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            item.classList.add('selected');
+            this.selectedProducts.push({ ...product, index, quantity: 1 });
+          } else {
+            item.classList.remove('selected');
+            this.selectedProducts = this.selectedProducts.filter(p => p.index !== index);
+          }
+          this.updateCleanSummary();
+        });
+        item.appendChild(checkbox);
+
+        // Product image
         if (product.image) {
           const img = document.createElement('img');
           img.src = product.image;
@@ -227,26 +252,98 @@
           item.appendChild(img);
         }
 
+        // Product title (with "This item:" prefix for first product)
         const title = document.createElement('h4');
-        title.textContent = product.title;
+        if (index === 0) {
+          const strong = document.createElement('strong');
+          strong.textContent = 'This item: ';
+          title.appendChild(strong);
+          title.appendChild(document.createTextNode(product.title));
+        } else {
+          title.textContent = product.title;
+        }
         item.appendChild(title);
 
+        // Product price
         const price = this.createPriceElement(product);
         item.appendChild(price);
 
-        container.appendChild(item);
+        // Make card clickable to toggle checkbox
+        item.addEventListener('click', (e) => {
+          if (e.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+          }
+        });
 
-        // Add plus sign between items
+        productsWrapper.appendChild(item);
+
+        // Add plus separator between products
         if (index < this.products.length - 1) {
           const plus = document.createElement('span');
           plus.className = 'cartuplift-bundle-plus';
           plus.textContent = '+';
-          container.appendChild(plus);
+          productsWrapper.appendChild(plus);
         }
       });
 
+      container.appendChild(productsWrapper);
+
+      // Summary section (right side)
+      const summary = document.createElement('div');
+      summary.className = 'bundle-summary';
+
+      // Total price section
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'bundle-total';
+
+      const totalLabel = document.createElement('p');
+      totalLabel.className = 'total-label';
+      totalLabel.textContent = 'Total price:';
+      totalDiv.appendChild(totalLabel);
+
+      const totalPrice = document.createElement('p');
+      totalPrice.className = 'bundle-total-price';
+      totalPrice.id = 'cartuplift-total-price';
+      totalDiv.appendChild(totalPrice);
+
+      summary.appendChild(totalDiv);
+
+      // Add to cart button
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-bundle-btn';
+      addBtn.id = 'cartuplift-add-bundle';
+      addBtn.addEventListener('click', () => this.addBundleToCart());
+      summary.appendChild(addBtn);
+
+      container.appendChild(summary);
       this.container.appendChild(container);
+
+      // Initialize selected products (all selected by default)
       this.selectedProducts = this.products.map((p, i) => ({ ...p, index: i, quantity: 1 }));
+      
+      // Initial summary update
+      this.updateCleanSummary();
+    }
+
+    // Update the summary section for clean style
+    updateCleanSummary() {
+      const totalPriceEl = document.getElementById('cartuplift-total-price');
+      const addBtnEl = document.getElementById('cartuplift-add-bundle');
+
+      if (!totalPriceEl || !addBtnEl) return;
+
+      const selectedCount = this.selectedProducts.length;
+      const total = this.calculateTotal();
+
+      // Update total price
+      totalPriceEl.textContent = this.formatPrice(total);
+
+      // Update button text
+      addBtnEl.disabled = selectedCount === 0;
+      addBtnEl.textContent = selectedCount > 0 
+        ? `Add all ${selectedCount} to Cart` 
+        : 'Add to Cart';
     }
 
     // ========================================

@@ -3,8 +3,9 @@
   Version: 3.0.1 - Fixed FOUC and tier rendering
 {% endcomment %}
 
-{%- comment -%} Load CSS with preload to prevent FOUC {%- endcomment -%}
-{{ 'cart-bundles.css' | asset_url | stylesheet_tag: preload: true }}
+{%- comment -%} Load CSS and JS assets {%- endcomment -%}
+{{ 'cart-bundles.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
 
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
