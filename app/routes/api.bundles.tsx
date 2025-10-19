@@ -88,6 +88,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return json({ 
         success: true, 
         bundles: [],
+        currency: currencyCode,
         message: 'Smart bundles not enabled'
       });
     }
@@ -207,7 +208,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         })
       );
 
-      return json({
+      const response = {
         success: true,
         bundles: formattedBundles,
         source: 'manual',
@@ -216,7 +217,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           defaultDiscount: settings.defaultBundleDiscount,
           autoApply: settings.autoApplyBundleDiscounts
         }
+      };
+      
+      console.log('[Bundles API] Returning manual bundles:', {
+        count: formattedBundles.length,
+        currency: currencyCode,
+        bundleNames: formattedBundles.map(b => b.name)
       });
+      
+      return json(response);
     }
 
     // Step 2: No manual bundles, try AI-generated bundles
