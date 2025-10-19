@@ -2,10 +2,11 @@
   Cart Uplift - Product Bundle Block  
   NOTE: Theme app extension blocks limited to 6 settings max
   Full bundle config managed in backend, block just triggers display
-  Version: 2.0.0 - Using cart-bundles-v2.js to bypass cache
+  Version: 3.0.0 - Separated CSS and JS for better performance
 {% endcomment %}
 
-<script src="{{ 'cart-bundles-v2.js' | asset_url }}" defer></script>
+<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}">
+<script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
 
 {%- liquid
   # Simple block - just displays bundles managed in backend
