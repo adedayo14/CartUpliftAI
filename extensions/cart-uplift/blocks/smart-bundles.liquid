@@ -25,9 +25,6 @@
     </div>
   </div>
   
-  {%- comment -%} Load JS at the end {%- endcomment -%}
-  <script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
-  
   {%- comment -%} Show widget once CSS loaded {%- endcomment -%}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -53,29 +50,6 @@
       "type": "checkbox",
       "id": "bundle_enabled",
       "label": "Enable bundles",
-      "default": true,
-      "info": "Show product bundles on this page"
-    },
-    {
-      "type": "text",
-      "id": "bundle_title",
-      "label": "Section heading",
-      "default": "Bundle & Save",
-      "info": "Optional heading above bundles"
-    },
-    {
-      "type": "range",
-      "id": "priority",
-      "label": "Display priority",
-      "min": 1,
-      "max": 10,
-      "step": 1,
-      "default": 5,
-      "info": "Order if multiple bundle blocks on same page"
-    }
-  ]
-}
-{% endschema %}
       "default": true,
       "info": "Show product bundles on this page"
     },
