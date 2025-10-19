@@ -299,6 +299,35 @@ export default function BundlesAdmin() {
     }, 3000);
   }, []);
 
+  const handleFixBundleIds = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/admin/api/bundle-management', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: "fix-bundle-ids" }),
+      });
+      
+      if (response.status === 401) {
+        window.location.reload();
+        return;
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        triggerBanner("success", `Fixed ${data.updatedCount} bundle(s)`);
+        revalidator.revalidate();
+      } else {
+        triggerBanner("error", data.error || "Failed to fix bundle IDs");
+      }
+    } catch (error: any) {
+      console.error('[handleFixBundleIds] Error:', error);
+      triggerBanner("error", error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [revalidator, triggerBanner]);
+
   const handleCreateBundle = useCallback(async () => {
     if (!newBundle.name.trim()) {
       triggerBanner("error", "Bundle name is required");
@@ -532,6 +561,13 @@ export default function BundlesAdmin() {
         onAction: () => { resetForm(); setShowCreateModal(true); },
         icon: PlusIcon,
       }}
+      secondaryActions={[
+        {
+          content: "Fix product IDs",
+          onAction: handleFixBundleIds,
+          helpText: "One-time fix for existing bundles",
+        }
+      ]}
     >
       <Layout>
         {showSuccessBanner && (

@@ -266,6 +266,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
+    if (actionType === 'fix-bundle-ids') {
+      // Fix existing bundles with gid:// prefixes
+      const bundles = await prisma.bundle.findMany({
+        where: {
+          shop: session.shop,
+          assignedProducts: { not: null }
+        }
+      });
+
+      let updatedCount = 0;
+      for (const bundle of bundles) {
+        if (!bundle.assignedProducts) continue;
+
+        const productIds = JSON.parse(bundle.assignedProducts);
+        const hasPrefix = productIds.some((id: string) => id.startsWith('gid://'));
+        
+        if (hasPrefix) {
+          const cleanedIds = productIds.map((id: string) => 
+            id.replace('gid://shopify/Product/', '')
+          );
+
+          await prisma.bundle.update({
+            where: { id: bundle.id },
+            data: { assignedProducts: JSON.stringify(cleanedIds) }
+          });
+          updatedCount++;
+        }
+      }
+
+      console.log(`[Bundle API] Fixed ${updatedCount} bundles`);
+      return json({ success: true, updatedCount });
+    }
+    
     if (actionType === 'create-bundle') {
       const name = (body.name as string) || '';
       const description = (body.description as string) || '';
