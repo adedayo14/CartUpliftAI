@@ -1840,8 +1840,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
                       variant_id: String(variant.id).replace('gid://shopify/ProductVariant/', ''),
                       title: product.title,
                       handle: product.handle,
-                      price: parseFloat(variant.price || '0'),
-                      comparePrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) : undefined,
+                      price: Math.round(parseFloat(variant.price || '0') * 100), // Convert to cents for consistency
+                      comparePrice: variant.compareAtPrice ? Math.round(parseFloat(variant.compareAtPrice) * 100) : undefined,
                       image: product.media?.edges?.[0]?.node?.image?.url
                     };
                   }
@@ -1888,13 +1888,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
           const validManualBundles = formattedManualBundles.filter(b => b !== null);
           
           if (validManualBundles.length > 0) {
-            console.log(`[BUNDLES API] Returning ${validManualBundles.length} manual bundles`);
-            return json({ success: true, bundles: validManualBundles }, {
+            // Get shop currency
+            let currencyCode = 'GBP';
+            try {
+              const shopResponse = await admin.graphql(`#graphql
+                query { shop { currencyCode } }
+              `);
+              const shopData: any = await shopResponse.json();
+              currencyCode = shopData.data?.shop?.currencyCode || 'GBP';
+            } catch (err) {
+              console.warn('[BUNDLES API] Failed to fetch currency, defaulting to GBP');
+            }
+            
+            console.log(`[BUNDLES API] Returning ${validManualBundles.length} manual bundles with currency ${currencyCode}`);
+            return json({ success: true, bundles: validManualBundles, currency: currencyCode }, {
               headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Cache-Control': 'public, max-age=30',
                 'X-Bundles-Source': 'manual',
-                'X-Bundles-Count': String(validManualBundles.length)
+                'X-Bundles-Count': String(validManualBundles.length),
+                'X-Bundles-Currency': currencyCode
               }
             });
           }
