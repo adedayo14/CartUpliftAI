@@ -82,9 +82,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         status: 'active',
         OR: [
           // Check if product is in assignedProducts JSON array
-          { assignedProducts: { contains: productId } },
+          { assignedProducts: { contains: `"${productId}"` } },
           // Also check if product is in the bundle's products
-          { productIds: { contains: productId } }
+          { productIds: { contains: `"${productId}"` } }
         ]
       },
       include: {
@@ -96,6 +96,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     console.log('[Bundles API] Found manual bundles:', manualBundles.length);
+    
+    if (manualBundles.length > 0) {
+      console.log('[Bundles API] Manual bundle details:', manualBundles.map(b => ({
+        id: b.id,
+        name: b.name,
+        type: b.type,
+        bundleStyle: b.bundleStyle,
+        assignedProducts: b.assignedProducts,
+        productIds: b.productIds
+      })));
+    }
 
     if (manualBundles.length > 0) {
       // Format manual bundles
