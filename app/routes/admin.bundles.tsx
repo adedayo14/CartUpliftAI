@@ -38,6 +38,7 @@ import {
   DeleteIcon,
   InfoIcon,
 } from "@shopify/polaris-icons";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -178,6 +179,7 @@ export default function BundlesAdmin() {
   const loaderData = useLoaderData<typeof loader>();
   const revalidator = useRevalidator();
   const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shopify = useAppBridge();
 
   const loaderBundles = useMemo(() => (loaderData as any).bundles || [], [loaderData]);
   const currencyCode = (loaderData as any).currencyCode;
@@ -306,8 +308,10 @@ export default function BundlesAdmin() {
     setShowSuccessBanner(false);
     setShowErrorBanner(false);
     try {
+      // Get fresh session token from URL or session
       const urlParams = new URLSearchParams(window.location.search);
-      const sessionToken = urlParams.get('id_token') || '';
+      const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
+      
       const payload = {
         action: "create-bundle",
         name: newBundle.name,
@@ -326,11 +330,23 @@ export default function BundlesAdmin() {
         allowDeselect: newBundle.allowDeselect,
         hideIfNoML: newBundle.hideIfNoML,
       };
+      
+      // Make request - if 401, reload page to get fresh session
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
         body: JSON.stringify(payload),
       });
+      
+      // If unauthorized, reload page to refresh session
+      if (response.status === 401) {
+        console.log('[handleCreateBundle] Session expired, reloading page...');
+        window.location.reload();
+        return;
+      }
       
       // Check if response is ok and has JSON content
       if (!response.ok) {
@@ -379,13 +395,20 @@ export default function BundlesAdmin() {
     setPendingBundleId(bundleId);
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const sessionToken = urlParams.get('id_token') || '';
+      const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
       const payload = { action: "toggle-status", bundleId, status: currentStatus === 'active' ? 'paused' : 'active' };
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
         body: JSON.stringify(payload),
       });
+      
+      // If unauthorized, reload page to refresh session
+      if (response.status === 401) {
+        console.log('[handleToggleStatus] Session expired, reloading page...');
+        window.location.reload();
+        return;
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -422,13 +445,20 @@ export default function BundlesAdmin() {
     setPendingBundleId(bundleId);
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const sessionToken = urlParams.get('id_token') || '';
+      const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
       const payload = { action: "delete-bundle", bundleId };
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
         body: JSON.stringify(payload),
       });
+      
+      // If unauthorized, reload page to refresh session
+      if (response.status === 401) {
+        console.log('[handleDelete] Session expired, reloading page...');
+        window.location.reload();
+        return;
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
