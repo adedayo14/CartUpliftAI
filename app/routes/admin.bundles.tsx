@@ -793,13 +793,19 @@ export default function BundlesAdmin() {
                       <ResourceList
                         items={availableProducts.slice(0, 25)}
                         renderItem={(product: Product) => {
-                          const isSelected = selectedProducts.includes(product.id);
+                          // Strip gid://shopify/Product/ prefix for consistency
+                          const numericId = product.id.replace('gid://shopify/Product/', '');
+                          const isSelected = selectedProducts.includes(numericId);
                           return (
                             <ResourceItem 
                               id={product.id} 
                               onClick={() => {
                                 if (!isSaving) {
-                                  setSelectedProducts(isSelected ? selectedProducts.filter(id => id !== product.id) : [...selectedProducts, product.id]);
+                                  setSelectedProducts(
+                                    isSelected 
+                                      ? selectedProducts.filter(id => id !== numericId) 
+                                      : [...selectedProducts, numericId]
+                                  );
                                 }
                               }}
                             >
