@@ -213,14 +213,20 @@
     // All products in a row with summary on the right
     // ========================================
     renderCleanHorizontal() {
+      console.log('🎨 Rendering Amazon-style FBT layout with', this.products.length, 'products');
+      
       const container = document.createElement('div');
       container.className = 'cartuplift-bundle-clean';
 
       // Products wrapper (left side - scrollable on mobile)
       const productsWrapper = document.createElement('div');
       productsWrapper.className = 'bundle-products-wrapper';
+      
+      console.log('📦 Creating products wrapper...');
 
       this.products.forEach((product, index) => {
+        console.log(`  Product ${index + 1}:`, product.title, '-', product.variant_id);
+        
         // Create product card
         const item = document.createElement('div');
         item.className = 'cartuplift-clean-item selected';
@@ -288,6 +294,7 @@
       });
 
       container.appendChild(productsWrapper);
+      console.log('✅ Products wrapper created with', productsWrapper.children.length, 'children');
 
       // Summary section (right side)
       const summary = document.createElement('div');
@@ -317,13 +324,17 @@
       summary.appendChild(addBtn);
 
       container.appendChild(summary);
+      console.log('✅ Summary section created');
+      
       this.container.appendChild(container);
+      console.log('✅ Container appended to DOM');
 
       // Initialize selected products (all selected by default)
       this.selectedProducts = this.products.map((p, i) => ({ ...p, index: i, quantity: 1 }));
       
       // Initial summary update
       this.updateCleanSummary();
+      console.log('✅ Amazon FBT layout complete!');
     }
 
     // Update the summary section for clean style

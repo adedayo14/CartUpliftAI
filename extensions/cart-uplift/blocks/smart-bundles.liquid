@@ -1,11 +1,11 @@
 {% comment %}
   Cart Uplift - Product Bundle Block  
-  Version: 3.0.1 - Fixed FOUC and tier rendering
+  Version: 3.1.0 - Amazon-style FBT layout
 {% endcomment %}
 
-{%- comment -%} Load CSS and JS assets {%- endcomment -%}
+{%- comment -%} Load CSS and JS assets with cache busting {%- endcomment -%}
 {{ 'cart-bundles.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'cart-bundles.js' | asset_url }}" defer></script>
+<script src="{{ 'cart-bundles.js' | asset_url }}?v=3.1.0" defer></script>
 
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
