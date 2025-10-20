@@ -504,9 +504,12 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        // Silent success - no banner
+        // Silent success - update UI and reload for better UX
         setBundleList((prev) => prev.filter((b) => b.id !== bundleId));
-        revalidator.revalidate();
+        // Auto-refresh page after deletion to ensure clean state
+        setTimeout(() => {
+          window.location.reload();
+        }, 300); // Small delay to show deletion animation
       } else {
         triggerBanner("error", data.error || "Failed to delete bundle");
       }
