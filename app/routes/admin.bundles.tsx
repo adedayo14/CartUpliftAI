@@ -42,7 +42,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
-interface Bundle {
+interface   1 Bundle {
   id: string;
   name: string;
   description?: string;
@@ -801,20 +801,11 @@ export default function BundlesAdmin() {
                 helpText="Choose how products are selected for this bundle"
               />
 
-                <Select 
-                label="Display style"
-                options={[
-                    { label: "Frequently bought together", value: "fbt" },
-                    { label: "Grid layout", value: "grid" },
-                    { label: "List layout", value: "list" },
-                    { label: "Carousel (scrollable)", value: "carousel" },
-                    { label: "Quantity tiers", value: "tier" }
-                ]}
-                value={newBundle.bundleStyle}
-                onChange={(v) => setNewBundle({ ...newBundle, bundleStyle: v as "fbt" | "grid" | "list" | "carousel" | "tier" })}
-                disabled={isSaving}
-                helpText="How the bundle will appear on your store"
-                />
+                <Banner tone="info">
+                <Text as="p" variant="bodySm">
+                  💡 <strong>Display style moved to theme editor:</strong> Configure how bundles appear by editing the Smart Bundles block in your theme customizer (Online Store → Themes → Customize).
+                </Text>
+              </Banner>
 
               {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
                 <Card background="bg-surface-secondary">

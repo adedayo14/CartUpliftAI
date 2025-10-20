@@ -1,6 +1,6 @@
 {% comment %}
   Cart Uplift - Product Bundle Block  
-  Version: 3.1.0 - Amazon-style FBT layout
+  Version: 3.2.0 - Display style in theme schema
 {% endcomment %}
 
 {%- comment -%} Load CSS and JS assets with cache busting {%- endcomment -%}
@@ -40,13 +40,13 @@
 
 {% schema %}
 {
-  "name": "Smart Bundles",
+  "name": "Smart Bundles - v3.2",
   "target": "section",
   "templates": ["product", "collection"],
   "settings": [
     {
       "type": "paragraph",
-      "content": "⚙️ **Configure bundles in your Cart Uplift admin dashboard.** This block displays bundles you've created for each product."
+      "content": "⚙️ **Create bundles** in your CartUplift admin dashboard, then **style them here**. Choose Amazon-style, Grid, List, Detailed, or Tier layouts."
     },
     {
       "type": "checkbox",
@@ -103,7 +103,7 @@
     },
     {
       "type": "paragraph",
-      "content": "💡 **Preview:** Visit a product page where you've assigned bundles to see them in action. The style you select above will override any style set in the admin dashboard."
+      "content": "💡 **Live Preview:** Save and view a product page to see your bundles. The style you choose above overrides any admin settings. Change styles anytime without affecting your bundle content."
     }
   ]
 }
