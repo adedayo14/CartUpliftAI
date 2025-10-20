@@ -97,9 +97,28 @@ Check Network tab for:
 
 ## 🎨 Bundle Style Classes
 
-Reference for the 5 bundle display styles:
+Reference for the 5 bundle display styles (configurable in theme editor):
 
-### 1. Clean/FBT (Amazon Style)
+### Display Style Priority
+1. **Theme Setting** (Liquid schema) - Overrides everything
+2. **Admin Setting** (Bundle configuration) - Fallback if no theme setting
+3. **Default** - `clean` (Amazon style)
+
+### How to Configure
+**Theme Editor (Recommended):**
+1. Go to Shopify Admin → Online Store → Themes → Customize
+2. Navigate to product page
+3. Click on "Smart Bundles" block
+4. Select "Bundle display style" from dropdown
+5. Choose: Amazon Style, Grid, List, Detailed, or Tier
+
+**Admin Dashboard (Global):**
+1. Go to Cart Uplift admin
+2. Create/Edit bundle
+3. Select "Bundle Style" in settings
+4. Note: Theme setting overrides this
+
+### 1. Clean/FBT (Amazon Style) - Recommended ⭐
 ```css
 .cartuplift-bundle-clean
   .bundle-products-wrapper
@@ -107,6 +126,7 @@ Reference for the 5 bundle display styles:
   .bundle-summary
     .add-bundle-btn
 ```
+**Best for:** All product types, mobile-friendly, high conversion
 
 ### 2. Grid (Checkboxes)
 ```css
@@ -114,6 +134,7 @@ Reference for the 5 bundle display styles:
   .cartuplift-grid-card.selected
   .cartuplift-quantity-selector
 ```
+**Best for:** "Pick X from Y" bundles, customizable quantities
 
 ### 3. List (Vertical)
 ```css

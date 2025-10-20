@@ -9,6 +9,7 @@
 
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
+  assign display_style = block.settings.display_style
 -%}
 
 {% if bundle_enabled %}
@@ -18,6 +19,7 @@
     data-product-id="{% if product %}{{ product.id }}{% endif %}"
     data-bundle-title="{{ block.settings.bundle_title | escape }}"
     data-bundle-priority="{{ block.settings.priority }}"
+    data-display-style="{{ display_style }}"
     style="opacity: 0; transition: opacity 0.3s;"
   >
     <div class="cartuplift-bundle-loading" style="padding: 20px; text-align: center; color: #666;">
@@ -61,6 +63,35 @@
       "info": "Optional heading above bundles"
     },
     {
+      "type": "select",
+      "id": "display_style",
+      "label": "Bundle display style",
+      "options": [
+        {
+          "value": "clean",
+          "label": "Amazon Style (Recommended)"
+        },
+        {
+          "value": "grid",
+          "label": "Grid with Checkboxes"
+        },
+        {
+          "value": "list",
+          "label": "Compact List"
+        },
+        {
+          "value": "detailed",
+          "label": "Detailed with Variants"
+        },
+        {
+          "value": "tier",
+          "label": "Quantity Tiers"
+        }
+      ],
+      "default": "clean",
+      "info": "Choose how bundles appear on this page. Amazon Style shows products in a horizontal row with summary on the right."
+    },
+    {
       "type": "range",
       "id": "priority",
       "label": "Display priority",
@@ -72,7 +103,7 @@
     },
     {
       "type": "paragraph",
-      "content": "💡 **To see bundles preview:** Visit a product page in your store where you've assigned bundles. The JavaScript will load and display bundles based on your admin configuration."
+      "content": "💡 **Preview:** Visit a product page where you've assigned bundles to see them in action. The style you select above will override any style set in the admin dashboard."
     }
   ]
 }

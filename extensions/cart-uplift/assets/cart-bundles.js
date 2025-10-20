@@ -178,8 +178,15 @@
         return;
       }
 
-      const bundleStyle = this.config.bundleStyle || 'clean';
-      console.log(`🎨 Rendering style: ${bundleStyle}`);
+      // Check for theme setting first (from Liquid schema), then fall back to admin setting
+      const themeStyle = this.containerElement.dataset.displayStyle;
+      const bundleStyle = themeStyle || this.config.bundleStyle || 'clean';
+      
+      if (themeStyle) {
+        console.log(`🎨 Using theme style override: ${bundleStyle}`);
+      } else {
+        console.log(`🎨 Using admin style: ${bundleStyle}`);
+      }
 
       // Render based on style - 5 options only
       switch (bundleStyle) {
