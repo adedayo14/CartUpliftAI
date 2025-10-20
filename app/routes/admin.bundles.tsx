@@ -180,9 +180,37 @@ export default function BundlesAdmin() {
   const revalidator = useRevalidator();
   const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shopify = useAppBridge();
+  const [retryCount, setRetryCount] = useState(0);
+  const [isAutoRetrying, setIsAutoRetrying] = useState(false);
 
   const loaderBundles = useMemo(() => (loaderData as any).bundles || [], [loaderData]);
   const currencyCode = (loaderData as any).currencyCode;
+  
+  // Auto-retry logic for session/auth errors
+  useEffect(() => {
+    const hasError = !(loaderData as any).success;
+    const errorMessage = (loaderData as any).error;
+    
+    if (hasError && retryCount < 3 && !isAutoRetrying) {
+      console.log(`[BundlesAdmin] Error detected: ${errorMessage}. Auto-retry attempt ${retryCount + 1}/3`);
+      setIsAutoRetrying(true);
+      
+      // Exponential backoff: 500ms, 1s, 2s
+      const retryDelay = Math.min(500 * Math.pow(2, retryCount), 2000);
+      
+      setTimeout(() => {
+        console.log('[BundlesAdmin] Retrying...');
+        setRetryCount(prev => prev + 1);
+        revalidator.revalidate();
+        setIsAutoRetrying(false);
+      }, retryDelay);
+    } else if (!hasError && retryCount > 0) {
+      // Success after retry - reset counter
+      console.log('[BundlesAdmin] Successfully recovered after retry');
+      setRetryCount(0);
+      setIsAutoRetrying(false);
+    }
+  }, [loaderData, retryCount, revalidator, isAutoRetrying]);
   
   // Log if currency code is missing to help debug
   useEffect(() => {
@@ -1030,6 +1058,80 @@ export default function BundlesAdmin() {
           </BlockStack>
         </Modal.Section>
       </Modal>
+    </Page>
+  );
+}
+
+// Error Boundary with Auto-Recovery
+export function ErrorBoundary() {
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    // Auto-retry after 3 seconds
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          window.location.reload();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleManualRetry = () => {
+    window.location.reload();
+  };
+
+  return (
+    <Page title="Oops! Something went wrong">
+      <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Box padding="800">
+                <BlockStack gap="400" align="center">
+                  <Text as="p" variant="headingXl">⚠️</Text>
+                  <Text as="h2" variant="headingLg" alignment="center">
+                    Something went wrong
+                  </Text>
+                  <Text as="p" variant="bodyMd" alignment="center" tone="subdued">
+                    Don't worry - we're automatically recovering...
+                  </Text>
+                  <Text as="p" variant="bodyLg" alignment="center" fontWeight="semibold">
+                    Auto-refreshing in {countdown} seconds
+                  </Text>
+                  <Button onClick={handleManualRetry} variant="primary">
+                    Refresh Now
+                  </Button>
+                </BlockStack>
+              </Box>
+              <Divider />
+              <Box padding="400">
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued" fontWeight="semibold">
+                    Why did this happen?
+                  </Text>
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    This is usually a temporary session issue. The page will refresh automatically to restore your session.
+                  </Text>
+                  <Text as="p" variant="bodySm" tone="subdued" fontWeight="semibold">
+                    If this keeps happening, try:
+                  </Text>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodySm" tone="subdued">• Clearing your browser cache</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">• Logging out and back in to Shopify</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">• Using a different browser</Text>
+                  </BlockStack>
+                </BlockStack>
+              </Box>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }

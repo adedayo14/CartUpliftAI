@@ -178,9 +178,20 @@ npm run ml:seed
 4. Check DevTools for 404s on assets
 
 ### Page Goes Blank After Action
-- **Fixed in latest version**: Auto-refresh implemented
+- **Fixed in latest version**: Auto-refresh implemented after bundle deletion
 - If still occurs: Check console for errors
 - Manually refresh page (Cmd+R)
+
+### "Oops! Something went wrong" Errors
+- **Fixed in latest version**: Auto-retry with exponential backoff (3 attempts)
+- **Auto-recovery**: Error boundary auto-refreshes page after 3 seconds
+- **Manual recovery**: Click "Refresh Now" button
+- **Root causes**:
+  - Session timeout (most common)
+  - Network interruption
+  - API rate limiting
+- **Prevention**: Auto-retry logic attempts 3 times before showing error
+- If persistent: Clear cache, re-login to Shopify, or try different browser
 
 ### Dev Server Issues
 ```bash
