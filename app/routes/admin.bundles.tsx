@@ -421,11 +421,15 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        // Silent success - no banner
+        // Success - close modal and refresh page for clean state
         setShowCreateModal(false);
         resetForm();
         if (data.bundle) setBundleList((prev) => [data.bundle as Bundle, ...prev]);
-        revalidator.revalidate();
+        
+        // Auto-refresh page after creation to ensure clean state and avoid blank page
+        setTimeout(() => {
+          window.location.reload();
+        }, 300); // Small delay to show creation animation
       } else {
         triggerBanner("error", data.error || "Failed to create bundle");
       }
@@ -434,7 +438,7 @@ export default function BundlesAdmin() {
     } finally {
       setIsSaving(false);
     }
-  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, resetForm, revalidator]);
+  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, resetForm]);
 
   const bundleTypeOptions = [
     { label: "Manual Bundle", value: "manual" },
@@ -485,7 +489,11 @@ export default function BundlesAdmin() {
         const nextStatus = payload.status;
         const updatedBundle = data.bundle as Bundle | undefined;
         setBundleList((prev) => prev.map((b) => b.id === bundleId ? { ...b, status: updatedBundle?.status ?? nextStatus } : b));
-        revalidator.revalidate();
+        
+        // Auto-refresh for clean state
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
       } else {
         triggerBanner("error", data.error || "Failed to update status");
       }

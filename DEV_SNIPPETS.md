@@ -178,9 +178,13 @@ npm run ml:seed
 4. Check DevTools for 404s on assets
 
 ### Page Goes Blank After Action
-- **Fixed in latest version**: Auto-refresh implemented after bundle deletion
-- If still occurs: Check console for errors
-- Manually refresh page (Cmd+R)
+- **Fixed in latest version**: Auto-refresh implemented after:
+  - Bundle creation (300ms delay)
+  - Bundle deletion (300ms delay)
+  - Bundle status toggle (300ms delay)
+- **Why it happened**: Remix revalidator caused temporary blank state
+- **Solution**: Window reload ensures clean UI state
+- If still occurs: Check console for errors, manually refresh (Cmd+R)
 
 ### "Oops! Something went wrong" Errors
 - **Fixed in latest version**: Auto-retry with exponential backoff (3 attempts)
