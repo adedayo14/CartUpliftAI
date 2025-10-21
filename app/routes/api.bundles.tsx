@@ -156,6 +156,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
           const products: BundleProduct[] = bundle.bundles.map(bp => {
             const details = productDetails[bp.productId] || {};
+            const isCurrentProduct = bp.isAnchor || bp.productId === productId || bp.productId === productId.toString() || bp.productId.toString() === productId;
             return {
               id: bp.productId,
               title: bp.productTitle || details.title || 'Unknown Product',
@@ -164,7 +165,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
               comparePrice: details.comparePrice,
               image: details.image,
               variantId: bp.variantId || details.variantId,
-              isAnchor: bp.isAnchor || bp.productId === productId,
+              isAnchor: isCurrentProduct,
               isRemovable: bp.isRemovable
             };
           }).sort((a, b) => {
@@ -261,6 +262,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
           const products: BundleProduct[] = bundle.productIds.map((pid, idx) => {
             const details = productDetails[pid] || {};
+            const isCurrentProduct = pid === productId || pid === productId.toString() || pid.toString() === productId;
             return {
               id: pid,
               title: bundle.productTitles[idx] || details.title || 'Unknown Product',
@@ -269,8 +271,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
               comparePrice: details.comparePrice,
               image: details.image,
               variantId: details.variantId,
-              isAnchor: pid === productId,
-              isRemovable: pid !== productId
+              isAnchor: isCurrentProduct,
+              isRemovable: !isCurrentProduct
             };
           }).sort((a, b) => {
             // Sort anchor product first
