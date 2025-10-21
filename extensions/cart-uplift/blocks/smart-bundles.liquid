@@ -1,11 +1,11 @@
 {% comment %}
   Cart Uplift - Product Bundle Block  
-  Version: 3.3.0 - Button colors & FBT price fix
+  Version: 3.4.0 - AI tracking fix & cart error suppression
 {% endcomment %}
 
-{%- comment -%} Load CSS and JS assets with cache busting {%- endcomment -%}
-<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}?v={{ 'now' | date: '%s' }}">
-<script src="{{ 'cart-bundles.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
+{%- comment -%} Load CSS and JS assets with aggressive cache busting {%- endcomment -%}
+<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}?v=340{{ 'now' | date: '%s' }}">
+<script src="{{ 'cart-bundles.js' | asset_url }}?v=340{{ 'now' | date: '%s' }}" defer></script>
 
 {%- comment -%} Preload bundle API data for faster rendering {%- endcomment -%}
 {% if product %}

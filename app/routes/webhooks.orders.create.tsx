@@ -487,9 +487,11 @@ async function processBundlePurchases(shop: string, order: any) {
       properties.forEach((prop: any) => {
         if (prop.name === '_bundle_id') {
           bundleId = prop.value;
+          console.log(`🔍 Found _bundle_id: ${bundleId} in line item: ${item.title}`);
         }
         if (prop.name === '_bundle_name') {
           bundleName = prop.value;
+          console.log(`🔍 Found _bundle_name: ${bundleName}`);
         }
       });
       
@@ -528,6 +530,7 @@ async function processBundlePurchases(shop: string, order: any) {
         
         // Strip "ai-" prefix if present (AI bundles have format "ai-123")
         const dbBundleId = bundleId.startsWith('ai-') ? bundleId.replace('ai-', '') : bundleId;
+        console.log(`🔍 Looking up bundle in DB: original=${bundleId}, dbId=${dbBundleId}`);
         
         // Update bundle record in database
         const bundle = await (db as any).bundle?.findFirst({
@@ -538,6 +541,7 @@ async function processBundlePurchases(shop: string, order: any) {
         });
         
         if (bundle) {
+          console.log(`✅ Found bundle in DB: ${bundle.name} (type: ${bundle.type})`);
           const currentPurchases = bundle.totalPurchases || 0;
           const currentRevenue = bundle.totalRevenue || 0;
           
@@ -552,7 +556,7 @@ async function processBundlePurchases(shop: string, order: any) {
           
           console.log(`✅ Updated bundle ${bundleId}: purchases ${currentPurchases} → ${currentPurchases + 1}, revenue £${currentRevenue} → £${(currentRevenue + totalRevenue).toFixed(2)}`);
         } else {
-          console.warn(`⚠️ Bundle ${bundleId} not found in database`);
+          console.warn(`⚠️ Bundle ${bundleId} (dbId: ${dbBundleId}) not found in database for shop: ${shop}`);
         }
         
       } catch (err) {
