@@ -42,7 +42,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
-interface   1 Bundle {
+interface Bundle {
   id: string;
   name: string;
   description?: string;
