@@ -1110,15 +1110,8 @@
           console.log('🎁 Bundle added successfully:', result);
           this.showSuccessMessage();
           
-          if (window.cartUpliftDrawer) {
-            await window.cartUpliftDrawer.fetchCart();
-            window.cartUpliftDrawer.updateDrawerContent();
-            window.cartUpliftDrawer.open();
-          } else {
-            document.documentElement.dispatchEvent(new CustomEvent('cart:refresh', {
-              bubbles: true
-            }));
-          }
+          // Try multiple methods to refresh/open cart
+          this.refreshCart();
         } else {
           throw new Error('Failed to add to cart');
         }
@@ -1126,6 +1119,63 @@
         console.error('🎁 Failed to add bundle:', error);
         alert(`Failed to add bundle to cart: ${error.message}`);
       }
+    }
+
+    refreshCart() {
+      console.log('🎁 Attempting to refresh cart...');
+      
+      // Method 1: Cart Uplift Drawer (if exists and has proper methods)
+      if (window.cartUpliftDrawer && typeof window.cartUpliftDrawer.open === 'function') {
+        try {
+          if (typeof window.cartUpliftDrawer.fetchCart === 'function') {
+            window.cartUpliftDrawer.fetchCart();
+          }
+          if (typeof window.cartUpliftDrawer.updateDrawerContent === 'function') {
+            window.cartUpliftDrawer.updateDrawerContent();
+          }
+          window.cartUpliftDrawer.open();
+          console.log('🎁 Cart refreshed via CartUplift drawer');
+          return;
+        } catch (err) {
+          console.warn('🎁 CartUplift drawer method failed:', err);
+        }
+      }
+
+      // Method 2: Shopify theme cart drawer
+      const themeCartDrawer = document.querySelector('cart-drawer');
+      if (themeCartDrawer && typeof themeCartDrawer.open === 'function') {
+        try {
+          themeCartDrawer.open();
+          console.log('🎁 Cart refreshed via theme cart-drawer');
+          return;
+        } catch (err) {
+          console.warn('🎁 Theme cart drawer failed:', err);
+        }
+      }
+
+      // Method 3: Dispatch cart refresh events (for themes)
+      try {
+        document.documentElement.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+        document.body.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+        window.dispatchEvent(new CustomEvent('cart:refresh'));
+        console.log('🎁 Cart refresh events dispatched');
+      } catch (err) {
+        console.warn('🎁 Event dispatch failed:', err);
+      }
+
+      // Method 4: Trigger theme-specific cart updates
+      if (typeof Shopify !== 'undefined' && Shopify.theme) {
+        try {
+          if (typeof Shopify.theme.cartUpdateCallbacks !== 'undefined') {
+            Shopify.theme.cartUpdateCallbacks.forEach(callback => callback());
+            console.log('🎁 Shopify theme callbacks triggered');
+          }
+        } catch (err) {
+          console.warn('🎁 Shopify callbacks failed:', err);
+        }
+      }
+
+      console.log('🎁 Cart refresh complete (check your theme for cart drawer)');
     }
 
     showSuccessMessage() {
