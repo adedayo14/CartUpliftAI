@@ -1,11 +1,11 @@
 {% comment %}
   Cart Uplift - Product Bundle Block  
-  Version: 3.4.0 - AI tracking fix & cart error suppression
+  Version: 3.5.0 - Anchor product fix & aggressive cache clear
 {% endcomment %}
 
 {%- comment -%} Load CSS and JS assets with aggressive cache busting {%- endcomment -%}
-<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}?v=340{{ 'now' | date: '%s' }}">
-<script src="{{ 'cart-bundles.js' | asset_url }}?v=340{{ 'now' | date: '%s' }}" defer></script>
+<link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}?v=350{{ 'now' | date: '%s' }}">
+<script src="{{ 'cart-bundles.js' | asset_url }}?v=350{{ 'now' | date: '%s' }}" defer></script>
 
 {%- comment -%} Preload bundle API data for faster rendering {%- endcomment -%}
 {% if product %}

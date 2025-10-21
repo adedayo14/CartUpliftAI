@@ -532,13 +532,35 @@ async function processBundlePurchases(shop: string, order: any) {
         const dbBundleId = bundleId.startsWith('ai-') ? bundleId.replace('ai-', '') : bundleId;
         console.log(`🔍 Looking up bundle in DB: original=${bundleId}, dbId=${dbBundleId}`);
         
-        // Update bundle record in database
-        const bundle = await (db as any).bundle?.findFirst({
+        // Try multiple lookup strategies
+        let bundle = await (db as any).bundle?.findFirst({
           where: {
             shop,
             id: dbBundleId
           }
         });
+        
+        // If not found, try with original ID (in case it's already stored correctly)
+        if (!bundle && bundleId !== dbBundleId) {
+          console.log(`🔍 Trying original ID: ${bundleId}`);
+          bundle = await (db as any).bundle?.findFirst({
+            where: {
+              shop,
+              id: bundleId
+            }
+          });
+        }
+        
+        // If still not found, try by name as last resort
+        if (!bundle && bundleName) {
+          console.log(`🔍 Trying by name: ${bundleName}`);
+          bundle = await (db as any).bundle?.findFirst({
+            where: {
+              shop,
+              name: bundleName
+            }
+          });
+        }
         
         if (bundle) {
           console.log(`✅ Found bundle in DB: ${bundle.name} (type: ${bundle.type})`);
