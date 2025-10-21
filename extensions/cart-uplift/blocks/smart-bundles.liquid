@@ -10,9 +10,31 @@
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
   assign display_style = block.settings.display_style
+  assign btn_bg = block.settings.button_bg_color | default: '#000000'
+  assign btn_text = block.settings.button_text_color | default: '#FFFFFF'
+  assign btn_border = block.settings.button_border_color | default: '#000000'
+  assign btn_border_width = block.settings.button_border_width | default: 1
+  assign btn_border_radius = block.settings.button_border_radius | default: 5
 -%}
 
 {% if bundle_enabled %}
+  {%- comment -%} Inject custom button styles {%- endcomment -%}
+  <style>
+    .cartuplift-bundle-wrapper .bundle-add-btn,
+    .cartuplift-bundle-wrapper .add-bundle-btn,
+    .cartuplift-bundle-wrapper button.primary {
+      background-color: {{ btn_bg }} !important;
+      color: {{ btn_text }} !important;
+      border: {{ btn_border_width }}px solid {{ btn_border }} !important;
+      border-radius: {{ btn_border_radius }}px !important;
+    }
+    .cartuplift-bundle-wrapper .bundle-add-btn:hover,
+    .cartuplift-bundle-wrapper .add-bundle-btn:hover,
+    .cartuplift-bundle-wrapper button.primary:hover {
+      opacity: 0.9;
+    }
+  </style>
+
   <div 
     class="cartuplift-bundle-wrapper"
     data-bundle-widget="true"
@@ -73,7 +95,7 @@
       "options": [
         {
           "value": "clean",
-          "label": "🏆 Amazon Style (Recommended)"
+          "label": "🏆 Horizontal (Recommended)"
         },
         {
           "value": "grid",
@@ -93,7 +115,54 @@
         }
       ],
       "default": "clean",
-      "info": "🏆 Amazon = Horizontal row | ☑️ Grid = Interactive cards | 📋 List = Minimal | 🔍 Detailed = Full info | 📊 Tier = Volume pricing"
+      "info": "🏆 Horizontal = Products in row | ☑️ Grid = Interactive cards | 📋 List = Minimal | 🔍 Detailed = Full info | 📊 Tier = Volume pricing"
+    },
+    {
+      "type": "header",
+      "content": "🎨 Button & Colors"
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Button background color",
+      "default": "#000000",
+      "info": "Main button color (Add to Cart, etc)"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text color",
+      "default": "#FFFFFF",
+      "info": "Color of text inside buttons"
+    },
+    {
+      "type": "color",
+      "id": "button_border_color",
+      "label": "Button border color",
+      "default": "#000000",
+      "info": "Outline color for buttons"
+    },
+    {
+      "type": "range",
+      "id": "button_border_width",
+      "label": "Button border width",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "unit": "px",
+      "default": 1,
+      "info": "Thickness of button border (0 = no border)"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Button corner radius",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "default": 5,
+      "info": "Roundness of button corners (0 = square, 50 = pill)"
     },
     {
       "type": "range",

@@ -1010,6 +1010,21 @@
       this.footer.appendChild(summary);
     }
 
+    // Helper methods for clean/FBT layout
+    calculateTotal() {
+      let total = 0;
+      this.selectedProducts.forEach(p => {
+        const qty = p.quantity || 1;
+        total += p.price * qty;
+      });
+      return total;
+    }
+
+    formatPrice(amount) {
+      const formatted = (amount / 100).toFixed(2);
+      return `${this.currencySymbol}${formatted}`;
+    }
+
     calculatePrices() {
       let originalPrice = 0;
       let discountedPrice = 0;
