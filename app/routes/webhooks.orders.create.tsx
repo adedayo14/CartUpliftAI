@@ -98,6 +98,9 @@ async function processOrderForAttribution(shop: string, order: any) {
       return;
     }
     
+    // 🎁 BUNDLE TRACKING: Check for bundle purchases and update analytics
+    await processBundlePurchases(shop, order);
+    
     // Extract purchased product IDs AND variant IDs (for matching with tracking)
     // Build comprehensive maps for attribution matching
     const purchasedProductIds: string[] = [];
@@ -446,5 +449,101 @@ async function updateUserProfilePurchase(shop: string, customerId: string, produ
     }
   } catch (e) {
     console.warn("Failed to update user profile:", e);
+  }
+}
+
+/**
+ * 🎁 Process Bundle Purchases
+ * Track bundle purchases and update analytics
+ */
+async function processBundlePurchases(shop: string, order: any) {
+  try {
+    console.log("🎁 Checking for bundle purchases in order:", order.id);
+    
+    // Group line items by bundle_id from properties
+    const bundleGroups = new Map<string, any[]>();
+    
+    order.line_items?.forEach((item: any) => {
+      const properties = item.properties || [];
+      
+      // Find bundle properties (Shopify stores custom properties as array of {name, value} objects)
+      let bundleId: string | null = null;
+      let bundleName: string | null = null;
+      
+      properties.forEach((prop: any) => {
+        if (prop.name === '_bundle_id') {
+          bundleId = prop.value;
+        }
+        if (prop.name === '_bundle_name') {
+          bundleName = prop.value;
+        }
+      });
+      
+      if (bundleId) {
+        if (!bundleGroups.has(bundleId)) {
+          bundleGroups.set(bundleId, []);
+        }
+        bundleGroups.get(bundleId)!.push({
+          ...item,
+          bundleName
+        });
+      }
+    });
+    
+    if (bundleGroups.size === 0) {
+      console.log("ℹ️ No bundle purchases found in this order");
+      return;
+    }
+    
+    console.log(`🎁 Found ${bundleGroups.size} bundle purchase(s) in order`);
+    
+    // Process each bundle purchase
+    for (const [bundleId, items] of bundleGroups) {
+      try {
+        const bundleName = items[0].bundleName || 'Unknown Bundle';
+        
+        // Calculate total revenue for this bundle purchase
+        let totalRevenue = 0;
+        items.forEach((item: any) => {
+          const price = parseFloat(item.price || 0);
+          const quantity = parseInt(item.quantity || 1);
+          totalRevenue += price * quantity;
+        });
+        
+        console.log(`🎁 Bundle ${bundleId} (${bundleName}): £${totalRevenue.toFixed(2)} from ${items.length} items`);
+        
+        // Update bundle record in database
+        const bundle = await (db as any).bundle?.findFirst({
+          where: {
+            shop,
+            id: bundleId
+          }
+        });
+        
+        if (bundle) {
+          const currentPurchases = bundle.totalPurchases || 0;
+          const currentRevenue = bundle.totalRevenue || 0;
+          
+          await (db as any).bundle?.update({
+            where: { id: bundle.id },
+            data: {
+              totalPurchases: currentPurchases + 1,
+              totalRevenue: currentRevenue + totalRevenue,
+              updatedAt: new Date()
+            }
+          });
+          
+          console.log(`✅ Updated bundle ${bundleId}: purchases ${currentPurchases} → ${currentPurchases + 1}, revenue £${currentRevenue} → £${(currentRevenue + totalRevenue).toFixed(2)}`);
+        } else {
+          console.warn(`⚠️ Bundle ${bundleId} not found in database`);
+        }
+        
+      } catch (err) {
+        console.error(`❌ Failed to process bundle ${bundleId}:`, err);
+      }
+    }
+    
+  } catch (error) {
+    console.error("❌ Failed to process bundle purchases:", error);
   }
 }
