@@ -327,35 +327,6 @@ export default function BundlesAdmin() {
     }, 3000);
   }, []);
 
-  const handleFixBundleIds = useCallback(async () => {
-    setIsSaving(true);
-    try {
-      const response = await fetch('/admin/api/bundle-management', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "fix-bundle-ids" }),
-      });
-      
-      if (response.status === 401) {
-        window.location.reload();
-        return;
-      }
-      
-      const data = await response.json();
-      if (data.success) {
-        triggerBanner("success", `Fixed ${data.updatedCount} bundle(s)`);
-        revalidator.revalidate();
-      } else {
-        triggerBanner("error", data.error || "Failed to fix bundle IDs");
-      }
-    } catch (error: any) {
-      console.error('[handleFixBundleIds] Error:', error);
-      triggerBanner("error", error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [revalidator, triggerBanner]);
-
   const handleCreateBundle = useCallback(async () => {
     if (!newBundle.name.trim()) {
       triggerBanner("error", "Bundle name is required");
@@ -398,10 +369,10 @@ export default function BundlesAdmin() {
         body: JSON.stringify(payload),
       });
       
-      // If unauthorized, reload page to refresh session
+      // If unauthorized, show error message
       if (response.status === 401) {
-        console.log('[handleCreateBundle] Session expired, reloading page...');
-        window.location.reload();
+        console.log('[handleCreateBundle] Session expired');
+        triggerBanner("error", "Session expired. Please refresh the page.");
         return;
       }
       
@@ -421,15 +392,11 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        // Success - close modal and refresh page for clean state
+        // Success - close modal and revalidate data
         setShowCreateModal(false);
         resetForm();
-        if (data.bundle) setBundleList((prev) => [data.bundle as Bundle, ...prev]);
-        
-        // Auto-refresh page after creation to ensure clean state and avoid blank page
-        setTimeout(() => {
-          window.location.reload();
-        }, 300); // Small delay to show creation animation
+        triggerBanner("success", "Bundle created successfully!");
+        revalidator.revalidate(); // Refresh data without page reload
       } else {
         triggerBanner("error", data.error || "Failed to create bundle");
       }
@@ -438,7 +405,7 @@ export default function BundlesAdmin() {
     } finally {
       setIsSaving(false);
     }
-  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, resetForm]);
+  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, resetForm, revalidator]);
 
   const bundleTypeOptions = [
     { label: "Manual Bundle", value: "manual" },
@@ -486,14 +453,8 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        const nextStatus = payload.status;
-        const updatedBundle = data.bundle as Bundle | undefined;
-        setBundleList((prev) => prev.map((b) => b.id === bundleId ? { ...b, status: updatedBundle?.status ?? nextStatus } : b));
-        
-        // Auto-refresh for clean state
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
+        triggerBanner("success", `Bundle ${payload.status === 'active' ? 'activated' : 'paused'}!`);
+        revalidator.revalidate(); // Refresh data without page reload
       } else {
         triggerBanner("error", data.error || "Failed to update status");
       }
@@ -540,12 +501,8 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        // Silent success - update UI and reload for better UX
-        setBundleList((prev) => prev.filter((b) => b.id !== bundleId));
-        // Auto-refresh page after deletion to ensure clean state
-        setTimeout(() => {
-          window.location.reload();
-        }, 300); // Small delay to show deletion animation
+        triggerBanner("success", "Bundle deleted successfully!");
+        revalidator.revalidate(); // Refresh data without page reload
       } else {
         triggerBanner("error", data.error || "Failed to delete bundle");
       }
@@ -600,13 +557,6 @@ export default function BundlesAdmin() {
         onAction: () => { resetForm(); setShowCreateModal(true); },
         icon: PlusIcon,
       }}
-      secondaryActions={[
-        {
-          content: "Fix product IDs",
-          onAction: handleFixBundleIds,
-          helpText: "One-time fix for existing bundles",
-        }
-      ]}
     >
       <Layout>
         {showSuccessBanner && (
