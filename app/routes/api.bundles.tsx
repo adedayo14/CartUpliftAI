@@ -167,6 +167,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
               isAnchor: bp.isAnchor || bp.productId === productId,
               isRemovable: bp.isRemovable
             };
+          }).sort((a, b) => {
+            // Sort anchor product first
+            if (a.isAnchor && !b.isAnchor) return -1;
+            if (!a.isAnchor && b.isAnchor) return 1;
+            return 0;
           });
 
           // Calculate totals
@@ -267,6 +272,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
               isAnchor: pid === productId,
               isRemovable: pid !== productId
             };
+          }).sort((a, b) => {
+            // Sort anchor product first
+            if (a.isAnchor && !b.isAnchor) return -1;
+            if (!a.isAnchor && b.isAnchor) return 1;
+            return 0;
           });
 
           return {

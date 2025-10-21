@@ -369,9 +369,19 @@ export default function BundlesAdmin() {
         body: JSON.stringify(payload),
       });
       
-      // If unauthorized, show error message
+      // If unauthorized, try to refresh session and retry
       if (response.status === 401) {
-        console.log('[handleCreateBundle] Session expired');
+        console.log('[handleCreateBundle] Session expired, attempting refresh...');
+        try {
+          const refreshResponse = await fetch('/admin/api/session-refresh', { method: 'POST' });
+          if (refreshResponse.ok) {
+            console.log('[handleCreateBundle] Session refreshed, retrying...');
+            window.location.reload(); // Reload to get fresh session tokens
+            return;
+          }
+        } catch (refreshError) {
+          console.error('[handleCreateBundle] Session refresh failed:', refreshError);
+        }
         triggerBanner("error", "Session expired. Please refresh the page.");
         return;
       }
@@ -392,11 +402,15 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        // Success - close modal and revalidate data
-        setShowCreateModal(false);
-        resetForm();
+        // Success - revalidate first, then close modal
         triggerBanner("success", "Bundle created successfully!");
         revalidator.revalidate(); // Refresh data without page reload
+        
+        // Wait a bit for revalidation, then close modal and reset form
+        setTimeout(() => {
+          setShowCreateModal(false);
+          resetForm();
+        }, 500);
       } else {
         triggerBanner("error", data.error || "Failed to create bundle");
       }
