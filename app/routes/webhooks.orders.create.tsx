@@ -458,7 +458,21 @@ async function updateUserProfilePurchase(shop: string, customerId: string, produ
  */
 async function processBundlePurchases(shop: string, order: any) {
   try {
-    console.log("🎁 Checking for bundle purchases in order:", order.id);
+    const orderId = order.id?.toString();
+    console.log("🎁 Checking for bundle purchases in order:", orderId);
+    
+    // 🛡️ DUPLICATE PREVENTION: Check if we already tracked bundles for this order
+    const existingBundleTracking = await (db as any).bundlePurchase?.findFirst({
+      where: {
+        shop,
+        orderId
+      }
+    });
+    
+    if (existingBundleTracking) {
+      console.log(`⚠️ Bundle tracking already exists for order ${orderId}, skipping duplicate`);
+      return;
+    }
     
     // Group line items by bundle_id from properties
     const bundleGroups = new Map<string, any[]>();
@@ -541,6 +555,22 @@ async function processBundlePurchases(shop: string, order: any) {
       } catch (err) {
         console.error(`❌ Failed to process bundle ${bundleId}:`, err);
       }
+    }
+    
+    // 📝 Create tracking record to prevent duplicate processing
+    try {
+      await (db as any).bundlePurchase?.create({
+        data: {
+          shop,
+          orderId: order.id?.toString(),
+          orderNumber: order.order_number || order.number,
+          bundleCount: bundleGroups.size,
+          createdAt: new Date()
+        }
+      });
+      console.log(`✅ Created bundle purchase tracking record for order ${order.id}`);
+    } catch (err) {
+      console.error("❌ Failed to create bundle purchase tracking:", err);
     }
     
   } catch (error) {

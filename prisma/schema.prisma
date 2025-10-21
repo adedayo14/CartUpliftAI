@@ -205,6 +205,20 @@ model BundleProduct {
   @@index([productId])
 }
 
+// Track bundle purchases to prevent duplicate webhook processing
+model BundlePurchase {
+  id          String   @id @default(cuid())
+  shop        String
+  orderId     String   // Shopify order ID
+  orderNumber Int?     // Human-readable order number
+  bundleCount Int      @default(0) // How many bundles in this order
+  createdAt   DateTime @default(now())
+  
+  @@unique([shop, orderId])
+  @@index([shop])
+  @@index([orderId])
+}
+
 // Customer Bundle Interactions
 model CustomerBundle {
   id           String   @id @default(cuid())
