@@ -40,70 +40,74 @@
 
 {% schema %}
 {
-  "name": "Smart Bundles v118",
+  "name": "🎁 Smart Bundles",
   "target": "section",
   "templates": ["product", "collection"],
   "settings": [
     {
       "type": "paragraph",
-      "content": "🎨 **Style your bundles here!** Create bundles in admin, then choose display: Amazon-style, Grid, List, Detailed, or Tier layouts."
+      "content": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📦 **CREATE BUNDLES** in CartUplift admin dashboard, then **STYLE THEM HERE**.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     },
     {
       "type": "checkbox",
       "id": "bundle_enabled",
-      "label": "Enable bundles",
+      "label": "✅ Enable bundles on this page",
       "default": true,
-      "info": "Show product bundles on this page"
+      "info": "Toggle to show/hide bundle recommendations"
     },
     {
       "type": "text",
       "id": "bundle_title",
-      "label": "Section heading",
+      "label": "📝 Section heading",
       "default": "Bundle & Save",
-      "info": "Optional heading above bundles"
+      "info": "Heading that appears above your bundles (optional)"
+    },
+    {
+      "type": "header",
+      "content": "🎨 Display Style"
     },
     {
       "type": "select",
       "id": "display_style",
-      "label": "Bundle display style",
+      "label": "Choose your layout",
       "options": [
         {
           "value": "clean",
-          "label": "Amazon Style (Recommended)"
+          "label": "🏆 Amazon Style (Recommended) - Horizontal row with summary"
         },
         {
           "value": "grid",
-          "label": "Grid with Checkboxes"
+          "label": "☑️  Grid Layout - Cards with checkboxes for selection"
         },
         {
           "value": "list",
-          "label": "Compact List"
+          "label": "📋 Compact List - Simple vertical layout"
         },
         {
           "value": "detailed",
-          "label": "Detailed with Variants"
+          "label": "🔍 Detailed View - Full product info with variants"
         },
         {
           "value": "tier",
-          "label": "Quantity Tiers"
+          "label": "📊 Quantity Tiers - Volume discounts (3 for $30, etc)"
         }
       ],
       "default": "clean",
-      "info": "Choose how bundles appear on this page. Amazon Style shows products in a horizontal row with summary on the right."
+      "info": "Amazon = Best for upsells | Grid = Interactive | List = Minimal | Detailed = Full info | Tier = Volume pricing"
     },
     {
       "type": "range",
       "id": "priority",
-      "label": "Display priority",
+      "label": "⚡ Display priority",
       "min": 1,
       "max": 10,
       "step": 1,
       "default": 5,
-      "info": "Order if multiple bundle blocks on same page (1 = highest)"
+      "info": "Order if multiple bundle blocks exist (1 = shows first)"
     },
     {
       "type": "paragraph",
-      "content": "💡 **Live Preview:** Save and view a product page to see your bundles. The style you choose above overrides any admin settings. Change styles anytime without affecting your bundle content."
+      "content": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n💡 **TO PREVIEW:** Click Save → View product page with bundles. Change styles anytime!\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     }
   ]
 }
