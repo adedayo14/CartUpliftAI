@@ -62,123 +62,115 @@
 
 {% schema %}
 {
-  "name": "🎁 Smart Bundles",
+  "name": "Product Bundles",
   "target": "section",
   "templates": ["product", "collection"],
   "settings": [
     {
       "type": "paragraph",
-      "content": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📦 **CREATE BUNDLES** in CartUplift admin dashboard, then **STYLE THEM HERE**.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      "content": "Create and manage bundles in the CartUplift admin dashboard. Use these settings to control the display and styling on your storefront."
     },
     {
       "type": "checkbox",
       "id": "bundle_enabled",
-      "label": "✅ Enable bundles on this page",
+      "label": "Enable product bundles",
       "default": true,
-      "info": "Toggle to show/hide bundle recommendations"
+      "info": "Show or hide bundle recommendations on this page"
     },
     {
       "type": "text",
       "id": "bundle_title",
-      "label": "📝 Section heading",
+      "label": "Section heading",
       "default": "Bundle & Save",
-      "info": "Heading that appears above your bundles (optional)"
+      "info": "Optional heading displayed above bundle recommendations"
     },
     {
       "type": "header",
-      "content": "🎨 Display Style"
+      "content": "Layout"
     },
     {
       "type": "select",
       "id": "display_style",
-      "label": "Choose your layout",
+      "label": "Display style",
       "options": [
         {
           "value": "clean",
-          "label": "🏆 Horizontal (Recommended)"
+          "label": "Horizontal (Recommended)"
         },
         {
           "value": "grid",
-          "label": "☑️  Grid with Checkboxes"
+          "label": "Grid with checkboxes"
         },
         {
           "value": "list",
-          "label": "📋 Compact List"
+          "label": "Compact list"
         },
         {
           "value": "detailed",
-          "label": "🔍 Detailed with Variants"
+          "label": "Detailed with variants"
         },
         {
           "value": "tier",
-          "label": "📊 Quantity Tiers"
+          "label": "Quantity tiers"
         }
       ],
       "default": "clean",
-      "info": "🏆 Horizontal = Products in row | ☑️ Grid = Interactive cards | 📋 List = Minimal | 🔍 Detailed = Full info | 📊 Tier = Volume pricing"
+      "info": "Choose how bundles are displayed to customers"
     },
     {
       "type": "header",
-      "content": "🎨 Button & Colors"
+      "content": "Button style"
     },
     {
       "type": "color",
       "id": "button_bg_color",
-      "label": "Button background color",
-      "default": "#000000",
-      "info": "Main button color (Add to Cart, etc)"
+      "label": "Background color",
+      "default": "#000000"
     },
     {
       "type": "color",
       "id": "button_text_color",
-      "label": "Button text color",
-      "default": "#FFFFFF",
-      "info": "Color of text inside buttons"
+      "label": "Text color",
+      "default": "#FFFFFF"
     },
     {
       "type": "color",
       "id": "button_border_color",
-      "label": "Button border color",
-      "default": "#000000",
-      "info": "Outline color for buttons"
+      "label": "Border color",
+      "default": "#000000"
     },
     {
       "type": "range",
       "id": "button_border_width",
-      "label": "Button border width",
+      "label": "Border width",
       "min": 0,
       "max": 5,
       "step": 1,
       "unit": "px",
       "default": 1,
-      "info": "Thickness of button border (0 = no border)"
+      "info": "Set to 0 to remove border"
     },
     {
       "type": "range",
       "id": "button_border_radius",
-      "label": "Button corner radius",
+      "label": "Corner radius",
       "min": 0,
       "max": 50,
       "step": 5,
       "unit": "px",
       "default": 5,
-      "info": "Roundness of button corners (0 = square, 50 = pill)"
+      "info": "Controls the roundness of button corners"
     },
     {
       "type": "range",
       "id": "priority",
-      "label": "⚡ Display priority",
+      "label": "Display priority",
       "min": 1,
       "max": 10,
       "step": 1,
       "default": 5,
-      "info": "Order if multiple bundle blocks exist (1 = shows first)"
-    },
-    {
-      "type": "paragraph",
-      "content": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n💡 **TO PREVIEW:** Click Save → View product page with bundles. Change styles anytime!\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      "info": "Lower numbers display first when multiple bundle blocks are present"
     }
   ]
 }
 {% endschema %}
-/* Schema updated Mon Oct 20 17:02:01 BST 2025 */
