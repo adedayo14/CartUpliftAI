@@ -1108,9 +1108,8 @@
         if (response.ok) {
           const result = await response.json();
           console.log('🎁 Bundle added successfully:', result);
-          this.showSuccessMessage();
           
-          // Try multiple methods to refresh/open cart
+          // Refresh/open cart (no success popup since cart opens)
           this.refreshCart();
         } else {
           throw new Error('Failed to add to cart');

@@ -526,11 +526,14 @@ async function processBundlePurchases(shop: string, order: any) {
         
         console.log(`🎁 Bundle ${bundleId} (${bundleName}): £${totalRevenue.toFixed(2)} from ${items.length} items`);
         
+        // Strip "ai-" prefix if present (AI bundles have format "ai-123")
+        const dbBundleId = bundleId.startsWith('ai-') ? bundleId.replace('ai-', '') : bundleId;
+        
         // Update bundle record in database
         const bundle = await (db as any).bundle?.findFirst({
           where: {
             shop,
-            id: bundleId
+            id: dbBundleId
           }
         });
         

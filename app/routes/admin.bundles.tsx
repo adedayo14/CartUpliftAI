@@ -751,12 +751,6 @@ export default function BundlesAdmin() {
                 helpText="Choose how products are selected for this bundle"
               />
 
-                <Banner tone="info">
-                <Text as="p" variant="bodySm">
-                  💡 <strong>Display style moved to theme editor:</strong> Configure how bundles appear by editing the Smart Bundles block in your theme customizer (Online Store → Themes → Customize).
-                </Text>
-              </Banner>
-
               {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
                 <Card background="bg-surface-secondary">
                   <BlockStack gap="400">
