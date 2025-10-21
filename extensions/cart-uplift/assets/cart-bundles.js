@@ -90,9 +90,6 @@
     }
 
     renderBundlesInWidget(widget, widgetIndex) {
-      const loadingEl = widget.querySelector('.cartuplift-bundle-loading');
-      if (loadingEl) loadingEl.remove();
-
       const title = widget.dataset.bundleTitle;
       if (title) {
         const heading = document.createElement('h2');

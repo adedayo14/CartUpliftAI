@@ -7,6 +7,11 @@
 <link rel="stylesheet" href="{{ 'cart-bundles.css' | asset_url }}?v={{ 'now' | date: '%s' }}">
 <script src="{{ 'cart-bundles.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
 
+{%- comment -%} Preload bundle API data for faster rendering {%- endcomment -%}
+{% if product %}
+<link rel="preload" as="fetch" href="/apps/cart-uplift/api/bundles?product_id={{ product.id }}" crossorigin="anonymous">
+{% endif %}
+
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
   assign display_style = block.settings.display_style
@@ -42,22 +47,9 @@
     data-bundle-title="{{ block.settings.bundle_title | escape }}"
     data-bundle-priority="{{ block.settings.priority }}"
     data-display-style="{{ display_style }}"
-    style="opacity: 0; transition: opacity 0.3s;"
   >
-    <div class="cartuplift-bundle-loading" style="padding: 20px; text-align: center; color: #666;">
-      <p style="margin: 0;">🎁 Loading bundles...</p>
-    </div>
+    {%- comment -%} Widget content loads instantly via JS - no loading spinner needed {%- endcomment -%}
   </div>
-  
-  {%- comment -%} Show widget once CSS loaded {%- endcomment -%}
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const widget = document.querySelector('[data-bundle-widget]');
-      if (widget) {
-        widget.style.opacity = '1';
-      }
-    });
-  </script>
 {% endif %}
 
 {% schema %}
