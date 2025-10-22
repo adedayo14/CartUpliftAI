@@ -26,6 +26,7 @@ import {
   Box,
   Divider,
   Icon,
+  Tooltip,
 } from "@shopify/polaris";
 import { 
   PlusIcon, 
@@ -419,43 +420,31 @@ export default function BundlesAdmin() {
     } finally {
       setIsSaving(false);
     }
-  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, resetForm, revalidator]);
-
-  const bundleTypeOptions = [
-    { label: "Manual Bundle", value: "manual" },
-    { label: "Category Bundle", value: "category" },
-    { label: "AI Suggested", value: "ai_suggested" },
-  ];
-
-  const discountTypeOptions = [
-    { label: "Percentage Off", value: "percentage" },
-    { label: "Fixed Amount Off", value: "fixed" },
-  ];
+  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, revalidator, resetForm]);
 
   const handleToggleStatus = async (bundleId: string, currentStatus: string) => {
-    if (isSaving || pendingBundleId) return;
     setPendingBundleId(bundleId);
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
-      const payload = { action: "toggle-status", bundleId, status: currentStatus === 'active' ? 'paused' : 'active' };
+      
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
-        body: JSON.stringify(payload),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          action: "toggle-status",
+          bundleId,
+          currentStatus,
+        }),
       });
-      
-      // If unauthorized, reload page to refresh session
+
       if (response.status === 401) {
-        console.log('[handleToggleStatus] Session expired, reloading page...');
+        console.log('[handleToggleStatus] Session expired, refreshing...');
         window.location.reload();
         return;
-      }
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[handleToggleStatus] Server error:', response.status, errorText);
-        throw new Error(`Server error: ${response.status}`);
       }
 
       let data;
@@ -467,43 +456,44 @@ export default function BundlesAdmin() {
       }
 
       if (data.success) {
-        triggerBanner("success", `Bundle ${payload.status === 'active' ? 'activated' : 'paused'}!`);
-        revalidator.revalidate(); // Refresh data without page reload
+        const newStatus = currentStatus === "active" ? "paused" : "active";
+        triggerBanner("success", `Bundle ${newStatus === "active" ? "activated" : "paused"} successfully!`);
+        revalidator.revalidate();
       } else {
-        triggerBanner("error", data.error || "Failed to update status");
+        triggerBanner("error", data.error || "Failed to update bundle");
       }
     } catch (error: any) {
-      triggerBanner("error", error.message || "Failed to update status");
+      triggerBanner("error", error.message || "Failed to update bundle");
     } finally {
       setPendingBundleId(null);
     }
   };
 
   const handleDelete = async (bundleId: string) => {
-    // Silent delete - no confirmation prompt
-    if (isSaving || pendingBundleId) return;
+    if (!confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+      return;
+    }
     setPendingBundleId(bundleId);
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
-      const payload = { action: "delete-bundle", bundleId };
+      
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
-        body: JSON.stringify(payload),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          action: "delete",
+          bundleId,
+        }),
       });
-      
-      // If unauthorized, reload page to refresh session
+
       if (response.status === 401) {
-        console.log('[handleDelete] Session expired, reloading page...');
+        console.log('[handleDelete] Session expired, refreshing...');
         window.location.reload();
         return;
-      }
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[handleDelete] Server error:', response.status, errorText);
-        throw new Error(`Server error: ${response.status}`);
       }
 
       let data;
@@ -531,37 +521,127 @@ export default function BundlesAdmin() {
   const totalPurchases = useMemo(() => bundleList.reduce((sum, b) => sum + (b.totalPurchases || 0), 0), [bundleList]);
   const activeBundles = useMemo(() => bundleList.filter(b => b.status === 'active').length, [bundleList]);
 
-  const bundleTableRows = bundleList.map((bundle: Bundle) => [
-    <InlineStack gap="300" blockAlign="center" key={`name-${bundle.id}`}>
-      <Box>
-        <Icon source={bundle.type === 'manual' ? PackageIcon : bundle.type === 'category' ? CollectionIcon : MagicIcon} tone="base" />
-      </Box>
-      <BlockStack gap="100">
-        <Text as="span" variant="bodyMd" fontWeight="semibold">{bundle.name}</Text>
-        {bundle.description && <Text as="span" variant="bodySm" tone="subdued">{bundle.description}</Text>}
-      </BlockStack>
-    </InlineStack>,
-    <Text as="span" variant="bodySm">{bundle.type === "manual" ? "Manual" : bundle.type === "category" ? "Category" : "AI Suggested"}</Text>,
-    <Badge tone={bundle.status === "active" ? "success" : "info"} key={`badge-${bundle.id}`}>
-      {bundle.status === "active" ? "Active" : bundle.status === "paused" ? "Paused" : "Draft"}
-    </Badge>,
-    <Text as="span" variant="bodySm" fontWeight="medium">{bundle.discountType === "percentage" ? `${bundle.discountValue}%` : formatMoney(bundle.discountValue)}</Text>,
-    <Text as="span" variant="bodySm">{bundle.totalPurchases?.toLocaleString?.() || "0"}</Text>,
-    <Text as="span" variant="bodySm" fontWeight="medium">{formatMoney(bundle.totalRevenue || 0)}</Text>,
-    <ButtonGroup key={`actions-${bundle.id}`}>
-      <Button
-        size="micro"
-        variant={bundle.status === "active" ? "secondary" : "primary"}
-        onClick={() => handleToggleStatus(bundle.id, bundle.status)}
-        loading={pendingBundleId === bundle.id}
+  // Helper to get bundle type details
+  const getBundleTypeInfo = (type: string) => {
+    switch(type) {
+      case 'manual':
+        return { icon: PackageIcon, label: 'Manual', description: 'Hand-picked products' };
+      case 'category':
+        return { icon: CollectionIcon, label: 'Category', description: 'From collections' };
+      default:
+        return { icon: MagicIcon, label: 'AI Suggested', description: 'AI-powered' };
+    }
+  };
+
+  // Improved bundle table rows with better long title handling
+  const bundleTableRows = bundleList.map((bundle: Bundle) => {
+    const typeInfo = getBundleTypeInfo(bundle.type);
+    const hasLongTitle = bundle.name.length > 40;
+    
+    return [
+      // Bundle Name Column - with icon and truncated text
+      <InlineStack gap="300" blockAlign="center" key={`name-${bundle.id}`}>
+        <Box minWidth="20px">
+          <Icon source={typeInfo.icon} tone="base" />
+        </Box>
+        <BlockStack gap="050">
+          <Box maxWidth="280px">
+            {hasLongTitle ? (
+              <Tooltip content={bundle.name} preferredPosition="above">
+                <Text 
+                  as="span" 
+                  variant="bodyMd" 
+                  fontWeight="semibold"
+                  truncate
+                >
+                  {bundle.name}
+                </Text>
+              </Tooltip>
+            ) : (
+              <Text as="span" variant="bodyMd" fontWeight="semibold">
+                {bundle.name}
+              </Text>
+            )}
+          </Box>
+          {bundle.description && (
+            <Text 
+              as="span" 
+              variant="bodySm" 
+              tone="subdued"
+              truncate
+            >
+              {bundle.description}
+            </Text>
+          )}
+        </BlockStack>
+      </InlineStack>,
+      
+      // Type Column - clearer labels
+      <InlineStack gap="200" blockAlign="center" key={`type-${bundle.id}`}>
+        <Text as="span" variant="bodySm" fontWeight="medium">
+          {typeInfo.label}
+        </Text>
+      </InlineStack>,
+      
+      // Status Badge
+      <Badge 
+        tone={bundle.status === "active" ? "success" : bundle.status === "paused" ? "attention" : "info"} 
+        key={`badge-${bundle.id}`}
       >
-        {bundle.status === "active" ? "Pause" : "Activate"}
-      </Button>
-      <Button size="micro" tone="critical" onClick={() => handleDelete(bundle.id)} loading={pendingBundleId === bundle.id}>
-        Delete
-      </Button>
-    </ButtonGroup>,
-  ]);
+        {bundle.status === "active" ? "Active" : bundle.status === "paused" ? "Paused" : "Draft"}
+      </Badge>,
+      
+      // Discount - with better formatting
+      <Text as="span" variant="bodySm" fontWeight="medium" key={`discount-${bundle.id}`}>
+        {bundle.discountType === "percentage" 
+          ? `${bundle.discountValue}%` 
+          : formatMoney(bundle.discountValue)
+        }
+      </Text>,
+      
+      // Purchases
+      <Text as="span" variant="bodySm" alignment="end" key={`purchases-${bundle.id}`}>
+        {bundle.totalPurchases?.toLocaleString?.() || "0"}
+      </Text>,
+      
+      // Revenue
+      <Text as="span" variant="bodySm" fontWeight="medium" alignment="end" key={`revenue-${bundle.id}`}>
+        {formatMoney(bundle.totalRevenue || 0)}
+      </Text>,
+      
+      // Actions
+      <ButtonGroup key={`actions-${bundle.id}`}>
+        <Button
+          size="micro"
+          variant={bundle.status === "active" ? "secondary" : "primary"}
+          onClick={() => handleToggleStatus(bundle.id, bundle.status)}
+          loading={pendingBundleId === bundle.id}
+        >
+          {bundle.status === "active" ? "Pause" : "Activate"}
+        </Button>
+        <Button 
+          size="micro" 
+          tone="critical" 
+          onClick={() => handleDelete(bundle.id)} 
+          loading={pendingBundleId === bundle.id}
+        >
+          Delete
+        </Button>
+      </ButtonGroup>,
+    ];
+  });
+
+  // Bundle type options for creation modal
+  const bundleTypeOptions = [
+    { label: "Manual - Hand-pick specific products", value: "manual" },
+    { label: "Category - Auto-bundle from collections", value: "category" },
+    { label: "AI Suggested - Smart recommendations", value: "ai_suggested" },
+  ];
+
+  const discountTypeOptions = [
+    { label: "Percentage", value: "percentage" },
+    { label: "Fixed amount", value: "fixed" },
+  ];
 
   return (
     <Page
@@ -591,7 +671,7 @@ export default function BundlesAdmin() {
         {bundleList.length > 0 && (
           <Layout.Section>
             <Card>
-              <InlineStack gap="800" align="space-between">
+              <InlineStack gap="800" align="space-between" wrap={false}>
                 <BlockStack gap="200">
                   <Text as="p" variant="bodySm" tone="subdued">Total revenue</Text>
                   <Text as="p" variant="heading2xl">{formatMoney(totalRevenue)}</Text>
@@ -642,6 +722,7 @@ export default function BundlesAdmin() {
                 columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "text"]}
                 headings={["Bundle", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
                 rows={bundleTableRows}
+                hoverable
               />
             </Card>
           )}
@@ -675,7 +756,7 @@ export default function BundlesAdmin() {
                   <Text as="h2" variant="headingMd">Bundle types</Text>
                   <BlockStack gap="300">
                     <InlineStack gap="300" blockAlign="start">
-                      <Box>
+                      <Box minWidth="20px">
                         <Icon source={PackageIcon} tone="base" />
                       </Box>
                       <BlockStack gap="050">
@@ -686,7 +767,7 @@ export default function BundlesAdmin() {
                       </BlockStack>
                     </InlineStack>
                     <InlineStack gap="300" blockAlign="start">
-                      <Box>
+                      <Box minWidth="20px">
                         <Icon source={CollectionIcon} tone="base" />
                       </Box>
                       <BlockStack gap="050">
@@ -697,7 +778,7 @@ export default function BundlesAdmin() {
                       </BlockStack>
                     </InlineStack>
                     <InlineStack gap="300" blockAlign="start">
-                      <Box>
+                      <Box minWidth="20px">
                         <Icon source={MagicIcon} tone="base" />
                       </Box>
                       <BlockStack gap="050">
@@ -718,153 +799,140 @@ export default function BundlesAdmin() {
       {/* Create Bundle Modal */}
       <Modal
         open={showCreateModal}
-        onClose={() => !isSaving && setShowCreateModal(false)}
-        title="Create bundle"
-        primaryAction={{ 
-          content: "Create bundle", 
-          disabled: !newBundle.name.trim() || isSaving, 
-          loading: isSaving, 
-          onAction: handleCreateBundle 
+        onClose={() => {
+          if (!isSaving) {
+            setShowCreateModal(false);
+            resetForm();
+          }
         }}
-        secondaryActions={[{ 
-          content: "Cancel", 
-          disabled: isSaving, 
-          onAction: () => setShowCreateModal(false) 
-        }]}
+        title="Create product bundle"
+        primaryAction={{
+          content: "Create bundle",
+          onAction: handleCreateBundle,
+          loading: isSaving,
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: () => {
+              if (!isSaving) {
+                setShowCreateModal(false);
+                resetForm();
+              }
+            },
+            disabled: isSaving,
+          },
+        ]}
       >
         <Modal.Section>
           <BlockStack gap="400">
             <FormLayout>
-              <TextField 
-                label="Bundle name" 
-                value={newBundle.name} 
-                onChange={(v) => setNewBundle({ ...newBundle, name: v })} 
-                placeholder="e.g., Summer Essentials Bundle" 
-                autoComplete="off" 
+              <TextField
+                label="Bundle name"
+                value={newBundle.name}
+                onChange={(v) => setNewBundle({ ...newBundle, name: v })}
+                placeholder="e.g., Summer Essentials Pack"
+                autoComplete="off"
                 disabled={isSaving}
-                helpText="This will be displayed to customers"
-              />
-              
-              <TextField 
-                label="Description" 
-                value={newBundle.description} 
-                onChange={(v) => setNewBundle({ ...newBundle, description: v })} 
-                placeholder="Describe what's included in this bundle"
-                multiline={2} 
-                autoComplete="off" 
-                disabled={isSaving}
-                helpText="Optional internal description"
+                requiredIndicator
               />
 
-              <Select 
-                label="Bundle type" 
-                options={bundleTypeOptions} 
-                value={newBundle.bundleType} 
-                onChange={(v) => setNewBundle({ ...newBundle, bundleType: v })} 
+              <TextField
+                label="Description"
+                value={newBundle.description}
+                onChange={(v) => setNewBundle({ ...newBundle, description: v })}
+                placeholder="Brief description of the bundle (optional)"
+                autoComplete="off"
+                multiline={2}
+                disabled={isSaving}
+              />
+
+              <Select
+                label="Bundle type"
+                options={bundleTypeOptions}
+                value={newBundle.bundleType}
+                onChange={(v) => setNewBundle({ ...newBundle, bundleType: v })}
                 disabled={isSaving}
                 helpText="Choose how products are selected for this bundle"
               />
 
-              {newBundle.bundleType === "manual" && availableProducts.length > 0 && (
+              {newBundle.bundleType === "category" && (
                 <Card background="bg-surface-secondary">
-                  <BlockStack gap="400">
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={PackageIcon} />
-                        <Text as="h3" variant="headingMd">Select products</Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Choose which products to include in this bundle
+                  <BlockStack gap="300">
+                    <Text as="h3" variant="headingMd">Select collections</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Products from these collections will be automatically bundled
+                    </Text>
+                    {availableCollections.length === 0 ? (
+                      <Text as="p" variant="bodySm" tone="critical">
+                        No collections available. Create collections in your store first.
                       </Text>
-                    </BlockStack>
-                    <Box paddingBlockStart="200">
-                      <ResourceList
-                        items={availableProducts.slice(0, 25)}
-                        renderItem={(product: Product) => {
-                          // Strip gid://shopify/Product/ prefix for consistency
-                          const numericId = product.id.replace('gid://shopify/Product/', '');
-                          const isSelected = selectedProducts.includes(numericId);
-                          return (
-                            <ResourceItem 
-                              id={product.id} 
-                              onClick={() => {
-                                if (!isSaving) {
-                                  setSelectedProducts(
-                                    isSelected 
-                                      ? selectedProducts.filter(id => id !== numericId) 
-                                      : [...selectedProducts, numericId]
-                                  );
-                                }
-                              }}
-                            >
-                              <InlineStack gap="300" blockAlign="center">
-                                <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSaving} />
-                                <Thumbnail source={product.image} alt={product.title} size="small" />
-                                <BlockStack gap="050">
-                                  <Text as="span" variant="bodyMd">{product.title}</Text>
-                                  <Text as="span" variant="bodySm" tone="subdued">{formatMoney(parseFloat(product.price))}</Text>
-                                </BlockStack>
-                              </InlineStack>
-                            </ResourceItem>
-                          );
-                        }}
-                      />
-                    </Box>
-                    {selectedProducts.length > 0 && (
-                      <Banner tone="success">
-                        <Text as="p" variant="bodySm">
-                          {selectedProducts.length} product{selectedProducts.length === 1 ? '' : 's'} selected
-                        </Text>
-                      </Banner>
+                    ) : (
+                      <BlockStack gap="200">
+                        {availableCollections.slice(0, 10).map((collection) => (
+                          <Checkbox
+                            key={collection.id}
+                            label={`${collection.title} (${collection.productsCount} products)`}
+                            checked={selectedCollections.includes(collection.id)}
+                            onChange={(checked) => {
+                              setSelectedCollections(
+                                checked
+                                  ? [...selectedCollections, collection.id]
+                                  : selectedCollections.filter((id) => id !== collection.id)
+                              );
+                            }}
+                            disabled={isSaving}
+                          />
+                        ))}
+                      </BlockStack>
                     )}
                   </BlockStack>
                 </Card>
               )}
 
-              {newBundle.bundleType === "category" && availableCollections.length > 0 && (
+              {newBundle.bundleType === "manual" && (
                 <Card background="bg-surface-secondary">
-                  <BlockStack gap="400">
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={CollectionIcon} />
-                        <Text as="h3" variant="headingMd">Select collections</Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        All products from selected collections will be eligible for bundling
+                  <BlockStack gap="300">
+                    <Text as="h3" variant="headingMd">Select products</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Choose specific products to include in this bundle
+                    </Text>
+                    {availableProducts.length === 0 ? (
+                      <Text as="p" variant="bodySm" tone="critical">
+                        No products available. Add products to your store first.
                       </Text>
-                    </BlockStack>
-                    <Box paddingBlockStart="200">
-                      <ResourceList
-                        items={availableCollections}
-                        renderItem={(collection: Collection) => {
-                          const isSelected = selectedCollections.includes(collection.id);
-                          return (
-                            <ResourceItem 
-                              id={collection.id} 
-                              onClick={() => {
-                                if (!isSaving) {
-                                  setSelectedCollections(isSelected ? selectedCollections.filter(id => id !== collection.id) : [...selectedCollections, collection.id]);
-                                }
-                              }}
-                            >
-                              <InlineStack gap="300" blockAlign="center">
-                                <Checkbox label="" checked={isSelected} onChange={() => {}} disabled={isSaving} />
-                                <BlockStack gap="050">
-                                  <Text as="span" variant="bodyMd">{collection.title}</Text>
-                                  <Text as="span" variant="bodySm" tone="subdued">{collection.productsCount} products</Text>
-                                </BlockStack>
-                              </InlineStack>
-                            </ResourceItem>
-                          );
-                        }}
-                      />
-                    </Box>
-                    {selectedCollections.length > 0 && (
-                      <Banner tone="success">
-                        <Text as="p" variant="bodySm">
-                          {selectedCollections.length} collection{selectedCollections.length === 1 ? '' : 's'} selected
-                        </Text>
-                      </Banner>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => {
+                            // Open a product picker modal or expand inline selection
+                            // For simplicity, showing first 5 products as checkboxes
+                          }}
+                          disabled={isSaving}
+                        >
+                          Select products ({selectedProducts.length} selected)
+                        </Button>
+                        <BlockStack gap="200">
+                          {availableProducts.slice(0, 5).map((product) => {
+                            const numericId = product.id.replace('gid://shopify/Product/', '');
+                            return (
+                              <Checkbox
+                                key={product.id}
+                                label={product.title}
+                                checked={selectedProducts.includes(numericId)}
+                                onChange={(checked) => {
+                                  setSelectedProducts(
+                                    checked
+                                      ? [...selectedProducts, numericId]
+                                      : selectedProducts.filter((id) => id !== numericId)
+                                  );
+                                }}
+                                disabled={isSaving}
+                              />
+                            );
+                          })}
+                        </BlockStack>
+                      </>
                     )}
                   </BlockStack>
                 </Card>
