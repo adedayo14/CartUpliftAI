@@ -35,17 +35,17 @@ model Settings {
   // Core Features
   enableApp               Boolean  @default(true)
   showOnlyOnCartPage      Boolean  @default(false)
-  autoOpenCart            Boolean  @default(true)
-  enableFreeShipping      Boolean  @default(false)
+  autoOpenCart            Boolean  @default(false)  // OFF by default - less intrusive
+  enableFreeShipping      Boolean  @default(false)  // OFF - requires Shopify discount setup
   freeShippingThreshold   Float    @default(0)
   
   // Advanced Features
-  enableRecommendations   Boolean  @default(true)
+  enableRecommendations   Boolean  @default(false)  // OFF - let merchants enable when ready
   enableAddons            Boolean  @default(false)
-  enableDiscountCode      Boolean  @default(true)
+  enableDiscountCode      Boolean  @default(true)   // Keep ON - basic feature
   enableNotes             Boolean  @default(false)
-  enableExpressCheckout   Boolean  @default(true)
-  enableAnalytics         Boolean  @default(true)  // Analytics on by default - core feature
+  enableExpressCheckout   Boolean  @default(true)   // Keep ON - basic feature
+  enableAnalytics         Boolean  @default(true)   // Keep ON - core feature for insights
   // Dev-only fields for title case options
   enableRecommendationTitleCaps Boolean @default(false)
   // Dev-only toggle in dev schema; safe to keep for prod alignment
@@ -67,12 +67,12 @@ model Settings {
   
   // Appearance
   backgroundColor         String   @default("#ffffff")
-  textColor               String   @default("#1A1A1A")
-  buttonColor             String   @default("#000000")
+  textColor               String   @default("inherit")  // Use theme color
+  buttonColor             String   @default("inherit")  // Use theme color
   buttonTextColor         String   @default("#ffffff")
-  recommendationsBackgroundColor String @default("#ecebe3")
-  shippingBarBackgroundColor String @default("#f0f0f0")
-  shippingBarColor        String   @default("#121212")
+  recommendationsBackgroundColor String @default("#f5f5f5")  // Neutral gray
+  shippingBarBackgroundColor String @default("#e5e5e5")      // Neutral gray
+  shippingBarColor        String   @default("#000000")       // Black (safe default)
   
   // Recommendation Settings
   recommendationLayout    String   @default("horizontal")
@@ -97,7 +97,7 @@ model Settings {
 
   // ML/Privacy Settings (required for AI Personalization section)
   mlPersonalizationMode   String   @default("balanced")
-  enableMLRecommendations Boolean  @default(true)
+  enableMLRecommendations Boolean  @default(false)  // OFF - let merchants enable AI when ready
   mlPrivacyLevel          String   @default("basic")
   enableAdvancedPersonalization Boolean @default(false)
   enableBehaviorTracking  Boolean  @default(false)

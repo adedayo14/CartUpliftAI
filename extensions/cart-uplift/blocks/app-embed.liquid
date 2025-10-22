@@ -504,7 +504,7 @@
       "id": "auto_open_cart",
       "label": "Open cart after add to cart",
       "info": "Automatically show the cart when an item is added.",
-      "default": true
+      "default": false
     },
     {
       "type": "checkbox",
@@ -543,23 +543,29 @@
         }
       ],
       "default": "free_shipping",
-      "info": "Choose 'Free shipping + gifts' to enable both features. Configure relevant sections below."
+      "info": "💡 TIP: Start with 'Free shipping goal' only. Add gifts later after testing."
     },
     {
       "type": "header",
       "content": "Free shipping goal"
     },
     {
+      "type": "paragraph",
+      "content": "⚠️ SETUP REQUIRED: Create a free shipping discount in Shopify Admin > Discounts with the same threshold amount. [Learn more](https://help.shopify.com/manual/promoting-marketing/discounts)"
+    },
+    {
       "type": "checkbox",
       "id": "enable_free_shipping_progress",
       "label": "Show progress bar",
-      "default": true
+      "default": false,
+      "info": "Turn on after creating your free shipping discount"
     },
     {
       "type": "number",
       "id": "free_shipping_threshold",
-      "label": "Free shipping minimum ",
-      "default": 100
+      "label": "Free shipping minimum",
+      "default": 0,
+      "info": "Must match your Shopify free shipping discount threshold"
     },
     {
       "type": "text",
@@ -590,16 +596,21 @@
       "content": "Gift with purchase"
     },
     {
+      "type": "paragraph",
+      "content": "⚠️ SETUP REQUIRED: Set your gift product price to $0 in Shopify before enabling. The app will auto-add the product when threshold is reached."
+    },
+    {
       "type": "number",
       "id": "gift_threshold",
       "label": "Gift unlock amount ($)",
-      "default": 150
+      "default": 0,
+      "info": "Cart subtotal required to unlock gift"
     },
     {
       "type": "product",
       "id": "gift_product",
       "label": "Gift product",
-      "info": "REQUIRED for auto-add: Select product to give as gift when threshold is reached"
+      "info": "⚠️ IMPORTANT: Set this product's price to $0.00 in your Shopify products"
     },
     {
       "type": "text",
