@@ -16,16 +16,14 @@ import {
   ProgressBar,
   Icon,
   InlineGrid,
-  List,
 } from "@shopify/polaris";
 import { 
   CheckCircleIcon,
   AlertCircleIcon,
-  SettingsIcon,
-  ThemeIcon,
+  XCircleIcon,
   StarFilledIcon,
   GiftCardIcon,
-  ChartLineIcon,
+  ChartVerticalIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -60,7 +58,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       currentThemeId = currentTheme.node.id.split('/').pop();
     }
     
-    // Check if app block is enabled (you'd implement this check based on your app's logic)
     themeEnabled = false; // Replace with actual check
   } catch (err) {
     console.error('Failed to fetch current theme:', err);
@@ -68,7 +65,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const search = new URL(request.url).search;
 
-  // Check if settings are actually configured (not just default values)
   const isSettingsConfigured = settings && (
     settings.enableRecommendations !== null ||
     settings.enableFreeShipping !== null ||
@@ -94,7 +90,6 @@ export default function Index() {
     ? `https://admin.shopify.com/store/${shopHandle}/themes/${currentThemeId}/editor?context=apps`
     : `https://admin.shopify.com/store/${shopHandle}/themes/current/editor?context=apps`;
 
-  // Calculate setup progress
   const setupSteps = [
     { id: 'theme', label: 'Theme enabled', completed: themeEnabled },
     { id: 'settings', label: 'Settings configured', completed: hasSettings },
@@ -108,89 +103,80 @@ export default function Index() {
       <TitleBar title="Cart Uplift" />
       
       <Layout>
-        {/* Main Content */}
         <Layout.Section>
-          <BlockStack gap="500">
+          <BlockStack gap="600">
             
             {/* Hero Section */}
             <Card>
               <BlockStack gap="500">
-                <InlineStack align="space-between" blockAlign="center" wrap={false}>
+                <InlineStack align="space-between" blockAlign="center">
                   <BlockStack gap="200">
-                    <InlineStack gap="300" blockAlign="center" wrap={false}>
+                    <InlineStack gap="300" blockAlign="center">
                       <Text variant="heading2xl" as="h1">
                         Welcome to Cart Uplift
                       </Text>
-                      <Badge tone="success" size="large">
-                        Active Trial
-                      </Badge>
+                      <Badge tone="success">Active Trial</Badge>
                     </InlineStack>
                     <Text variant="bodyLg" as="p" tone="subdued">
                       AI-powered cart recommendations and smart bundling for your store
                     </Text>
                   </BlockStack>
                   
-                  <InlineStack gap="300" wrap={false}>
-                    <a 
-                      href={`/app/settings${safeSearch}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Button size="large">
-                        Configure settings
-                      </Button>
+                  <InlineStack gap="300">
+                    <a href={`/app/settings${safeSearch}`} style={{ textDecoration: 'none' }}>
+                      <Button size="large">Configure settings</Button>
                     </a>
-                    <a 
-                      href={`/admin/bundles${safeSearch}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Button size="large">
-                        Manage bundles
-                      </Button>
+                    <a href={`/admin/bundles${safeSearch}`} style={{ textDecoration: 'none' }}>
+                      <Button size="large" variant="secondary">Manage bundles</Button>
                     </a>
                   </InlineStack>
                 </InlineStack>
 
                 {!isSetupComplete && (
-                  <Box paddingBlockStart="400">
+                  <>
+                    <Divider />
                     <BlockStack gap="300">
                       <InlineStack align="space-between" blockAlign="center">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Setup progress: {completedSteps} of {setupSteps.length} steps
+                        <Text variant="headingMd" as="p">
+                          Setup progress: {completedSteps} of {setupSteps.length} complete
                         </Text>
-                        <Text variant="bodyMd" as="span" tone="subdued">
+                        <Text variant="bodySm" as="span" tone="subdued">
                           {Math.round(setupProgress)}%
                         </Text>
                       </InlineStack>
                       <ProgressBar 
                         progress={setupProgress} 
-                        size="small"
+                        size="medium"
                         tone={isSetupComplete ? "success" : "primary"}
                       />
                     </BlockStack>
-                  </Box>
+                  </>
                 )}
 
                 {isSetupComplete && (
-                  <Banner tone="success">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Icon source={CheckCircleIcon} tone="success" />
-                      <Text variant="bodyMd" as="p" fontWeight="semibold">
-                        Setup complete! Cart Uplift is now active and optimizing your store.
-                      </Text>
-                    </InlineStack>
-                  </Banner>
+                  <>
+                    <Divider />
+                    <Banner tone="success">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={CheckCircleIcon} tone="success" />
+                        <Text variant="bodyMd" as="p">
+                          Setup complete! Cart Uplift is active and optimizing your store.
+                        </Text>
+                      </InlineStack>
+                    </Banner>
+                  </>
                 )}
               </BlockStack>
             </Card>
 
-            {/* Setup Checklist - Only show if not complete */}
+            {/* Setup Checklist */}
             {!isSetupComplete && (
               <Card>
                 <BlockStack gap="500">
                   <BlockStack gap="200">
                     <InlineStack gap="200" blockAlign="center">
                       <Icon source={AlertCircleIcon} tone="info" />
-                      <Text variant="headingMd" as="h2">
+                      <Text variant="headingLg" as="h2">
                         Complete your setup
                       </Text>
                     </InlineStack>
@@ -199,44 +185,32 @@ export default function Index() {
                     </Text>
                   </BlockStack>
 
-                  <BlockStack gap="0">
+                  <Divider />
+
+                  <BlockStack gap="400">
                     {/* Step 1: Theme */}
                     <Box 
-                      padding="400" 
-                      background={themeEnabled ? "bg-surface-success-hover" : "bg-surface"}
-                      borderBlockEndWidth="025"
-                      borderColor="border"
+                      padding="500" 
+                      background={themeEnabled ? "bg-surface-success" : "bg-surface-secondary"}
+                      borderRadius="300"
                     >
-                      <BlockStack gap="400">
-                        <InlineStack align="space-between" blockAlign="start" wrap={false}>
-                          <InlineStack gap="400" blockAlign="center" wrap={false}>
-                            <Box minWidth="fit-content">
-                              {themeEnabled ? (
-                                <Box 
-                                  background="bg-fill-success" 
-                                  padding="200" 
-                                  borderRadius="100"
-                                  minWidth="32px"
-                                  minHeight="32px"
-                                >
-                                  <Icon source={CheckCircleIcon} tone="base" />
-                                </Box>
-                              ) : (
-                                <Box 
-                                  background="bg-fill" 
-                                  padding="200" 
-                                  borderRadius="100"
-                                  minWidth="32px"
-                                  minHeight="32px"
-                                  borderWidth="025"
-                                  borderColor="border"
-                                >
-                                  <Icon source={ThemeIcon} />
-                                </Box>
-                              )}
+                      <InlineStack align="space-between" blockAlign="start">
+                        <BlockStack gap="300">
+                          <InlineStack gap="300" blockAlign="center">
+                            <Box 
+                              background={themeEnabled ? "bg-fill-success" : "bg-fill"} 
+                              padding="200" 
+                              borderRadius="200"
+                              minWidth="32px"
+                              minHeight="32px"
+                            >
+                              <Icon 
+                                source={themeEnabled ? CheckCircleIcon : AlertCircleIcon} 
+                                tone={themeEnabled ? "success" : "base"} 
+                              />
                             </Box>
                             <BlockStack gap="100">
-                              <Text variant="bodyLg" as="h3" fontWeight="semibold">
+                              <Text variant="headingMd" as="h3">
                                 Enable app in your theme
                               </Text>
                               <Text variant="bodyMd" as="p" tone="subdued">
@@ -245,68 +219,53 @@ export default function Index() {
                             </BlockStack>
                           </InlineStack>
                           
-                          {themeEnabled && (
-                            <Badge tone="success">Complete</Badge>
+                          {!themeEnabled && (
+                            <Text variant="bodySm" as="p" tone="subdued">
+                              Opens in theme customizer • Takes 30 seconds
+                            </Text>
                           )}
-                        </InlineStack>
-
+                        </BlockStack>
+                        
                         {!themeEnabled && (
-                          <Box paddingInlineStart="1200">
-                            <a 
-                              href={themeEditorUrl} 
-                              target="_top" 
-                              rel="noopener noreferrer"
-                              style={{ textDecoration: 'none', display: 'inline-block' }}
-                            >
-                              <Button variant="primary" size="large">
-                                Open Theme Editor
-                              </Button>
-                            </a>
-                            <Box paddingBlockStart="200">
-                              <Text variant="bodySm" as="p" tone="subdued">
-                                Opens in theme customizer • Takes 30 seconds
-                              </Text>
-                            </Box>
-                          </Box>
+                          <a 
+                            href={themeEditorUrl}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none' }}
+                          >
+                            <Button size="large">Open Theme Editor</Button>
+                          </a>
                         )}
-                      </BlockStack>
+                        
+                        {themeEnabled && (
+                          <Badge tone="success" size="large">Complete</Badge>
+                        )}
+                      </InlineStack>
                     </Box>
 
                     {/* Step 2: Settings */}
                     <Box 
-                      padding="400" 
-                      background={hasSettings ? "bg-surface-success-hover" : "bg-surface"}
+                      padding="500" 
+                      background={hasSettings ? "bg-surface-success" : "bg-surface-secondary"}
+                      borderRadius="300"
                     >
-                      <BlockStack gap="400">
-                        <InlineStack align="space-between" blockAlign="start" wrap={false}>
-                          <InlineStack gap="400" blockAlign="center" wrap={false}>
-                            <Box minWidth="fit-content">
-                              {hasSettings ? (
-                                <Box 
-                                  background="bg-fill-success" 
-                                  padding="200" 
-                                  borderRadius="100"
-                                  minWidth="32px"
-                                  minHeight="32px"
-                                >
-                                  <Icon source={CheckCircleIcon} tone="base" />
-                                </Box>
-                              ) : (
-                                <Box 
-                                  background="bg-fill" 
-                                  padding="200" 
-                                  borderRadius="100"
-                                  minWidth="32px"
-                                  minHeight="32px"
-                                  borderWidth="025"
-                                  borderColor="border"
-                                >
-                                  <Icon source={SettingsIcon} />
-                                </Box>
-                              )}
+                      <InlineStack align="space-between" blockAlign="start">
+                        <BlockStack gap="300">
+                          <InlineStack gap="300" blockAlign="center">
+                            <Box 
+                              background={hasSettings ? "bg-fill-success" : "bg-fill"} 
+                              padding="200" 
+                              borderRadius="200"
+                              minWidth="32px"
+                              minHeight="32px"
+                            >
+                              <Icon 
+                                source={hasSettings ? CheckCircleIcon : AlertCircleIcon} 
+                                tone={hasSettings ? "success" : "base"} 
+                              />
                             </Box>
                             <BlockStack gap="100">
-                              <Text variant="bodyLg" as="h3" fontWeight="semibold">
+                              <Text variant="headingMd" as="h3">
                                 Configure your settings
                               </Text>
                               <Text variant="bodyMd" as="p" tone="subdued">
@@ -314,37 +273,28 @@ export default function Index() {
                               </Text>
                             </BlockStack>
                           </InlineStack>
-                          
-                          {hasSettings && (
-                            <Badge tone="success">Complete</Badge>
-                          )}
-                        </InlineStack>
-
+                        </BlockStack>
+                        
                         {!hasSettings && (
-                          <Box paddingInlineStart="1200">
-                            <a 
-                              href={`/app/settings${safeSearch}`}
-                              style={{ textDecoration: 'none', display: 'inline-block' }}
-                            >
-                              <Button size="large">
-                                Configure Settings
-                              </Button>
-                            </a>
-                            <Box paddingBlockStart="200">
-                              <Text variant="bodySm" as="p" tone="subdued">
-                                Customize the experience for your customers
-                              </Text>
-                            </Box>
-                          </Box>
+                          <a 
+                            href={`/app/settings${safeSearch}`}
+                            style={{ textDecoration: 'none' }}
+                          >
+                            <Button size="large">Configure Settings</Button>
+                          </a>
                         )}
-                      </BlockStack>
+                        
+                        {hasSettings && (
+                          <Badge tone="success" size="large">Complete</Badge>
+                        )}
+                      </InlineStack>
                     </Box>
                   </BlockStack>
                 </BlockStack>
               </Card>
             )}
 
-            {/* Features Grid */}
+            {/* Key Features */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
@@ -356,24 +306,21 @@ export default function Index() {
                   </Text>
                 </BlockStack>
 
-                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 2 }} gap="400">
-                  {/* AI Recommendations */}
-                  <Box 
-                    padding="400" 
-                    background="bg-surface-secondary" 
-                    borderRadius="200"
-                  >
+                <Divider />
+
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4 }} gap="400">
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
                         background="bg-fill-info" 
-                        padding="200" 
-                        borderRadius="100"
-                        width="fit-content"
+                        padding="300" 
+                        borderRadius="200"
+                        width="48px"
                       >
                         <Icon source={StarFilledIcon} tone="info" />
                       </Box>
-                      <BlockStack gap="100">
-                        <Text variant="headingMd" as="h3" fontWeight="semibold">
+                      <BlockStack gap="200">
+                        <Text variant="headingMd" as="h3">
                           AI recommendations
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -383,23 +330,18 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
-                  {/* Progress Bars */}
-                  <Box 
-                    padding="400" 
-                    background="bg-surface-secondary" 
-                    borderRadius="200"
-                  >
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
                         background="bg-fill-success" 
-                        padding="200" 
-                        borderRadius="100"
-                        width="fit-content"
+                        padding="300" 
+                        borderRadius="200"
+                        width="48px"
                       >
-                        <Icon source={StarFilledIcon} tone="success" />
+                        <Icon source={ChartVerticalIcon} tone="success" />
                       </Box>
-                      <BlockStack gap="100">
-                        <Text variant="headingMd" as="h3" fontWeight="semibold">
+                      <BlockStack gap="200">
+                        <Text variant="headingMd" as="h3">
                           Goal progress bars
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -409,23 +351,18 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
-                  {/* Gift with Purchase */}
-                  <Box 
-                    padding="400" 
-                    background="bg-surface-secondary" 
-                    borderRadius="200"
-                  >
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
                         background="bg-fill-warning" 
-                        padding="200" 
-                        borderRadius="100"
-                        width="fit-content"
+                        padding="300" 
+                        borderRadius="200"
+                        width="48px"
                       >
                         <Icon source={GiftCardIcon} tone="warning" />
                       </Box>
-                      <BlockStack gap="100">
-                        <Text variant="headingMd" as="h3" fontWeight="semibold">
+                      <BlockStack gap="200">
+                        <Text variant="headingMd" as="h3">
                           Gift with purchase
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -435,23 +372,18 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
-                  {/* Analytics */}
-                  <Box 
-                    padding="400" 
-                    background="bg-surface-secondary" 
-                    borderRadius="200"
-                  >
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
-                        background="bg-fill-magic" 
-                        padding="200" 
-                        borderRadius="100"
-                        width="fit-content"
+                        background="bg-fill-brand" 
+                        padding="300" 
+                        borderRadius="200"
+                        width="48px"
                       >
-                        <Icon source={ChartLineIcon} tone="magic" />
+                        <Icon source={ChartVerticalIcon} />
                       </Box>
-                      <BlockStack gap="100">
-                        <Text variant="headingMd" as="h3" fontWeight="semibold">
+                      <BlockStack gap="200">
+                        <Text variant="headingMd" as="h3">
                           Revenue analytics
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -464,7 +396,7 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* How It Works */}
+            {/* How It Works - Comparison */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
@@ -476,7 +408,9 @@ export default function Index() {
                   </Text>
                 </BlockStack>
 
-                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 2 }} gap="400">
+                <Divider />
+
+                <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
                   {/* Generic Approach */}
                   <Box 
                     padding="500" 
@@ -489,33 +423,37 @@ export default function Index() {
                       <InlineStack gap="300" blockAlign="center">
                         <Box 
                           background="bg-fill-critical" 
-                          padding="200" 
-                          borderRadius="100"
+                          padding="300" 
+                          borderRadius="200"
+                          minWidth="40px"
+                          minHeight="40px"
                         >
-                          <Text variant="headingMd" as="span" fontWeight="bold" alignment="center">
-                            ✕
-                          </Text>
+                          <Icon source={XCircleIcon} tone="critical" />
                         </Box>
-                        <Text variant="headingMd" as="h3" fontWeight="semibold">
+                        <Text variant="headingMd" as="h3">
                           Generic recommendations
                         </Text>
                       </InlineStack>
                       
-                      <List type="bullet">
-                        <List.Item>Shows same products to everyone</List.Item>
-                        <List.Item>Low relevance for most customers</List.Item>
-                        <List.Item>Customers ignore recommendations</List.Item>
-                      </List>
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p">
+                          • Shows same products to everyone
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Low relevance for most customers
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Customers ignore recommendations
+                        </Text>
+                      </BlockStack>
 
                       <Divider />
 
                       <InlineStack gap="200" blockAlign="center">
-                        <Text variant="bodyLg" as="span" fontWeight="semibold">
+                        <Text variant="headingMd" as="span">
                           Result:
                         </Text>
-                        <Badge tone="critical" size="large">
-                          5-10% click rate
-                        </Badge>
+                        <Badge tone="critical" size="large">5-10% click rate</Badge>
                       </InlineStack>
                     </BlockStack>
                   </Box>
@@ -532,31 +470,37 @@ export default function Index() {
                       <InlineStack gap="300" blockAlign="center">
                         <Box 
                           background="bg-fill-success" 
-                          padding="200" 
-                          borderRadius="100"
+                          padding="300" 
+                          borderRadius="200"
+                          minWidth="40px"
+                          minHeight="40px"
                         >
                           <Icon source={CheckCircleIcon} tone="success" />
                         </Box>
-                        <Text variant="headingMd" as="h3" fontWeight="semibold">
+                        <Text variant="headingMd" as="h3">
                           AI-powered recommendations
                         </Text>
                       </InlineStack>
                       
-                      <List type="bullet">
-                        <List.Item>Learns from customer behavior</List.Item>
-                        <List.Item>Shows relevant products they want</List.Item>
-                        <List.Item>Gets smarter with every interaction</List.Item>
-                      </List>
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p">
+                          • Learns from customer behavior
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Shows relevant products they want
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Gets smarter with every interaction
+                        </Text>
+                      </BlockStack>
 
                       <Divider />
 
                       <InlineStack gap="200" blockAlign="center">
-                        <Text variant="bodyLg" as="span" fontWeight="semibold">
+                        <Text variant="headingMd" as="span">
                           Result:
                         </Text>
-                        <Badge tone="success" size="large">
-                          35-50% click rate
-                        </Badge>
+                        <Badge tone="success" size="large">35-50% click rate</Badge>
                       </InlineStack>
                     </BlockStack>
                   </Box>
@@ -575,100 +519,128 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* Support Card */}
+            {/* How It Works - Process */}
             <Card>
-              <InlineStack align="space-between" blockAlign="center" wrap={false}>
+              <BlockStack gap="500">
                 <BlockStack gap="200">
-                  <Text variant="headingMd" as="h3" fontWeight="semibold">
-                    Need help getting started?
+                  <Text variant="headingLg" as="h2">
+                    How it works
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Our team is here to help you succeed with personalized onboarding and support
+                    Three simple steps to boost your cart value
                   </Text>
                 </BlockStack>
-                <InlineStack gap="300" wrap={false}>
-                  <Button>
-                    Contact Support
-                  </Button>
-                  <Button variant="plain">
-                    View Docs
-                  </Button>
-                </InlineStack>
-              </InlineStack>
-            </Card>
 
-          </BlockStack>
-        </Layout.Section>
+                <Divider />
 
-        {/* Sidebar - Optional Stats/Info */}
-        <Layout.Section variant="oneThird">
-          <BlockStack gap="400">
-            
-            {/* Getting Started */}
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2" fontWeight="semibold">
-                  How it works
-                </Text>
-                
-                <BlockStack gap="300">
-                  <Box>
-                    <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      1. AI learns your store
-                    </Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      Our ML engine analyzes purchase patterns and product relationships
-                    </Text>
-                  </Box>
-                  
-                  <Divider />
-                  
-                  <Box>
-                    <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      2. Smart recommendations
-                    </Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      Show relevant products in cart and on product pages
-                    </Text>
-                  </Box>
-                  
-                  <Divider />
-                  
-                  <Box>
-                    <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      3. Track performance
-                    </Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      Monitor clicks, conversions, and revenue in your dashboard
-                    </Text>
-                  </Box>
-                </BlockStack>
+                <InlineGrid columns={{ xs: 1, md: 3 }} gap="500">
+                  <BlockStack gap="300">
+                    <Box 
+                      background="bg-fill-info" 
+                      padding="300" 
+                      borderRadius="200"
+                      width="48px"
+                    >
+                      <Text variant="headingLg" as="span" alignment="center">
+                        1
+                      </Text>
+                    </Box>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        AI learns your store
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Our ML engine analyzes purchase patterns and product relationships
+                      </Text>
+                    </BlockStack>
+                  </BlockStack>
+
+                  <BlockStack gap="300">
+                    <Box 
+                      background="bg-fill-success" 
+                      padding="300" 
+                      borderRadius="200"
+                      width="48px"
+                    >
+                      <Text variant="headingLg" as="span" alignment="center">
+                        2
+                      </Text>
+                    </Box>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Smart recommendations
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Show relevant products in cart and on product pages
+                      </Text>
+                    </BlockStack>
+                  </BlockStack>
+
+                  <BlockStack gap="300">
+                    <Box 
+                      background="bg-fill-warning" 
+                      padding="300" 
+                      borderRadius="200"
+                      width="48px"
+                    >
+                      <Text variant="headingLg" as="span" alignment="center">
+                        3
+                      </Text>
+                    </Box>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Track performance
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Monitor clicks, conversions, and revenue in your dashboard
+                      </Text>
+                    </BlockStack>
+                  </BlockStack>
+                </InlineGrid>
               </BlockStack>
             </Card>
 
-            {/* Resources */}
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2" fontWeight="semibold">
-                  Resources
-                </Text>
-                
-                <BlockStack gap="300">
-                  <Button variant="plain" fullWidth textAlign="start">
-                    Setup guide
-                  </Button>
-                  <Button variant="plain" fullWidth textAlign="start">
-                    Best practices
-                  </Button>
-                  <Button variant="plain" fullWidth textAlign="start">
-                    Video tutorials
-                  </Button>
-                  <Button variant="plain" fullWidth textAlign="start">
-                    FAQs
-                  </Button>
+            {/* Support & Resources */}
+            <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+              <Card>
+                <BlockStack gap="400">
+                  <BlockStack gap="200">
+                    <Text variant="headingMd" as="h3">
+                      Need help getting started?
+                    </Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      Our team is here to help you succeed with personalized onboarding and support
+                    </Text>
+                  </BlockStack>
+                  <InlineStack gap="300">
+                    <Button>Contact Support</Button>
+                    <Button variant="plain">View Docs</Button>
+                  </InlineStack>
                 </BlockStack>
-              </BlockStack>
-            </Card>
+              </Card>
+
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h3">
+                    Resources
+                  </Text>
+                  <BlockStack gap="200">
+                    <Button variant="plain" textAlign="start" fullWidth>
+                      Setup guide
+                    </Button>
+                    <Button variant="plain" textAlign="start" fullWidth>
+                      Best practices
+                    </Button>
+                    <Button variant="plain" textAlign="start" fullWidth>
+                      Video tutorials
+                    </Button>
+                    <Button variant="plain" textAlign="start" fullWidth>
+                      FAQs
+                    </Button>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
+            </InlineGrid>
 
           </BlockStack>
         </Layout.Section>
