@@ -68,10 +68,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const search = new URL(request.url).search;
 
+  // Check if settings are actually configured (not just default values)
+  const isSettingsConfigured = settings && (
+    settings.enableRecommendations !== null ||
+    settings.enableFreeShipping !== null ||
+    settings.enableGiftGating !== null ||
+    settings.freeShippingThreshold !== null
+  );
+
   return json({ 
     shop, 
     currentThemeId,
-    hasSettings: !!settings,
+    hasSettings: isSettingsConfigured,
     themeEnabled,
     search,
   });
@@ -192,7 +200,7 @@ export default function Index() {
                                   minWidth="32px"
                                   minHeight="32px"
                                 >
-                                  <Icon source={CheckCircleIcon} tone="success" />
+                                  <Icon source={CheckCircleIcon} tone="base" />
                                 </Box>
                               ) : (
                                 <Box 
@@ -262,7 +270,7 @@ export default function Index() {
                                   minWidth="32px"
                                   minHeight="32px"
                                 >
-                                  <Icon source={CheckCircleIcon} tone="success" />
+                                  <Icon source={CheckCircleIcon} tone="base" />
                                 </Box>
                               ) : (
                                 <Box 
