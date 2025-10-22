@@ -275,10 +275,10 @@ export default function Index() {
 
                       <BlockStack gap="300">
                         <Text variant="headingMd" as="h3">
-                          Understands product relationships
+                          Creates bundles customers actually want
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          It spots which items are frequently bought together and creates smart bundles with flexible discounts (10-25%). No manual setup required.
+                          Spots which items are frequently bought together and bundles them with strategic discounts. Customers add more to their cart because the deal feels right, boosting your average order value.
                         </Text>
                       </BlockStack>
 
