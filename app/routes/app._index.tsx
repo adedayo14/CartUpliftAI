@@ -129,6 +129,25 @@ export default function Index() {
                       AI-powered cart recommendations and smart bundling for your store
                     </Text>
                   </BlockStack>
+                  
+                  <InlineStack gap="300" wrap={false}>
+                    <a 
+                      href={`/app/settings${safeSearch}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button size="large">
+                        Configure settings
+                      </Button>
+                    </a>
+                    <a 
+                      href={`/admin/bundles${safeSearch}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button size="large">
+                        Manage bundles
+                      </Button>
+                    </a>
+                  </InlineStack>
                 </InlineStack>
 
                 {!isSetupComplete && (
