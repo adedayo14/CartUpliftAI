@@ -25,7 +25,7 @@ import {
   GiftIcon,
   ChartVerticalIcon,
   PackageIcon,
-  TrendingUpIcon,
+  ChartLineIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -344,7 +344,7 @@ export default function Index() {
                         width="56px"
                         height="56px"
                       >
-                        <Icon source={TrendingUpIcon} tone="success" />
+                        <Icon source={ChartLineIcon} tone="success" />
                       </Box>
                       <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
