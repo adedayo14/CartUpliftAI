@@ -21,11 +21,6 @@ import {
   CheckCircleIcon,
   AlertCircleIcon,
   XCircleIcon,
-  StarFilledIcon,
-  GiftCardIcon,
-  ChartVerticalIcon,
-  PackageIcon,
-  ChartLineIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -67,11 +62,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const search = new URL(request.url).search;
 
+  // Check if settings are actually configured (not just defaults)
   const isSettingsConfigured = settings && (
-    settings.enableRecommendations !== null ||
-    settings.enableFreeShipping !== null ||
-    settings.enableGiftGating !== null ||
-    settings.freeShippingThreshold !== null
+    settings.enableRecommendations === true ||
+    settings.enableFreeShipping === true ||
+    settings.enableGiftGating === true ||
+    (settings.freeShippingThreshold !== null && settings.freeShippingThreshold > 0)
   );
 
   return json({ 
@@ -313,116 +309,61 @@ export default function Index() {
                 <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 5 }} gap="400">
                   {/* AI Recommendations */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="300">
-                      <Box 
-                        background="bg-surface-info-active" 
-                        padding="400" 
-                        borderRadius="200"
-                        width="56px"
-                        height="56px"
-                      >
-                        <Icon source={StarFilledIcon} tone="info" />
-                      </Box>
-                      <BlockStack gap="200">
-                        <Text variant="headingMd" as="h3">
-                          AI recommendations
-                        </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Machine learning analyzes customer behavior to show the most relevant products
-                        </Text>
-                      </BlockStack>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        AI recommendations
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Machine learning analyzes customer behavior to show the most relevant products
+                      </Text>
                     </BlockStack>
                   </Box>
 
                   {/* Goal Progress Bars */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="300">
-                      <Box 
-                        background="bg-surface-success-active" 
-                        padding="400" 
-                        borderRadius="200"
-                        width="56px"
-                        height="56px"
-                      >
-                        <Icon source={ChartLineIcon} tone="success" />
-                      </Box>
-                      <BlockStack gap="200">
-                        <Text variant="headingMd" as="h3">
-                          Goal progress bars
-                        </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Visual indicators showing progress toward free shipping and rewards
-                        </Text>
-                      </BlockStack>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Goal progress bars
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Visual indicators showing progress toward free shipping and rewards
+                      </Text>
                     </BlockStack>
                   </Box>
 
                   {/* Smart Bundles */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="300">
-                      <Box 
-                        background="bg-surface-brand-active" 
-                        padding="400" 
-                        borderRadius="200"
-                        width="56px"
-                        height="56px"
-                      >
-                        <Icon source={PackageIcon} />
-                      </Box>
-                      <BlockStack gap="200">
-                        <Text variant="headingMd" as="h3">
-                          Smart bundles
-                        </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          AI-powered product bundles with automatic discounts on product pages
-                        </Text>
-                      </BlockStack>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Smart bundles
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        AI-powered product bundles with automatic discounts on product pages
+                      </Text>
                     </BlockStack>
                   </Box>
 
-                  {/* Gift with Purchase */}
+                  {/* Gift with purchase */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="300">
-                      <Box 
-                        background="bg-surface-warning-active" 
-                        padding="400" 
-                        borderRadius="200"
-                        width="56px"
-                        height="56px"
-                      >
-                        <Icon source={GiftCardIcon} tone="warning" />
-                      </Box>
-                      <BlockStack gap="200">
-                        <Text variant="headingMd" as="h3">
-                          Gift with purchase
-                        </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Automatic rewards when customers reach spending milestones
-                        </Text>
-                      </BlockStack>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Gift with purchase
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Automatic rewards when customers reach spending milestones
+                      </Text>
                     </BlockStack>
                   </Box>
 
                   {/* Revenue Analytics */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="300">
-                      <Box 
-                        background="bg-surface-emphasis-active" 
-                        padding="400" 
-                        borderRadius="200"
-                        width="56px"
-                        height="56px"
-                      >
-                        <Icon source={ChartVerticalIcon} />
-                      </Box>
-                      <BlockStack gap="200">
-                        <Text variant="headingMd" as="h3">
-                          Revenue analytics
-                        </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Track revenue impact and performance metrics in real-time
-                        </Text>
-                      </BlockStack>
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Revenue analytics
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Track revenue impact and performance metrics in real-time
+                      </Text>
                     </BlockStack>
                   </Box>
                 </InlineGrid>
