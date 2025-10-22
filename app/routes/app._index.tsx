@@ -10,7 +10,6 @@ import {
   InlineStack,
   Text,
   Badge,
-  Banner,
   Box,
   Divider,
   InlineGrid,
@@ -297,26 +296,8 @@ export default function Index() {
                         </Text>
                       </BlockStack>
                     </InlineGrid>
-
-                    <Divider />
-
-                    <InlineStack gap="300" blockAlign="center" align="space-between" wrap={false}>
-                      <Text variant="bodyMd" as="span">
-                        Typical click rate
-                      </Text>
-                      <Badge tone="success" size="large">35 to 50%*</Badge>
-                    </InlineStack>
-                    <Text variant="bodySm" as="p" tone="subdued">
-                      *Ranges vary by catalogue size, traffic mix and placement.
-                    </Text>
                   </BlockStack>
                 </Box>
-
-                <Banner tone="info">
-                  <Text variant="bodyMd" as="p">
-                    <strong>Quick to show impact.</strong> Many shops see clear signal within 24 to 48 hours as learning begins.
-                  </Text>
-                </Banner>
               </BlockStack>
             </Card>
 
