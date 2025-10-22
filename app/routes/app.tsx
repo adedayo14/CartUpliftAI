@@ -29,16 +29,15 @@ export default function AppLayout() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <AppBridgeInitializer apiKey={apiKey} />
       <SessionStatus />
-      {/* Shopify App Design System: App Nav - wrapped in conditional to prevent premature render */}
-      {apiKey && (
-        <s-app-nav>
-          <s-link href="/app" rel="home">Home</s-link>
-          <s-link href="/admin/dashboard">Analytics</s-link>
-          <s-link href="/app/settings">Settings</s-link>
-          <s-link href="/admin/bundles">Bundles</s-link>
-          <s-link href="/app/ab-testing">A/B Testing</s-link>
-        </s-app-nav>
-      )}
+      {/* Shopify App Design System: App Nav */}
+      <s-app-nav>
+        <s-link href="/app" rel="home">Home</s-link>
+        <s-link href="/admin/dashboard">Analytics</s-link>
+        <s-link href="/app/settings">Settings</s-link>
+        <s-link href="/admin/bundles">Bundles</s-link>
+        {/* A/B Testing hidden - feature not ready for production */}
+        {/* <s-link href="/app/ab-testing">A/B Testing</s-link> */}
+      </s-app-nav>
       <Outlet />
     </AppProvider>
   );
