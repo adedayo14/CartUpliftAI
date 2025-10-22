@@ -13,90 +13,31 @@ import {
   Banner,
   Box,
   Divider,
-  ProgressBar,
   Icon,
   InlineGrid,
 } from "@shopify/polaris";
 import { 
   CheckCircleIcon,
-  AlertCircleIcon,
   XCircleIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
-  const shop = session.shop;
-
-  const settings = await prisma.settings.findUnique({
-    where: { shop },
-  });
-
-  let currentThemeId: string | null = null;
-  
-  // Theme enabled check: Would require querying theme JSON assets via API
-  // For now, we show this step to ensure merchants are aware of theme setup
-  // They can click "Open Theme Editor" to configure the app block
-  let themeEnabled = false;
-  
-  try {
-    const response = await admin.graphql(`
-      #graphql
-      query getCurrentThemeForAppIndex {
-        themes(first: 50) {
-          edges {
-            node { id name role }
-          }
-        }
-      }
-    `);
-    const responseJson = await response.json();
-    const themes = responseJson.data?.themes?.edges || [];
-    const currentTheme = themes.find((t: any) => t.node.role === 'MAIN');
-    if (currentTheme) {
-      currentThemeId = currentTheme.node.id.split('/').pop();
-    }
-  } catch (err) {
-    console.error('Failed to fetch current theme:', err);
-  }
+  const { session } = await authenticate.admin(request);
+  const { shop } = session;
 
   const search = new URL(request.url).search;
 
-  // Check if settings are actually configured (not just defaults)
-  const isSettingsConfigured = settings && (
-    settings.enableRecommendations === true ||
-    settings.enableFreeShipping === true ||
-    settings.enableGiftGating === true ||
-    (settings.freeShippingThreshold !== null && settings.freeShippingThreshold > 0)
-  );
-
   return json({ 
-    shop, 
-    currentThemeId,
-    hasSettings: isSettingsConfigured,
-    themeEnabled,
+    shop,
     search,
   });
 };
 
 export default function Index() {
-  const { shop, currentThemeId, hasSettings, themeEnabled, search } = useLoaderData<typeof loader>();
+  const { shop, search } = useLoaderData<typeof loader>();
   const safeSearch = search || "";
-
-  const shopHandle = (shop || '').replace('.myshopify.com', '');
-  const themeEditorUrl = currentThemeId
-    ? `https://admin.shopify.com/store/${shopHandle}/themes/${currentThemeId}/editor?context=apps`
-    : `https://admin.shopify.com/store/${shopHandle}/themes/current/editor?context=apps`;
-
-  const setupSteps = [
-    { id: 'theme', label: 'Theme enabled', completed: themeEnabled },
-    { id: 'settings', label: 'Settings configured', completed: hasSettings },
-  ];
-  const completedSteps = setupSteps.filter(step => step.completed).length;
-  const setupProgress = (completedSteps / setupSteps.length) * 100;
-  const isSetupComplete = completedSteps === setupSteps.length;
 
   return (
     <Page>
@@ -131,168 +72,8 @@ export default function Index() {
                     </a>
                   </InlineStack>
                 </InlineStack>
-
-                {!isSetupComplete && (
-                  <>
-                    <Divider />
-                    <BlockStack gap="300">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <Text variant="headingMd" as="p">
-                          Setup progress: {completedSteps} of {setupSteps.length} complete
-                        </Text>
-                        <Text variant="bodySm" as="span" tone="subdued">
-                          {Math.round(setupProgress)}%
-                        </Text>
-                      </InlineStack>
-                      <ProgressBar 
-                        progress={setupProgress} 
-                        size="medium"
-                        tone={isSetupComplete ? "success" : "primary"}
-                      />
-                    </BlockStack>
-                  </>
-                )}
-
-                {isSetupComplete && (
-                  <>
-                    <Divider />
-                    <Banner tone="success">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={CheckCircleIcon} tone="success" />
-                        <Text variant="bodyMd" as="p">
-                          Setup complete! Cart Uplift is active and optimizing your store.
-                        </Text>
-                      </InlineStack>
-                    </Banner>
-                  </>
-                )}
               </BlockStack>
             </Card>
-
-            {/* Setup Checklist */}
-            {!isSetupComplete && (
-              <Card>
-                <BlockStack gap="500">
-                  <BlockStack gap="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Icon source={AlertCircleIcon} tone="info" />
-                      <Text variant="headingLg" as="h2">
-                        Complete your setup
-                      </Text>
-                    </InlineStack>
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      Follow these steps to activate Cart Uplift and start increasing your revenue
-                    </Text>
-                  </BlockStack>
-
-                  <Divider />
-
-                  <BlockStack gap="400">
-                    {/* Step 1: Theme */}
-                    <Box 
-                      padding="500" 
-                      background={themeEnabled ? "bg-surface-success" : "bg-surface-secondary"}
-                      borderRadius="300"
-                    >
-                      <InlineStack align="space-between" blockAlign="start">
-                        <BlockStack gap="300">
-                          <InlineStack gap="300" blockAlign="center">
-                            <Box 
-                              background={themeEnabled ? "bg-fill-success" : "bg-fill"} 
-                              padding="200" 
-                              borderRadius="200"
-                              minWidth="32px"
-                              minHeight="32px"
-                            >
-                              <Icon 
-                                source={themeEnabled ? CheckCircleIcon : AlertCircleIcon} 
-                                tone={themeEnabled ? "success" : "base"} 
-                              />
-                            </Box>
-                            <BlockStack gap="100">
-                              <Text variant="headingMd" as="h3">
-                                Enable app in your theme
-                              </Text>
-                              <Text variant="bodyMd" as="p" tone="subdued">
-                                Add the Cart Uplift app block to your cart page
-                              </Text>
-                            </BlockStack>
-                          </InlineStack>
-                          
-                          {!themeEnabled && (
-                            <Text variant="bodySm" as="p" tone="subdued">
-                              One click to open theme customizer
-                            </Text>
-                          )}
-                        </BlockStack>
-                        
-                        {!themeEnabled && (
-                          <a 
-                            href={themeEditorUrl}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            style={{ textDecoration: 'none' }}
-                          >
-                            <Button size="large">Open Theme Editor</Button>
-                          </a>
-                        )}
-                        
-                        {themeEnabled && (
-                          <Badge tone="success" size="large">Complete</Badge>
-                        )}
-                      </InlineStack>
-                    </Box>
-
-                    {/* Step 2: Settings */}
-                    <Box 
-                      padding="500" 
-                      background={hasSettings ? "bg-surface-success" : "bg-surface-secondary"}
-                      borderRadius="300"
-                    >
-                      <InlineStack align="space-between" blockAlign="start">
-                        <BlockStack gap="300">
-                          <InlineStack gap="300" blockAlign="center">
-                            <Box 
-                              background={hasSettings ? "bg-fill-success" : "bg-fill"} 
-                              padding="200" 
-                              borderRadius="200"
-                              minWidth="32px"
-                              minHeight="32px"
-                            >
-                              <Icon 
-                                source={hasSettings ? CheckCircleIcon : AlertCircleIcon} 
-                                tone={hasSettings ? "success" : "base"} 
-                              />
-                            </Box>
-                            <BlockStack gap="100">
-                              <Text variant="headingMd" as="h3">
-                                Configure your settings
-                              </Text>
-                              <Text variant="bodyMd" as="p" tone="subdued">
-                                Set up AI recommendations, progress bars, and rewards
-                              </Text>
-                            </BlockStack>
-                          </InlineStack>
-                        </BlockStack>
-                        
-                        {!hasSettings && (
-                          <a 
-                            href={`/app/settings${safeSearch}`}
-                            style={{ textDecoration: 'none' }}
-                          >
-                            <Button size="large">Configure Settings</Button>
-                          </a>
-                        )}
-                        
-                        {hasSettings && (
-                          <Badge tone="success" size="large">Complete</Badge>
-                        )}
-                      </InlineStack>
-                    </Box>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            )}
 
             {/* Key Features */}
             <Card>
