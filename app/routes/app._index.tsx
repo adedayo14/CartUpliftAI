@@ -322,10 +322,10 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text variant="headingLg" as="h2">
-                    Features that drive results
+                    Key Features
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Proven tools to increase average order value and conversion rates
+                    Tools to enhance your cart experience and encourage larger orders
                   </Text>
                 </BlockStack>
 
@@ -379,7 +379,6 @@ export default function Index() {
                           Visual indicators showing progress toward free shipping and rewards
                         </Text>
                       </BlockStack>
-                      <Badge tone="success">68% reach threshold</Badge>
                     </BlockStack>
                   </Box>
 
@@ -406,7 +405,6 @@ export default function Index() {
                           Automatic rewards when customers reach spending milestones
                         </Text>
                       </BlockStack>
-                      <Badge tone="warning">+$22 avg. spending lift</Badge>
                     </BlockStack>
                   </Box>
 
@@ -430,10 +428,9 @@ export default function Index() {
                           Revenue Analytics
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
-                          Real-time tracking of your revenue impact and performance metrics
+                          Track revenue impact and performance metrics in real-time
                         </Text>
                       </BlockStack>
-                      <Badge tone="magic">Live ROI tracking</Badge>
                     </BlockStack>
                   </Box>
                 </InlineGrid>
