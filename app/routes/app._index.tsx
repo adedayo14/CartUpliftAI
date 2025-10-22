@@ -21,7 +21,6 @@ import {
 import { 
   CheckCircleIcon,
   AlertCircleIcon,
-  ChartVerticalIcon,
   SettingsIcon,
   ThemeIcon,
   StarFilledIcon,
@@ -156,71 +155,6 @@ export default function Index() {
                 )}
               </BlockStack>
             </Card>
-
-            {/* Quick Action Cards */}
-            <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 2 }} gap="400">
-              <Card>
-                <BlockStack gap="400">
-                  <InlineStack gap="300" blockAlign="start">
-                    <Box 
-                      background="bg-fill-info" 
-                      padding="300" 
-                      borderRadius="200"
-                    >
-                      <Icon source={ChartVerticalIcon} tone="info" />
-                    </Box>
-                    <BlockStack gap="100">
-                      <Text variant="headingMd" as="h3" fontWeight="semibold">
-                        Analytics Dashboard
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Track revenue impact and performance metrics
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                  
-                  <a 
-                    href={`/admin/dashboard${safeSearch}`}
-                    style={{ textDecoration: 'none', display: 'block' }}
-                  >
-                    <Button variant="primary" fullWidth size="large">
-                      View Analytics
-                    </Button>
-                  </a>
-                </BlockStack>
-              </Card>
-
-              <Card>
-                <BlockStack gap="400">
-                  <InlineStack gap="300" blockAlign="start">
-                    <Box 
-                      background="bg-fill-magic" 
-                      padding="300" 
-                      borderRadius="200"
-                    >
-                      <Icon source={SettingsIcon} tone="magic" />
-                    </Box>
-                    <BlockStack gap="100">
-                      <Text variant="headingMd" as="h3" fontWeight="semibold">
-                        Configuration
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Customize AI, progress bars, and rewards
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                  
-                  <a 
-                    href={`/app/settings${safeSearch}`}
-                    style={{ textDecoration: 'none', display: 'block' }}
-                  >
-                    <Button fullWidth size="large">
-                      Manage Settings
-                    </Button>
-                  </a>
-                </BlockStack>
-              </Card>
-            </InlineGrid>
 
             {/* Setup Checklist - Only show if not complete */}
             {!isSetupComplete && (
