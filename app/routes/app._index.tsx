@@ -35,6 +35,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   let currentThemeId: string | null = null;
+  
+  // Theme enabled check: Would require querying theme JSON assets via API
+  // For now, we show this step to ensure merchants are aware of theme setup
+  // They can click "Open Theme Editor" to configure the app block
   let themeEnabled = false;
   
   try {
@@ -54,8 +58,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (currentTheme) {
       currentThemeId = currentTheme.node.id.split('/').pop();
     }
-    
-    themeEnabled = false; // Replace with actual check
   } catch (err) {
     console.error('Failed to fetch current theme:', err);
   }
@@ -219,7 +221,7 @@ export default function Index() {
                           
                           {!themeEnabled && (
                             <Text variant="bodySm" as="p" tone="subdued">
-                              Opens in theme customizer • Takes 30 seconds
+                              One click to open theme customizer
                             </Text>
                           )}
                         </BlockStack>
