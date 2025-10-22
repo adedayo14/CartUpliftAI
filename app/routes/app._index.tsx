@@ -119,7 +119,7 @@ export default function Index() {
                       </Badge>
                     </InlineStack>
                     <Text variant="bodyLg" as="p" tone="subdued">
-                      AI-powered cart optimization that increases average order value by 18-32%
+                      AI-powered cart recommendations and smart bundling for your store
                     </Text>
                   </BlockStack>
                 </InlineStack>
@@ -419,7 +419,6 @@ export default function Index() {
                           Machine learning analyzes customer behavior to show the most relevant products
                         </Text>
                       </BlockStack>
-                      <Badge tone="info">+18-32% AOV increase</Badge>
                     </BlockStack>
                   </Box>
 
@@ -647,42 +646,42 @@ export default function Index() {
         <Layout.Section variant="oneThird">
           <BlockStack gap="400">
             
-            {/* Quick Stats */}
+            {/* Getting Started */}
             <Card>
               <BlockStack gap="400">
                 <Text variant="headingMd" as="h2" fontWeight="semibold">
-                  Average results
+                  How It Works
                 </Text>
                 
                 <BlockStack gap="300">
                   <Box>
-                    <Text variant="heading2xl" as="p" fontWeight="bold">
-                      +24%
+                    <Text variant="bodyMd" as="p" fontWeight="semibold">
+                      1. AI Learns Your Store
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
-                      Average order value increase
+                      Our ML engine analyzes purchase patterns and product relationships
                     </Text>
                   </Box>
                   
                   <Divider />
                   
                   <Box>
-                    <Text variant="heading2xl" as="p" fontWeight="bold">
-                      41%
+                    <Text variant="bodyMd" as="p" fontWeight="semibold">
+                      2. Smart Recommendations
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
-                      Customers engage with AI picks
+                      Show relevant products in cart and on product pages
                     </Text>
                   </Box>
                   
                   <Divider />
                   
                   <Box>
-                    <Text variant="heading2xl" as="p" fontWeight="bold">
-                      24-48h
+                    <Text variant="bodyMd" as="p" fontWeight="semibold">
+                      3. Track Performance
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
-                      Time to see first results
+                      Monitor clicks, conversions, and revenue in your dashboard
                     </Text>
                   </Box>
                 </BlockStack>
