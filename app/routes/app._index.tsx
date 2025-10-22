@@ -24,6 +24,7 @@ import {
   StarFilledIcon,
   GiftCardIcon,
   ChartVerticalIcon,
+  ProductIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -308,7 +309,7 @@ export default function Index() {
 
                 <Divider />
 
-                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 4 }} gap="400">
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 5 }} gap="400">
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
@@ -346,6 +347,27 @@ export default function Index() {
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
                           Visual indicators showing progress toward free shipping and rewards
+                        </Text>
+                      </BlockStack>
+                    </BlockStack>
+                  </Box>
+
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="300">
+                      <Box 
+                        background="bg-fill-magic" 
+                        padding="300" 
+                        borderRadius="200"
+                        width="48px"
+                      >
+                        <Icon source={ProductIcon} tone="magic" />
+                      </Box>
+                      <BlockStack gap="200">
+                        <Text variant="headingMd" as="h3">
+                          Smart bundles
+                        </Text>
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          AI-powered product bundles with automatic discounts on product pages
                         </Text>
                       </BlockStack>
                     </BlockStack>
