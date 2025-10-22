@@ -18,7 +18,6 @@ import {
 } from "@shopify/polaris";
 import { 
   CheckCircleIcon,
-  XCircleIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -153,98 +152,54 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* How It Works - Comparison */}
+            {/* How It Works - AI Benefits */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text variant="headingLg" as="h2">
-                    How AI recommendations work
+                    Why AI-powered recommendations work better
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    The difference between generic and personalized product recommendations
+                    Smart recommendations and bundles that drive real results
                   </Text>
                 </BlockStack>
 
                 <Divider />
 
-                <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
-                  {/* Generic Approach */}
-                  <Box 
-                    padding="500" 
-                    background="bg-surface-critical-hover" 
-                    borderRadius="300"
-                    borderWidth="025"
-                    borderColor="border-critical"
-                  >
-                    <BlockStack gap="400">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Box 
-                          background="bg-fill-critical" 
-                          padding="300" 
-                          borderRadius="200"
-                          minWidth="40px"
-                          minHeight="40px"
-                        >
-                          <Icon source={XCircleIcon} tone="critical" />
-                        </Box>
-                        <Text variant="headingMd" as="h3">
-                          Generic recommendations
-                        </Text>
-                      </InlineStack>
-                      
-                      <BlockStack gap="200">
+                {/* AI-Powered Benefits */}
+                <Box 
+                  padding="500" 
+                  background="bg-surface-success-hover" 
+                  borderRadius="300"
+                  borderWidth="025"
+                  borderColor="border-success"
+                >
+                  <BlockStack gap="400">
+                    <InlineStack gap="300" blockAlign="center">
+                      <Box 
+                        background="bg-fill-success" 
+                        padding="300" 
+                        borderRadius="200"
+                        minWidth="40px"
+                        minHeight="40px"
+                      >
+                        <Icon source={CheckCircleIcon} tone="success" />
+                      </Box>
+                      <Text variant="headingMd" as="h3">
+                        AI-powered recommendations & smart bundles
+                      </Text>
+                    </InlineStack>
+                    
+                    <BlockStack gap="300">
+                      <Text variant="bodyMd" as="p">
+                        <strong>Personalized Product Recommendations</strong>
+                      </Text>
+                      <BlockStack gap="200" inlineAlign="start">
                         <Text variant="bodyMd" as="p">
-                          • Shows same products to everyone
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Low relevance for most customers
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Customers ignore recommendations
-                        </Text>
-                      </BlockStack>
-
-                      <Divider />
-
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text variant="headingMd" as="span">
-                          Result:
-                        </Text>
-                        <Badge tone="critical" size="large">5-10% click rate</Badge>
-                      </InlineStack>
-                    </BlockStack>
-                  </Box>
-
-                  {/* AI-Powered Approach */}
-                  <Box 
-                    padding="500" 
-                    background="bg-surface-success-hover" 
-                    borderRadius="300"
-                    borderWidth="025"
-                    borderColor="border-success"
-                  >
-                    <BlockStack gap="400">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Box 
-                          background="bg-fill-success" 
-                          padding="300" 
-                          borderRadius="200"
-                          minWidth="40px"
-                          minHeight="40px"
-                        >
-                          <Icon source={CheckCircleIcon} tone="success" />
-                        </Box>
-                        <Text variant="headingMd" as="h3">
-                          AI-powered recommendations
-                        </Text>
-                      </InlineStack>
-                      
-                      <BlockStack gap="200">
-                        <Text variant="bodyMd" as="p">
-                          • Learns from customer behavior
+                          • Learns from customer behavior and purchase patterns
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          • Shows relevant products they want
+                          • Shows products each customer actually wants to buy
                         </Text>
                         <Text variant="bodyMd" as="p">
                           • Gets smarter with every interaction
@@ -253,15 +208,52 @@ export default function Index() {
 
                       <Divider />
 
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text variant="headingMd" as="span">
-                          Result:
+                      <Text variant="bodyMd" as="p">
+                        <strong>Intelligent Bundle Creation</strong>
+                      </Text>
+                      <BlockStack gap="200" inlineAlign="start">
+                        <Text variant="bodyMd" as="p">
+                          • Automatically creates product bundles from co-purchase data
                         </Text>
-                        <Badge tone="success" size="large">35-50% click rate</Badge>
-                      </InlineStack>
+                        <Text variant="bodyMd" as="p">
+                          • Offers dynamic discounts (10-25%) based on bundle value
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Shows bundles on product pages and cart drawer
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Manual bundle override for strategic promotions
+                        </Text>
+                      </BlockStack>
+
+                      <Divider />
+
+                      <Text variant="bodyMd" as="p">
+                        <strong>Continuous Optimization</strong>
+                      </Text>
+                      <BlockStack gap="200" inlineAlign="start">
+                        <Text variant="bodyMd" as="p">
+                          • A/B testing built-in to find what works best
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Tracks impressions, clicks, and conversions
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          • Measures direct revenue attribution
+                        </Text>
+                      </BlockStack>
                     </BlockStack>
-                  </Box>
-                </InlineGrid>
+
+                    <Divider />
+
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text variant="headingMd" as="span">
+                        Typical Results:
+                      </Text>
+                      <Badge tone="success" size="large">35-50% click rate</Badge>
+                    </InlineStack>
+                  </BlockStack>
+                </Box>
 
                 <Banner tone="info">
                   <BlockStack gap="200">
