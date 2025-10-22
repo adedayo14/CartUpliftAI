@@ -53,18 +53,18 @@ export default function Index() {
                   <BlockStack gap="200">
                     <InlineStack gap="300" blockAlign="center">
                       <Text variant="heading2xl" as="h1">
-                        Welcome to Cart Uplift
+                        Cart Uplift
                       </Text>
                       <Badge tone="success">Active Trial</Badge>
                     </InlineStack>
                     <Text variant="bodyLg" as="p" tone="subdued">
-                      AI-powered cart recommendations and smart bundling for your store
+                      Increase cart value with AI-powered recommendations and smart bundles
                     </Text>
                   </BlockStack>
                   
                   <InlineStack gap="300">
                     <a href={`/app/settings${safeSearch}`} style={{ textDecoration: 'none' }}>
-                      <Button size="large">Configure settings</Button>
+                      <Button size="large" variant="primary">Configure settings</Button>
                     </a>
                     <a href={`/admin/bundles${safeSearch}`} style={{ textDecoration: 'none' }}>
                       <Button size="large" variant="secondary">Manage bundles</Button>
@@ -74,201 +74,7 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* Key Features */}
-            <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text variant="headingLg" as="h2">
-                    Key features
-                  </Text>
-                  <Text variant="bodyMd" as="p" tone="subdued">
-                    Tools to enhance your cart experience and encourage larger orders
-                  </Text>
-                </BlockStack>
-
-                <Divider />
-
-                <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 5 }} gap="400">
-                  {/* AI Recommendations */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        AI recommendations
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Machine learning analyzes customer behavior to show the most relevant products
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Goal Progress Bars */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Goal progress bars
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Visual indicators showing progress toward free shipping and rewards
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Smart Bundles */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Smart bundles
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        AI-powered product bundles with automatic discounts on product pages
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Gift with purchase */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Gift with purchase
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Automatic rewards when customers reach spending milestones
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Revenue Analytics */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Revenue analytics
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Track revenue impact and performance metrics in real-time
-                      </Text>
-                    </BlockStack>
-                  </Box>
-                </InlineGrid>
-              </BlockStack>
-            </Card>
-
-            {/* How It Works - AI Benefits */}
-            <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text variant="headingLg" as="h2">
-                    Why AI-powered recommendations work better
-                  </Text>
-                  <Text variant="bodyMd" as="p" tone="subdued">
-                    Smart recommendations and bundles that drive real results
-                  </Text>
-                </BlockStack>
-
-                <Divider />
-
-                {/* AI-Powered Benefits */}
-                <Box 
-                  padding="500" 
-                  background="bg-surface-success-hover" 
-                  borderRadius="300"
-                  borderWidth="025"
-                  borderColor="border-success"
-                >
-                  <BlockStack gap="400">
-                    <InlineStack gap="300" blockAlign="center">
-                      <Box 
-                        background="bg-fill-success" 
-                        padding="300" 
-                        borderRadius="200"
-                        minWidth="40px"
-                        minHeight="40px"
-                      >
-                        <Icon source={CheckCircleIcon} tone="success" />
-                      </Box>
-                      <Text variant="headingMd" as="h3">
-                        AI-powered recommendations & smart bundles
-                      </Text>
-                    </InlineStack>
-                    
-                    <BlockStack gap="300">
-                      <Text variant="bodyMd" as="p">
-                        <strong>Personalized Product Recommendations</strong>
-                      </Text>
-                      <BlockStack gap="200" inlineAlign="start">
-                        <Text variant="bodyMd" as="p">
-                          • Learns from customer behavior and purchase patterns
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Shows products each customer actually wants to buy
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Gets smarter with every interaction
-                        </Text>
-                      </BlockStack>
-
-                      <Divider />
-
-                      <Text variant="bodyMd" as="p">
-                        <strong>Intelligent Bundle Creation</strong>
-                      </Text>
-                      <BlockStack gap="200" inlineAlign="start">
-                        <Text variant="bodyMd" as="p">
-                          • Automatically creates product bundles from co-purchase data
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Offers dynamic discounts (10-25%) based on bundle value
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Shows bundles on product pages and cart drawer
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Manual bundle override for strategic promotions
-                        </Text>
-                      </BlockStack>
-
-                      <Divider />
-
-                      <Text variant="bodyMd" as="p">
-                        <strong>Continuous Optimization</strong>
-                      </Text>
-                      <BlockStack gap="200" inlineAlign="start">
-                        <Text variant="bodyMd" as="p">
-                          • A/B testing built-in to find what works best
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Tracks impressions, clicks, and conversions
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          • Measures direct revenue attribution
-                        </Text>
-                      </BlockStack>
-                    </BlockStack>
-
-                    <Divider />
-
-                    <InlineStack gap="200" blockAlign="center">
-                      <Text variant="headingMd" as="span">
-                        Typical Results:
-                      </Text>
-                      <Badge tone="success" size="large">35-50% click rate</Badge>
-                    </InlineStack>
-                  </BlockStack>
-                </Box>
-
-                <Banner tone="info">
-                  <BlockStack gap="200">
-                    <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      Results typically appear within 24-48 hours
-                    </Text>
-                    <Text variant="bodyMd" as="p">
-                      The AI continuously learns from customer interactions and improves over time. Most stores see measurable results within the first two days of activation.
-                    </Text>
-                  </BlockStack>
-                </Banner>
-              </BlockStack>
-            </Card>
-
-            {/* How It Works - Process */}
+            {/* How It Works */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
@@ -276,7 +82,7 @@ export default function Index() {
                     How it works
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Three simple steps to boost your cart value
+                    Three simple steps to increase your average order value
                   </Text>
                 </BlockStack>
 
@@ -300,7 +106,7 @@ export default function Index() {
                         AI learns your store
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Our ML engine analyzes purchase patterns and product relationships
+                        Machine learning analyzes purchase patterns and customer behavior to understand product relationships
                       </Text>
                     </BlockStack>
                   </BlockStack>
@@ -319,10 +125,10 @@ export default function Index() {
                     </Box>
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        Smart recommendations
+                        Show smart recommendations
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Show relevant products in cart and on product pages
+                        Display personalized product suggestions and bundles in cart and on product pages
                       </Text>
                     </BlockStack>
                   </BlockStack>
@@ -341,14 +147,186 @@ export default function Index() {
                     </Box>
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        Track performance
+                        Track and optimize
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Monitor clicks, conversions, and revenue in your dashboard
+                        Monitor performance with real-time analytics and let AI continuously improve results
                       </Text>
                     </BlockStack>
                   </BlockStack>
                 </InlineGrid>
+              </BlockStack>
+            </Card>
+
+            {/* Key Features */}
+            <Card>
+              <BlockStack gap="500">
+                <BlockStack gap="200">
+                  <Text variant="headingLg" as="h2">
+                    Features designed to boost revenue
+                  </Text>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    Everything you need to increase cart value and customer satisfaction
+                  </Text>
+                </BlockStack>
+
+                <Divider />
+
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 5 }} gap="400">
+                  {/* AI Recommendations */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        AI recommendations
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Show personalized products based on customer behavior and purchase patterns
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Smart Bundles */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Smart bundles
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Create product bundles automatically with dynamic discounting
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Goal Progress Bars */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Progress incentives
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Visual progress bars for free shipping and gift thresholds
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Gift with purchase */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Gift with purchase
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Reward customers automatically when they reach spending milestones
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Revenue Analytics */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Revenue analytics
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Track performance and revenue attribution in real-time
+                      </Text>
+                    </BlockStack>
+                  </Box>
+                </InlineGrid>
+              </BlockStack>
+            </Card>
+
+            {/* Why It Works Better */}
+            <Card>
+              <BlockStack gap="500">
+                <BlockStack gap="200">
+                  <Text variant="headingLg" as="h2">
+                    Powered by machine learning
+                  </Text>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    AI that learns from your customers and gets smarter over time
+                  </Text>
+                </BlockStack>
+
+                <Divider />
+
+                <Box 
+                  padding="500" 
+                  background="bg-surface-success-hover" 
+                  borderRadius="300"
+                  borderWidth="025"
+                  borderColor="border-success"
+                >
+                  <BlockStack gap="400">
+                    <InlineStack gap="300" blockAlign="center">
+                      <Box 
+                        background="bg-fill-success" 
+                        padding="300" 
+                        borderRadius="200"
+                        minWidth="40px"
+                        minHeight="40px"
+                      >
+                        <Icon source={CheckCircleIcon} tone="success" />
+                      </Box>
+                      <Text variant="headingMd" as="h3">
+                        Intelligent recommendations that drive results
+                      </Text>
+                    </InlineStack>
+                    
+                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Learns continuously
+                        </Text>
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Analyzes customer behavior, purchase patterns, and product relationships to improve recommendations over time
+                        </Text>
+                      </BlockStack>
+
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Personalized for each customer
+                        </Text>
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Shows relevant products each customer actually wants to buy, not generic suggestions
+                        </Text>
+                      </BlockStack>
+
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Creates smart bundles
+                        </Text>
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Automatically identifies products bought together and offers dynamic discounts (10-25%)
+                        </Text>
+                      </BlockStack>
+
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Optimizes automatically
+                        </Text>
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Built-in A/B testing tracks impressions, clicks, conversions, and revenue attribution
+                        </Text>
+                      </BlockStack>
+                    </InlineGrid>
+
+                    <Divider />
+
+                    <InlineStack gap="300" blockAlign="center" align="space-between" wrap={false}>
+                      <Text variant="bodyMd" as="span">
+                        Typical click rate:
+                      </Text>
+                      <Badge tone="success" size="large">35-50%</Badge>
+                    </InlineStack>
+                  </BlockStack>
+                </Box>
+
+                <Banner tone="info">
+                  <Text variant="bodyMd" as="p">
+                    <strong>See results in 24-48 hours.</strong> Most stores notice measurable improvements within the first two days as the AI learns from customer interactions.
+                  </Text>
+                </Banner>
               </BlockStack>
             </Card>
 
@@ -361,12 +339,12 @@ export default function Index() {
                       Need help getting started?
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
-                      Our team is here to help you succeed with personalized onboarding and support
+                      Our team is here to help you maximize your results
                     </Text>
                   </BlockStack>
                   <InlineStack gap="300">
-                    <Button>Contact Support</Button>
-                    <Button variant="plain">View Docs</Button>
+                    <Button>Contact support</Button>
+                    <Button variant="plain">View documentation</Button>
                   </InlineStack>
                 </BlockStack>
               </Card>
