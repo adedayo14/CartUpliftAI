@@ -206,7 +206,7 @@ export default function Index() {
                         Progress incentives
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Clear bars for free shipping and gift thresholds to encourage larger baskets.
+                        Progress bars for free shipping and rewards that help lift cart value.
                       </Text>
                     </BlockStack>
                   </Box>
