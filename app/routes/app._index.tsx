@@ -24,7 +24,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const search = new URL(request.url).search;
 
-  return json({ 
+  return json({
     shop,
     search,
   });
@@ -37,12 +37,11 @@ export default function Index() {
   return (
     <Page>
       <TitleBar title="Cart Uplift" />
-      
+
       <Layout>
         <Layout.Section>
           <BlockStack gap="600">
-            
-            {/* Hero Section */}
+            {/* Hero */}
             <Card>
               <BlockStack gap="500">
                 <InlineStack align="space-between" blockAlign="center">
@@ -51,26 +50,30 @@ export default function Index() {
                       <Text variant="heading2xl" as="h1">
                         Cart Uplift
                       </Text>
-                      <Badge tone="success">Active Trial</Badge>
+                      <Badge tone="success">Trial active</Badge>
                     </InlineStack>
                     <Text variant="bodyLg" as="p" tone="subdued">
-                      Increase cart value with AI-powered recommendations and smart bundles
+                      Lift basket value with machine learning that adapts to your customers over time.
                     </Text>
                   </BlockStack>
-                  
+
                   <InlineStack gap="300">
-                    <a href={`/app/settings${safeSearch}`} style={{ textDecoration: 'none' }}>
-                      <Button size="large" variant="primary">Configure settings</Button>
+                    <a href={`/app/settings${safeSearch}`} style={{ textDecoration: "none" }}>
+                      <Button size="large" variant="primary">
+                        Open settings
+                      </Button>
                     </a>
-                    <a href={`/admin/bundles${safeSearch}`} style={{ textDecoration: 'none' }}>
-                      <Button size="large" variant="secondary">Manage bundles</Button>
+                    <a href={`/admin/bundles${safeSearch}`} style={{ textDecoration: "none" }}>
+                      <Button size="large" variant="secondary">
+                        Manage bundles
+                      </Button>
                     </a>
                   </InlineStack>
                 </InlineStack>
               </BlockStack>
             </Card>
 
-            {/* How It Works */}
+            {/* How it works */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
@@ -78,17 +81,18 @@ export default function Index() {
                     How it works
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Three simple steps to increase your average order value
+                    Three steps to raise average order value.
                   </Text>
                 </BlockStack>
 
                 <Divider />
 
                 <InlineGrid columns={{ xs: 1, md: 3 }} gap="500">
+                  {/* Step 1 */}
                   <BlockStack gap="300">
-                    <Box 
-                      background="bg-fill-info" 
-                      padding="200" 
+                    <Box
+                      background="bg-fill-info"
+                      padding="200"
                       borderRadius="200"
                       width="32px"
                       minHeight="32px"
@@ -99,18 +103,19 @@ export default function Index() {
                     </Box>
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        AI learns your store
+                        Understands real behaviour
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Machine learning analyzes purchase patterns and customer behavior to understand product relationships
+                        The model analyses browsing and purchase patterns to learn how your products relate.
                       </Text>
                     </BlockStack>
                   </BlockStack>
 
+                  {/* Step 2 */}
                   <BlockStack gap="300">
-                    <Box 
-                      background="bg-fill-success" 
-                      padding="200" 
+                    <Box
+                      background="bg-fill-success"
+                      padding="200"
                       borderRadius="200"
                       width="32px"
                       minHeight="32px"
@@ -121,18 +126,19 @@ export default function Index() {
                     </Box>
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        Show smart recommendations
+                        Shows relevant suggestions
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Display personalized product suggestions and bundles in cart and on product pages
+                        Personalised products and sensible bundles appear in the basket and on product pages.
                       </Text>
                     </BlockStack>
                   </BlockStack>
 
+                  {/* Step 3 */}
                   <BlockStack gap="300">
-                    <Box 
-                      background="bg-fill-warning" 
-                      padding="200" 
+                    <Box
+                      background="bg-fill-warning"
+                      padding="200"
                       borderRadius="200"
                       width="32px"
                       minHeight="32px"
@@ -143,10 +149,10 @@ export default function Index() {
                     </Box>
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        Track and optimize
+                        Measures and improves
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Monitor performance with real-time analytics and let AI continuously improve results
+                        Built-in testing tracks performance and the model keeps optimising automatically.
                       </Text>
                     </BlockStack>
                   </BlockStack>
@@ -154,15 +160,15 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* Key Features */}
+            {/* Features */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text variant="headingLg" as="h2">
-                    Features designed to boost revenue
+                    Features that grow revenue
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Everything you need to increase cart value and customer satisfaction
+                    Practical tools for higher spend and a smoother shopping experience.
                   </Text>
                 </BlockStack>
 
@@ -173,10 +179,10 @@ export default function Index() {
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        AI recommendations
+                        Personalised recommendations
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Show personalized products based on customer behavior and purchase patterns
+                        Suggestions tailored to each visitor, based on live browsing and purchase signals.
                       </Text>
                     </BlockStack>
                   </Box>
@@ -188,19 +194,19 @@ export default function Index() {
                         Smart bundles
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Create product bundles automatically with dynamic discounting
+                        Spots items often bought together and builds bundles with flexible discounts.
                       </Text>
                     </BlockStack>
                   </Box>
 
-                  {/* Goal Progress Bars */}
+                  {/* Progress incentives */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
                         Progress incentives
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Visual progress bars for free shipping and gift thresholds
+                        Clear bars for free shipping and gift thresholds to encourage larger baskets.
                       </Text>
                     </BlockStack>
                   </Box>
@@ -212,19 +218,19 @@ export default function Index() {
                         Gift with purchase
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Reward customers automatically when they reach spending milestones
+                        Reward customers at set spend levels. The app handles the rest.
                       </Text>
                     </BlockStack>
                   </Box>
 
-                  {/* Revenue Analytics */}
+                  {/* Revenue analytics */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
                         Revenue analytics
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Track performance and revenue attribution in real-time
+                        Track impressions, clicks, conversions and attributed revenue in real time.
                       </Text>
                     </BlockStack>
                   </Box>
@@ -232,7 +238,7 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* Why It Works Better */}
+            {/* Why it works */}
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
@@ -240,15 +246,15 @@ export default function Index() {
                     Smarter recommendations, better results
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Built to learn from your customers
+                    Built to learn from real customer behaviour and adapt as patterns change.
                   </Text>
                 </BlockStack>
 
                 <Divider />
 
-                <Box 
-                  padding="500" 
-                  background="bg-surface-success-hover" 
+                <Box
+                  padding="500"
+                  background="bg-surface-success-hover"
                   borderRadius="300"
                   borderWidth="025"
                   borderColor="border-success"
@@ -257,37 +263,37 @@ export default function Index() {
                     <InlineGrid columns={{ xs: 1, md: 2 }} gap="500">
                       <BlockStack gap="300">
                         <Text variant="headingMd" as="h3">
-                          Adapts to real behavior
+                          Learns continuously
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          This isn't static automation. The system studies what customers actually do—what they view, click, and buy—and adapts continuously to make every suggestion more relevant.
+                          No fixed rules. The model adapts to what people view, click and buy so suggestions stay relevant.
                         </Text>
                       </BlockStack>
 
                       <BlockStack gap="300">
                         <Text variant="headingMd" as="h3">
-                          Personal to every shopper
+                          Personal to each shopper
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          Each visitor sees products they're actually likely to buy, not random "you might also like" fillers. The recommendations match their browsing patterns and interests.
+                          Not generic. Visitors see products that fit their intent and context on your site.
                         </Text>
                       </BlockStack>
 
                       <BlockStack gap="300">
                         <Text variant="headingMd" as="h3">
-                          Creates bundles customers actually want
+                          Bundles that make sense
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          Spots which items are frequently bought together and bundles them with strategic discounts. Customers add more to their cart because the deal feels right, boosting your average order value.
+                          Identifies products often bought together and offers fair discounts that feel natural.
                         </Text>
                       </BlockStack>
 
                       <BlockStack gap="300">
                         <Text variant="headingMd" as="h3">
-                          Improves itself automatically
+                          Optimises itself
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          Built-in testing tracks what performs best—from clicks to conversions—and refines recommendations in real time. You get better results without lifting a finger.
+                          A/B testing measures what works and shifts traffic towards higher performers automatically.
                         </Text>
                       </BlockStack>
                     </InlineGrid>
@@ -296,22 +302,25 @@ export default function Index() {
 
                     <InlineStack gap="300" blockAlign="center" align="space-between" wrap={false}>
                       <Text variant="bodyMd" as="span">
-                        Typical click rate:
+                        Typical click rate
                       </Text>
-                      <Badge tone="success" size="large">35-50%</Badge>
+                      <Badge tone="success" size="large">35 to 50%*</Badge>
                     </InlineStack>
+                    <Text variant="bodySm" as="p" tone="subdued">
+                      *Ranges vary by catalogue size, traffic mix and placement.
+                    </Text>
                   </BlockStack>
                 </Box>
 
                 <Banner tone="info">
                   <Text variant="bodyMd" as="p">
-                    <strong>See results in 24-48 hours.</strong> Most stores notice measurable improvements within the first two days as the system learns from customer interactions.
+                    <strong>Quick to show impact.</strong> Many shops see clear signal within 24 to 48 hours as learning begins.
                   </Text>
                 </Banner>
               </BlockStack>
             </Card>
 
-            {/* Support & Resources */}
+            {/* Support and resources */}
             <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
               <Card>
                 <BlockStack gap="400">
@@ -320,7 +329,7 @@ export default function Index() {
                       Need help getting started?
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
-                      Our team is here to help you maximize your results
+                      We can help with set-up and best practice for your catalogue.
                     </Text>
                   </BlockStack>
                   <InlineStack gap="300">
@@ -352,7 +361,6 @@ export default function Index() {
                 </BlockStack>
               </Card>
             </InlineGrid>
-
           </BlockStack>
         </Layout.Section>
       </Layout>
