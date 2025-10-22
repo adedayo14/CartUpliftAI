@@ -13,12 +13,8 @@ import {
   Banner,
   Box,
   Divider,
-  Icon,
   InlineGrid,
 } from "@shopify/polaris";
-import { 
-  CheckCircleIcon,
-} from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
@@ -92,12 +88,12 @@ export default function Index() {
                   <BlockStack gap="300">
                     <Box 
                       background="bg-fill-info" 
-                      padding="300" 
+                      padding="200" 
                       borderRadius="200"
-                      width="48px"
-                      height="48px"
+                      width="32px"
+                      minHeight="32px"
                     >
-                      <Text variant="headingLg" as="span" alignment="center">
+                      <Text variant="headingMd" as="span" alignment="center">
                         1
                       </Text>
                     </Box>
@@ -114,12 +110,12 @@ export default function Index() {
                   <BlockStack gap="300">
                     <Box 
                       background="bg-fill-success" 
-                      padding="300" 
+                      padding="200" 
                       borderRadius="200"
-                      width="48px"
-                      height="48px"
+                      width="32px"
+                      minHeight="32px"
                     >
-                      <Text variant="headingLg" as="span" alignment="center">
+                      <Text variant="headingMd" as="span" alignment="center">
                         2
                       </Text>
                     </Box>
@@ -136,12 +132,12 @@ export default function Index() {
                   <BlockStack gap="300">
                     <Box 
                       background="bg-fill-warning" 
-                      padding="300" 
+                      padding="200" 
                       borderRadius="200"
-                      width="48px"
-                      height="48px"
+                      width="32px"
+                      minHeight="32px"
                     >
-                      <Text variant="headingLg" as="span" alignment="center">
+                      <Text variant="headingMd" as="span" alignment="center">
                         3
                       </Text>
                     </Box>
@@ -241,10 +237,10 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text variant="headingLg" as="h2">
-                    Powered by machine learning
+                    Smarter recommendations, better results
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    AI that learns from your customers and gets smarter over time
+                    Built to learn from your customers
                   </Text>
                 </BlockStack>
 
@@ -258,55 +254,40 @@ export default function Index() {
                   borderColor="border-success"
                 >
                   <BlockStack gap="400">
-                    <InlineStack gap="300" blockAlign="center">
-                      <Box 
-                        background="bg-fill-success" 
-                        padding="300" 
-                        borderRadius="200"
-                        minWidth="40px"
-                        minHeight="40px"
-                      >
-                        <Icon source={CheckCircleIcon} tone="success" />
-                      </Box>
-                      <Text variant="headingMd" as="h3">
-                        Intelligent recommendations that drive results
-                      </Text>
-                    </InlineStack>
-                    
-                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
-                      <BlockStack gap="200">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Learns continuously
+                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="500">
+                      <BlockStack gap="300">
+                        <Text variant="headingMd" as="h3">
+                          Adapts to real behavior
                         </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Analyzes customer behavior, purchase patterns, and product relationships to improve recommendations over time
+                        <Text variant="bodyMd" as="p">
+                          This isn't static automation. The system studies what customers actually do—what they view, click, and buy—and adapts continuously to make every suggestion more relevant.
                         </Text>
                       </BlockStack>
 
-                      <BlockStack gap="200">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Personalized for each customer
+                      <BlockStack gap="300">
+                        <Text variant="headingMd" as="h3">
+                          Personal to every shopper
                         </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Shows relevant products each customer actually wants to buy, not generic suggestions
-                        </Text>
-                      </BlockStack>
-
-                      <BlockStack gap="200">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Creates smart bundles
-                        </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Automatically identifies products bought together and offers dynamic discounts (10-25%)
+                        <Text variant="bodyMd" as="p">
+                          Each visitor sees products they're actually likely to buy, not random "you might also like" fillers. The recommendations match their browsing patterns and interests.
                         </Text>
                       </BlockStack>
 
-                      <BlockStack gap="200">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Optimizes automatically
+                      <BlockStack gap="300">
+                        <Text variant="headingMd" as="h3">
+                          Understands product relationships
                         </Text>
-                        <Text variant="bodyMd" as="p" tone="subdued">
-                          Built-in A/B testing tracks impressions, clicks, conversions, and revenue attribution
+                        <Text variant="bodyMd" as="p">
+                          It spots which items are frequently bought together and creates smart bundles with flexible discounts (10-25%). No manual setup required.
+                        </Text>
+                      </BlockStack>
+
+                      <BlockStack gap="300">
+                        <Text variant="headingMd" as="h3">
+                          Improves itself automatically
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          Built-in testing tracks what performs best—from clicks to conversions—and refines recommendations in real time. You get better results without lifting a finger.
                         </Text>
                       </BlockStack>
                     </InlineGrid>
@@ -324,7 +305,7 @@ export default function Index() {
 
                 <Banner tone="info">
                   <Text variant="bodyMd" as="p">
-                    <strong>See results in 24-48 hours.</strong> Most stores notice measurable improvements within the first two days as the AI learns from customer interactions.
+                    <strong>See results in 24-48 hours.</strong> Most stores notice measurable improvements within the first two days as the system learns from customer interactions.
                   </Text>
                 </Banner>
               </BlockStack>
