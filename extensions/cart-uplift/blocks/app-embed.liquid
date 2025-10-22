@@ -547,18 +547,14 @@
     },
     {
       "type": "header",
-      "content": "Free shipping goal"
-    },
-    {
-      "type": "paragraph",
-      "content": "⚠️ SETUP REQUIRED: Create a free shipping discount in Shopify Admin > Discounts with the same threshold amount. [Learn more](https://help.shopify.com/manual/promoting-marketing/discounts)"
+      "content": "⚙️ Free shipping goal (requires Shopify discount setup)"
     },
     {
       "type": "checkbox",
       "id": "enable_free_shipping_progress",
       "label": "Show progress bar",
       "default": false,
-      "info": "Turn on after creating your free shipping discount"
+      "info": "⚠️ First create a free shipping discount in Shopify Admin > Discounts, then enable this"
     },
     {
       "type": "number",
@@ -593,24 +589,20 @@
     },
     {
       "type": "header",
-      "content": "Gift with purchase"
-    },
-    {
-      "type": "paragraph",
-      "content": "⚠️ SETUP REQUIRED: Set your gift product price to $0 in Shopify before enabling. The app will auto-add the product when threshold is reached."
+      "content": "🎁 Gift with purchase (set gift product to $0 first)"
     },
     {
       "type": "number",
       "id": "gift_threshold",
       "label": "Gift unlock amount ($)",
       "default": 0,
-      "info": "Cart subtotal required to unlock gift"
+      "info": "Cart subtotal required to unlock gift (e.g. 150 for $150)"
     },
     {
       "type": "product",
       "id": "gift_product",
       "label": "Gift product",
-      "info": "⚠️ IMPORTANT: Set this product's price to $0.00 in your Shopify products"
+      "info": "⚠️ CRITICAL: Set this product's price to $0.00 in Shopify Products before enabling auto-add"
     },
     {
       "type": "text",
