@@ -53,7 +53,7 @@ export default function Index() {
                       <Badge tone="success">Trial active</Badge>
                     </InlineStack>
                     <Text variant="bodyLg" as="p" tone="subdued">
-                      Lift basket value with machine learning that adapts to your customers over time.
+                      Increase average order value with AI that learns from your customers and gets smarter over time.
                     </Text>
                   </BlockStack>
 
