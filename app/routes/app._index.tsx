@@ -322,7 +322,7 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text variant="headingLg" as="h2">
-                    Key Features
+                    Key features
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
                     Tools to enhance your cart experience and encourage larger orders
@@ -347,7 +347,7 @@ export default function Index() {
                       </Box>
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h3" fontWeight="semibold">
-                          AI Recommendations
+                          AI recommendations
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
                           Machine learning analyzes customer behavior to show the most relevant products
@@ -373,7 +373,7 @@ export default function Index() {
                       </Box>
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h3" fontWeight="semibold">
-                          Goal Progress Bars
+                          Goal progress bars
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
                           Visual indicators showing progress toward free shipping and rewards
@@ -399,7 +399,7 @@ export default function Index() {
                       </Box>
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h3" fontWeight="semibold">
-                          Gift with Purchase
+                          Gift with purchase
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
                           Automatic rewards when customers reach spending milestones
@@ -425,7 +425,7 @@ export default function Index() {
                       </Box>
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h3" fontWeight="semibold">
-                          Revenue Analytics
+                          Revenue analytics
                         </Text>
                         <Text variant="bodyMd" as="p" tone="subdued">
                           Track revenue impact and performance metrics in real-time
@@ -581,13 +581,13 @@ export default function Index() {
             <Card>
               <BlockStack gap="400">
                 <Text variant="headingMd" as="h2" fontWeight="semibold">
-                  How It Works
+                  How it works
                 </Text>
                 
                 <BlockStack gap="300">
                   <Box>
                     <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      1. AI Learns Your Store
+                      1. AI learns your store
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
                       Our ML engine analyzes purchase patterns and product relationships
@@ -598,7 +598,7 @@ export default function Index() {
                   
                   <Box>
                     <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      2. Smart Recommendations
+                      2. Smart recommendations
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
                       Show relevant products in cart and on product pages
@@ -609,7 +609,7 @@ export default function Index() {
                   
                   <Box>
                     <Text variant="bodyMd" as="p" fontWeight="semibold">
-                      3. Track Performance
+                      3. Track performance
                     </Text>
                     <Text variant="bodyMd" as="p" tone="subdued">
                       Monitor clicks, conversions, and revenue in your dashboard
