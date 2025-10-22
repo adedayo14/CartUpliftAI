@@ -22,9 +22,10 @@ import {
   AlertCircleIcon,
   XCircleIcon,
   StarFilledIcon,
-  GiftCardIcon,
+  GiftIcon,
   ChartVerticalIcon,
-  ProductIcon,
+  PackageIcon,
+  TrendingUpIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -309,14 +310,16 @@ export default function Index() {
 
                 <Divider />
 
-                <InlineGrid columns={{ xs: 1, sm: 2, md: 2, lg: 5 }} gap="400">
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 5 }} gap="400">
+                  {/* AI Recommendations */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
-                        background="bg-fill-info" 
-                        padding="300" 
+                        background="bg-surface-info-active" 
+                        padding="400" 
                         borderRadius="200"
-                        width="48px"
+                        width="56px"
+                        height="56px"
                       >
                         <Icon source={StarFilledIcon} tone="info" />
                       </Box>
@@ -331,15 +334,17 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
+                  {/* Goal Progress Bars */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
-                        background="bg-fill-success" 
-                        padding="300" 
+                        background="bg-surface-success-active" 
+                        padding="400" 
                         borderRadius="200"
-                        width="48px"
+                        width="56px"
+                        height="56px"
                       >
-                        <Icon source={ChartVerticalIcon} tone="success" />
+                        <Icon source={TrendingUpIcon} tone="success" />
                       </Box>
                       <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
@@ -352,15 +357,17 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
+                  {/* Smart Bundles */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
-                        background="bg-fill-magic" 
-                        padding="300" 
+                        background="bg-surface-brand-active" 
+                        padding="400" 
                         borderRadius="200"
-                        width="48px"
+                        width="56px"
+                        height="56px"
                       >
-                        <Icon source={ProductIcon} tone="magic" />
+                        <Icon source={PackageIcon} />
                       </Box>
                       <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
@@ -373,15 +380,17 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
+                  {/* Gift with Purchase */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
-                        background="bg-fill-warning" 
-                        padding="300" 
+                        background="bg-surface-warning-active" 
+                        padding="400" 
                         borderRadius="200"
-                        width="48px"
+                        width="56px"
+                        height="56px"
                       >
-                        <Icon source={GiftCardIcon} tone="warning" />
+                        <Icon source={GiftIcon} tone="warning" />
                       </Box>
                       <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
@@ -394,13 +403,15 @@ export default function Index() {
                     </BlockStack>
                   </Box>
 
+                  {/* Revenue Analytics */}
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="300">
                       <Box 
-                        background="bg-fill-brand" 
-                        padding="300" 
+                        background="bg-surface-emphasis-active" 
+                        padding="400" 
                         borderRadius="200"
-                        width="48px"
+                        width="56px"
+                        height="56px"
                       >
                         <Icon source={ChartVerticalIcon} />
                       </Box>
@@ -562,6 +573,7 @@ export default function Index() {
                       padding="300" 
                       borderRadius="200"
                       width="48px"
+                      height="48px"
                     >
                       <Text variant="headingLg" as="span" alignment="center">
                         1
@@ -583,6 +595,7 @@ export default function Index() {
                       padding="300" 
                       borderRadius="200"
                       width="48px"
+                      height="48px"
                     >
                       <Text variant="headingLg" as="span" alignment="center">
                         2
@@ -604,6 +617,7 @@ export default function Index() {
                       padding="300" 
                       borderRadius="200"
                       width="48px"
+                      height="48px"
                     >
                       <Text variant="headingLg" as="span" alignment="center">
                         3
