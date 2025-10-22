@@ -22,7 +22,7 @@ import {
   AlertCircleIcon,
   XCircleIcon,
   StarFilledIcon,
-  GiftIcon,
+  GiftCardIcon,
   ChartVerticalIcon,
   PackageIcon,
   ChartLineIcon,
@@ -390,7 +390,7 @@ export default function Index() {
                         width="56px"
                         height="56px"
                       >
-                        <Icon source={GiftIcon} tone="warning" />
+                        <Icon source={GiftCardIcon} tone="warning" />
                       </Box>
                       <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
