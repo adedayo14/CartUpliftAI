@@ -240,10 +240,10 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text variant="headingLg" as="h2">
-                    Smarter recommendations, better results
+                    Why AI beats static rules
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Built to learn from real customer behaviour and adapt as patterns change.
+                    Built to learn from real customer behaviour and adapt as patterns, trends and seasons change.
                   </Text>
                 </BlockStack>
 
