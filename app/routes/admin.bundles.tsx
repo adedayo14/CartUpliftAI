@@ -357,17 +357,13 @@ export default function BundlesAdmin() {
 
   const handleCreateBundle = useCallback(async () => {
     if (!newBundle.name.trim()) {
-      triggerBanner("error", "Bundle name is required");
+      triggerBanner("error", "FBT name is required");
       return;
     }
     setIsSaving(true);
     setShowSuccessBanner(false);
     setShowErrorBanner(false);
     try {
-      // Get fresh session token from URL or session
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
-      
       const payload = {
         action: "create-bundle",
         name: newBundle.name,
@@ -389,30 +385,20 @@ export default function BundlesAdmin() {
         hideIfNoML: newBundle.hideIfNoML,
       };
       
-      // Make request - if 401, reload page to get fresh session
+      // Use App Bridge authenticated fetch
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
+          'Authorization': `Bearer ${await shopify.idToken()}`
         },
         body: JSON.stringify(payload),
       });
       
-      // If unauthorized, try to refresh session and retry
+      // If unauthorized, reload to re-authenticate
       if (response.status === 401) {
-        console.log('[handleCreateBundle] Session expired, attempting refresh...');
-        try {
-          const refreshResponse = await fetch('/admin/api/session-refresh', { method: 'POST' });
-          if (refreshResponse.ok) {
-            console.log('[handleCreateBundle] Session refreshed, retrying...');
-            window.location.reload(); // Reload to get fresh session tokens
-            return;
-          }
-        } catch (refreshError) {
-          console.error('[handleCreateBundle] Session refresh failed:', refreshError);
-        }
-        triggerBanner("error", "Session expired. Please refresh the page.");
+        console.log('[handleCreateBundle] Session expired, reloading page...');
+        window.location.reload();
         return;
       }
       
@@ -449,7 +435,7 @@ export default function BundlesAdmin() {
     } finally {
       setIsSaving(false);
     }
-  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, assignmentType, triggerBanner, revalidator, resetForm]);
+  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, assignmentType, triggerBanner, revalidator, resetForm, shopify]);
 
   const handleToggleStatus = async (bundleId: string, currentStatus: string) => {
     setPendingBundleId(bundleId);
@@ -499,19 +485,16 @@ export default function BundlesAdmin() {
   };
 
   const handleDelete = async (bundleId: string) => {
-    if (!confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+    if (!confirm("Are you sure you want to delete this FBT? This action cannot be undone.")) {
       return;
     }
     setPendingBundleId(bundleId);
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionToken = urlParams.get('id_token') || urlParams.get('session') || '';
-      
       const response = await fetch('/admin/api/bundle-management', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
+          'Authorization': `Bearer ${await shopify.idToken()}`
         },
         body: JSON.stringify({
           action: "delete-bundle",
