@@ -1439,6 +1439,13 @@
           try { giftThresholds = JSON.parse(this.settings.giftThresholds) || []; } catch {}
         }
         const sortedGifts = giftThresholds.sort((a,b) => a.amount - b.amount);
+        console.log('📊 Progress Bar - Gift Settings Check:', {
+          giftEnabled,
+          hasGiftThresholds: !!this.settings.giftThresholds,
+          giftThresholdsRaw: this.settings.giftThresholds,
+          parsedGiftThresholds: giftThresholds,
+          sortedGifts: sortedGifts
+        });
         // Next gift threshold above current total
         const nextGift = sortedGifts.find(t => currentCents < Math.round(t.amount * 100));
         const nextGiftCents = nextGift ? Math.round(nextGift.amount * 100) : null;
