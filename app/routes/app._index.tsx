@@ -52,7 +52,7 @@ export default function Index() {
                       <Badge tone="success">Trial active</Badge>
                     </InlineStack>
                     <Text variant="bodyLg" as="p" tone="subdued">
-                      Grow your sales with AI that adapts to what customers actually like.
+                      Increase your average order value with AI-enhanced cross-selling that adapts to what customers actually like.
                     </Text>
                   </BlockStack>
 
