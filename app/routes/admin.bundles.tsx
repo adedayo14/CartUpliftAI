@@ -718,7 +718,7 @@ export default function BundlesAdmin() {
           ) : (
             <Card padding="0">
               <DataTable
-                columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "text"]}
+                columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "numeric"]}
                 headings={["Bundle", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
                 rows={bundleTableRows}
                 hoverable
