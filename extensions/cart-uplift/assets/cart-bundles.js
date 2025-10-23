@@ -250,7 +250,7 @@
             item.classList.remove('selected');
             this.selectedProducts = this.selectedProducts.filter(p => p.index !== index);
           }
-          this.updateCleanSummary();
+          this.renderFooter();
         });
         item.appendChild(checkbox);
 
@@ -300,65 +300,13 @@
       container.appendChild(productsWrapper);
       console.log('✅ Products wrapper created with', productsWrapper.children.length, 'children');
 
-      // Summary section (right side)
-      const summary = document.createElement('div');
-      summary.className = 'bundle-summary';
-
-      // Total price section
-      const totalDiv = document.createElement('div');
-      totalDiv.className = 'bundle-total';
-
-      const totalLabel = document.createElement('p');
-      totalLabel.className = 'total-label';
-      totalLabel.textContent = 'Total price:';
-      totalDiv.appendChild(totalLabel);
-
-      const totalPrice = document.createElement('p');
-      totalPrice.className = 'bundle-total-price';
-      totalPrice.id = 'cartuplift-total-price';
-      totalDiv.appendChild(totalPrice);
-
-      summary.appendChild(totalDiv);
-
-      // Add to cart button
-      const addBtn = document.createElement('button');
-      addBtn.className = 'add-bundle-btn';
-      addBtn.id = 'cartuplift-add-bundle';
-      addBtn.addEventListener('click', () => this.addBundleToCart());
-      summary.appendChild(addBtn);
-
-      container.appendChild(summary);
-      console.log('✅ Summary section created');
-      
       this.container.appendChild(container);
       console.log('✅ Container appended to DOM');
 
       // Initialize selected products (all selected by default)
       this.selectedProducts = this.products.map((p, i) => ({ ...p, index: i, quantity: 1 }));
       
-      // Initial summary update
-      this.updateCleanSummary();
       console.log('✅ Amazon FBT layout complete!');
-    }
-
-    // Update the summary section for clean style
-    updateCleanSummary() {
-      const totalPriceEl = document.getElementById('cartuplift-total-price');
-      const addBtnEl = document.getElementById('cartuplift-add-bundle');
-
-      if (!totalPriceEl || !addBtnEl) return;
-
-      const selectedCount = this.selectedProducts.length;
-      const total = this.calculateTotal();
-
-      // Update total price
-      totalPriceEl.textContent = this.formatPrice(total);
-
-      // Update button text
-      addBtnEl.disabled = selectedCount === 0;
-      addBtnEl.textContent = selectedCount > 0 
-        ? `Add all ${selectedCount} to Cart` 
-        : 'Add to Cart';
     }
 
     // ========================================
