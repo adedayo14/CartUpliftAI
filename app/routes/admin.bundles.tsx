@@ -833,17 +833,16 @@ export default function BundlesAdmin() {
               )}
 
               {newBundle.bundleType === "manual" && (
-                <Card background="bg-surface-secondary">
+                <Card>
                   <BlockStack gap="400">
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={PackageIcon} tone="base" />
-                        <Text as="h3" variant="headingMd">Bundle contents</Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Choose specific products to include in this bundle
-                      </Text>
-                    </BlockStack>
+                    <Box background="bg-surface-critical-subdued" padding="400" borderRadius="200">
+                      <BlockStack gap="200">
+                        <Text as="h3" variant="headingMd">Bundle contents (Required)</Text>
+                        <Text as="p" variant="bodySm" tone="critical">
+                          You must select at least one product for this bundle
+                        </Text>
+                      </BlockStack>
+                    </Box>
 
                     {availableProducts.length === 0 ? (
                       <Banner tone="warning">
