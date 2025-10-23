@@ -1628,12 +1628,16 @@
           if (freeEnabled && typeof freeThresholdCents === 'number' && freeThresholdCents > 0) {
             allThresholds.push({ type: 'shipping', amount: freeThresholdCents, label: 'Free Shipping' });
           }
+          console.log('📊 Building segmented bar - sortedGifts:', sortedGifts);
           for (const gift of sortedGifts) {
             if (gift.amount && gift.amount > 0) {
-              allThresholds.push({ type: 'gift', amount: Math.round(gift.amount * 100), label: gift.title || 'Gift', data: gift });
+              const giftCents = Math.round(gift.amount * 100);
+              console.log(`📊 Adding gift segment: ${gift.title} at $${gift.amount} (${giftCents} cents)`);
+              allThresholds.push({ type: 'gift', amount: giftCents, label: gift.title || 'Gift', data: gift });
             }
           }
           allThresholds.sort((a, b) => a.amount - b.amount);
+          console.log('📊 Final thresholds for segments:', allThresholds);
           
           if (allThresholds.length === 0) return `<div class="cartuplift-progress-bar"><div class="cartuplift-progress-fill" style="width:0%;"></div></div>`;
           

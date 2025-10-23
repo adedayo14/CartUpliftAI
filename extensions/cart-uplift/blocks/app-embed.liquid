@@ -255,6 +255,14 @@
             };
             window.CartUpliftSettings.enableGiftGating = true;
             window.CartUpliftSettings.giftThresholds = JSON.stringify([threshold]);
+            console.log('🎁 Gift threshold configured:', {
+              amount: Number(giftAmount),
+              amountInCents: Number(giftAmount) * 100,
+              product: __giftProductTitle,
+              incentiveType: type
+            });
+          } else {
+            console.log('🎁 Gift threshold NOT configured:', { type, giftAmount: Number(giftAmount) });
           }
         } catch (_) {}
       } catch (e) {
