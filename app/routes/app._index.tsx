@@ -70,6 +70,45 @@ export default function Index() {
               </BlockStack>
             </Card>
 
+            {/* Setup/Activation Guide */}
+            <Card>
+              <BlockStack gap="400">
+                <BlockStack gap="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text variant="headingMd" as="h3">
+                      ⚡ Activate your cart
+                    </Text>
+                    <Badge tone="attention">Action required</Badge>
+                  </InlineStack>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    Enable the Cart Uplift app embed in your theme editor to show the enhanced cart to customers.
+                  </Text>
+                </BlockStack>
+                <Box>
+                  <BlockStack gap="300">
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      <strong>Steps:</strong> Open theme editor → Click Apps → Enable "Cart Uplift - Smart Cart"
+                    </Text>
+                    <InlineStack gap="300">
+                      <Button
+                        variant="primary"
+                        url={`https://${shop}/admin/themes/current/editor?context=apps`}
+                        target="_blank"
+                      >
+                        Open theme editor
+                      </Button>
+                      <Button
+                        url="https://help.shopify.com/en/manual/online-store/themes/theme-structure/extend/apps#activate-app-embeds"
+                        target="_blank"
+                      >
+                        View setup guide
+                      </Button>
+                    </InlineStack>
+                  </BlockStack>
+                </Box>
+              </BlockStack>
+            </Card>
+
             {/* Features */}
             <Card>
               <BlockStack gap="500">
