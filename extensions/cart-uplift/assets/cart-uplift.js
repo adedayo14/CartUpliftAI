@@ -1279,7 +1279,7 @@
                 .replace(/\{product_name\}/g, String(threshold.title || 'Gift'))
                 .replace(/\{\{\s*product\s*\}\}/g, String(threshold.title || 'Gift'))
                 .replace(/\{product\}/g, String(threshold.title || 'Gift'))
-            : (this.settings.giftProgressText || 'Spend {{ amount }} more to unlock {{ product_name }}!')
+            : (this.settings.giftProgressText || 'Free shipping unlocked! ✓ Spend {{ amount }} more to unlock {{ product_name }}!')
                 .replace(/\{\{\s*amount\s*\}\}/g, this.formatMoney(remainingCents))
                 .replace(/\{amount\}/g, this.formatMoney(remainingCents))
                 .replace(/\{\{\s*title\s*\}\}/g, String(threshold.title || 'Gift'))
@@ -1473,7 +1473,7 @@
         const giftMsg = (t) => {
           if (!t) return '';
           const remaining = Math.max(0, Math.round(t.amount*100) - currentCents);
-          return (this.settings.giftProgressText || 'Add {{ amount }} to unlock {{ product_name }}')
+          return (this.settings.giftProgressText || 'Free shipping unlocked! ✓ Spend {{ amount }} more to unlock {{ product_name }}!')
               .replace(/\{\{\s*amount\s*\}\}/g, formatMoney(remaining))
               .replace(/\{amount\}/g, formatMoney(remaining))
               .replace(/\{\{\s*title\s*\}\}/g, String(t.title || 'reward'))
@@ -1724,7 +1724,7 @@
                 .replace(/\{product_name\}/g, 'Free gift')
                 .replace(/\{\{\s*product\s*\}\}/g, 'Free gift')
                 .replace(/\{product\}/g, 'Free gift')
-            : (this.settings.giftProgressText || 'Spend {{ amount }} more for free gift!')
+            : (this.settings.giftProgressText || 'Free shipping unlocked! ✓ Spend {{ amount }} more for free gift!')
                 .replace(/\{\{\s*amount\s*\}\}/g, this.formatMoney(remaining))
                 .replace(/\{amount\}/g, this.formatMoney(remaining))
                 .replace(/\{\{\s*title\s*\}\}/g, 'free gift')
