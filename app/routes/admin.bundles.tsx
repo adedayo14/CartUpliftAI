@@ -234,6 +234,7 @@ export default function BundlesAdmin() {
   const [pendingBundleId, setPendingBundleId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [assignmentType, setAssignmentType] = useState<"specific" | "all">("specific");
 
   const currencySymbol = useMemo(() => {
     if (!currencyCode) {
@@ -798,6 +799,71 @@ export default function BundlesAdmin() {
                 helpText="Choose how products are selected for this bundle"
               />
 
+              {/* Product Assignment Dropdown */}
+              <Select
+                label="Show bundle on"
+                options={[
+                  { label: "Specific product pages", value: "specific" },
+                  { label: "All product pages", value: "all" },
+                ]}
+                value={assignmentType}
+                onChange={(v) => setAssignmentType(v as "specific" | "all")}
+                disabled={isSaving}
+                helpText="Choose where this bundle should appear"
+              />
+
+              {/* Product Picker - Only show for specific pages */}
+              {assignmentType === "specific" && assignedProducts.length === 0 && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Box background="bg-surface-caution" padding="400" borderRadius="200">
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          No products selected
+                        </Text>
+                        <Text as="p" variant="bodySm">
+                          Click below to choose which product pages will show this bundle
+                        </Text>
+                      </BlockStack>
+                    </Box>
+                    <Button 
+                      onClick={() => setShowProductPicker(true)} 
+                      disabled={availableProducts.length === 0 || isSaving}
+                    >
+                      Select product pages
+                    </Button>
+                  </BlockStack>
+                </Card>
+              )}
+
+              {assignmentType === "specific" && assignedProducts.length > 0 && (
+                <Card>
+                  <Box background="bg-surface-success" padding="400" borderRadius="200">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={CheckIcon} tone="success" />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          {assignedProducts.length} product page{assignedProducts.length === 1 ? '' : 's'} selected
+                        </Text>
+                      </InlineStack>
+                      <Button 
+                        size="micro"
+                        onClick={() => setShowProductPicker(true)}
+                        disabled={isSaving}
+                      >
+                        Change
+                      </Button>
+                    </InlineStack>
+                  </Box>
+                </Card>
+              )}
+
+              {assignmentType === "all" && (
+                <Banner tone="info">
+                  <Text as="p">This bundle will appear on all product pages in your store</Text>
+                </Banner>
+              )}
+
               {newBundle.bundleType === "category" && (
                 <Card background="bg-surface-secondary">
                   <BlockStack gap="300">
@@ -886,58 +952,6 @@ export default function BundlesAdmin() {
                         </div>
                       </BlockStack>
                     )}
-                  </BlockStack>
-                </Card>
-              )}
-
-              {/* Product Assignment - Where this bundle appears */}
-              {assignedProducts.length === 0 && (
-                <Card>
-                  <BlockStack gap="400">
-                    <Box background="bg-surface-caution" padding="400" borderRadius="200">
-                      <BlockStack gap="200">
-                        <Text as="h3" variant="headingMd">Product assignment (Required)</Text>
-                        <Text as="p" variant="bodySm">
-                          Choose which product pages should display this bundle
-                        </Text>
-                      </BlockStack>
-                    </Box>
-                    <Button 
-                      onClick={() => setShowProductPicker(true)} 
-                      disabled={availableProducts.length === 0 || isSaving}
-                    >
-                      Select product pages
-                    </Button>
-                  </BlockStack>
-                </Card>
-              )}
-
-              {assignedProducts.length > 0 && (
-                <Card>
-                  <BlockStack gap="400">
-                    <BlockStack gap="200">
-                      <Text as="h3" variant="headingMd">Product assignment</Text>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Where this bundle appears
-                      </Text>
-                    </BlockStack>
-                    <Box background="bg-surface-success" padding="400" borderRadius="200">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Icon source={CheckIcon} tone="success" />
-                          <Text as="span" variant="bodyMd" fontWeight="semibold">
-                            Assigned to {assignedProducts.length} product page{assignedProducts.length === 1 ? '' : 's'}
-                          </Text>
-                        </InlineStack>
-                        <Button 
-                          size="micro"
-                          onClick={() => setShowProductPicker(true)}
-                          disabled={isSaving}
-                        >
-                          Change
-                        </Button>
-                      </InlineStack>
-                    </Box>
                   </BlockStack>
                 </Card>
               )}
