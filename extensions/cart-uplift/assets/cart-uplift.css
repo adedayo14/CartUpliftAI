@@ -211,6 +211,39 @@ body.cartuplift-no-scroll {
   left: 0 !important;
 }
 
+/* Segmented Progress Bar */
+.cartuplift-segmented-bar {
+  display: flex !important;
+  gap: 2px !important;
+  background: transparent !important;
+}
+
+.cartuplift-progress-segment {
+  height: 6px !important;
+  background: #e5e7eb !important;
+  border-radius: 4px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.cartuplift-segment-fill {
+  height: 100% !important;
+  border-radius: 4px !important;
+  transition: width 0.3s ease !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+
+.cartuplift-segment-completed .cartuplift-segment-fill {
+  opacity: 1 !important;
+}
+
+.cartuplift-segment-current .cartuplift-segment-fill {
+  opacity: 1 !important;
+}
+
 /* High specificity rules to ensure progress bar colors always work */
 .cartuplift-drawer .cartuplift-progress-fill,
 .cartuplift-section .cartuplift-progress-fill,

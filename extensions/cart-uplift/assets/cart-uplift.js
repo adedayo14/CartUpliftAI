@@ -1621,12 +1621,68 @@
           }
         }
 
+        // Build segmented progress bar for multi-tier visualization
+        const buildSegmentedBar = () => {
+          // Collect all thresholds
+          const allThresholds = [];
+          if (freeEnabled && typeof freeThresholdCents === 'number' && freeThresholdCents > 0) {
+            allThresholds.push({ type: 'shipping', amount: freeThresholdCents, label: 'Free Shipping' });
+          }
+          for (const gift of sortedGifts) {
+            if (gift.amount && gift.amount > 0) {
+              allThresholds.push({ type: 'gift', amount: Math.round(gift.amount * 100), label: gift.title || 'Gift', data: gift });
+            }
+          }
+          allThresholds.sort((a, b) => a.amount - b.amount);
+          
+          if (allThresholds.length === 0) return `<div class="cartuplift-progress-bar"><div class="cartuplift-progress-fill" style="width:0%;"></div></div>`;
+          
+          // Find total span for percentage calculations
+          const maxThreshold = allThresholds[allThresholds.length - 1].amount;
+          
+          // Build segments
+          let segmentsHTML = '';
+          let prevAmount = 0;
+          
+          for (let i = 0; i < allThresholds.length; i++) {
+            const threshold = allThresholds[i];
+            const segmentWidth = ((threshold.amount - prevAmount) / maxThreshold) * 100;
+            const isCompleted = currentCents >= threshold.amount;
+            const isCurrent = !isCompleted && (i === 0 || currentCents >= allThresholds[i - 1].amount);
+            
+            let fillWidth = 0;
+            if (isCompleted) {
+              fillWidth = 100; // Fully filled
+            } else if (isCurrent) {
+              // Calculate progress within this segment
+              const segmentStart = i > 0 ? allThresholds[i - 1].amount : 0;
+              const segmentRange = threshold.amount - segmentStart;
+              const progressInSegment = Math.max(0, currentCents - segmentStart);
+              fillWidth = Math.min(100, (progressInSegment / segmentRange) * 100);
+            }
+            
+            const segmentColor = threshold.type === 'shipping' ? shippingColor : (this.settings.giftBarColor || '#f59e0b');
+            const completedClass = isCompleted ? 'cartuplift-segment-completed' : '';
+            const currentClass = isCurrent ? 'cartuplift-segment-current' : '';
+            
+            segmentsHTML += `
+              <div class="cartuplift-progress-segment ${completedClass} ${currentClass}" style="width: ${segmentWidth}%;">
+                <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
+              </div>
+            `;
+            
+            prevAmount = threshold.amount;
+          }
+          
+          return `<div class="cartuplift-progress-bar cartuplift-segmented-bar">${segmentsHTML}</div>`;
+        };
+        
+        const progressBarHTML = buildSegmentedBar();
+
         return `
           <div class="cartuplift-progress-section">
             ${successTopRowHTML}
-            <div class="cartuplift-progress-bar">
-              <div class="cartuplift-progress-fill" style="width:${widthPct > 0 ? Math.max(widthPct, 4) : 0}%;"></div>
-            </div>
+            ${progressBarHTML}
             <div class="cartuplift-progress-info">
               ${messageHTML}
               <span class="cartuplift-progress-threshold">${labelRight}</span>
