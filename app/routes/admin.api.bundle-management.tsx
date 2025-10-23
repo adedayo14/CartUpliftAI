@@ -307,7 +307,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const discountValue = parseFloat(String(body.discountValue));
       const collectionIds = (body.categoryIds as string) || (body.collectionIds as string);
       const productIds = (body.productIds as string);
-      const minProducts = body.minProducts ? parseInt(String(body.minProducts)) : 2;
+      const minProducts = body.minProducts ? parseInt(String(body.minProducts)) : null;
+      const minBundlePrice = body.minBundlePrice ? parseFloat(String(body.minBundlePrice)) : null;
+      const assignmentType = (body.assignmentType as string) || 'specific';
       
       // NEW FIELDS - Enhanced bundle features
       const assignedProducts = (body.assignedProducts as string) || null;
@@ -334,6 +336,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           collectionIds,
           productIds,
           minProducts,
+          minBundlePrice,
+          assignmentType,
           // NEW FIELDS
           assignedProducts,
           bundleStyle,

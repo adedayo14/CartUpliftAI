@@ -271,13 +271,28 @@ export default function BundlesAdmin() {
     }
   }, [currencyCode]);
 
-  const [newBundle, setNewBundle] = useState({
+  const [newBundle, setNewBundle] = useState<{
+    name: string;
+    description: string;
+    bundleType: string;
+    discountType: string;
+    discountValue: number;
+    minProducts?: number;
+    minBundlePrice?: number;
+    bundleStyle: "fbt" | "grid" | "list" | "carousel" | "tier";
+    selectMinQty: number;
+    selectMaxQty: number;
+    allowDeselect: boolean;
+    hideIfNoML: boolean;
+    tierConfig: { qty: number; discount: number }[];
+  }>({
     name: "",
     description: "",
     bundleType: "manual",
     discountType: "percentage",
     discountValue: 10,
     minProducts: 2,
+    minBundlePrice: undefined,
     bundleStyle: "grid" as "fbt" | "grid" | "list" | "carousel" | "tier",
     selectMinQty: 2,
     selectMaxQty: 10,
@@ -307,6 +322,7 @@ export default function BundlesAdmin() {
       discountType: "percentage",
       discountValue: 10,
       minProducts: 2,
+      minBundlePrice: undefined,
       bundleStyle: "grid",
       selectMinQty: 2,
       selectMaxQty: 10,
@@ -321,6 +337,7 @@ export default function BundlesAdmin() {
     setSelectedProducts([]);
     setSelectedCollections([]);
     setAssignedProducts([]);
+    setAssignmentType("specific");
   }, []);
 
   useEffect(() => { setBundleList(loaderBundles); }, [loaderBundles]);
@@ -359,6 +376,8 @@ export default function BundlesAdmin() {
         discountType: newBundle.discountType,
         discountValue: newBundle.discountValue,
         minProducts: newBundle.minProducts,
+        minBundlePrice: newBundle.minBundlePrice,
+        assignmentType: assignmentType,
         productIds: JSON.stringify(selectedProducts),
         collectionIds: JSON.stringify(selectedCollections),
         assignedProducts: JSON.stringify(assignedProducts),
@@ -430,7 +449,7 @@ export default function BundlesAdmin() {
     } finally {
       setIsSaving(false);
     }
-  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, triggerBanner, revalidator, resetForm]);
+  }, [newBundle, selectedProducts, selectedCollections, assignedProducts, assignmentType, triggerBanner, revalidator, resetForm]);
 
   const handleToggleStatus = async (bundleId: string, currentStatus: string) => {
     setPendingBundleId(bundleId);
@@ -655,9 +674,9 @@ export default function BundlesAdmin() {
 
   return (
     <Page
-      title="Product Bundles"
+      title="Frequently Bought Together"
       primaryAction={{
-        content: "Create bundle",
+        content: "Create recommendation",
         onAction: () => { resetForm(); setShowCreateModal(true); },
         icon: PlusIcon,
       }}
@@ -715,22 +734,22 @@ export default function BundlesAdmin() {
           {bundleList.length === 0 ? (
             <Card>
               <EmptyState
-                heading="Create your first product bundle"
+                heading="Create your first recommendation"
                 image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                 action={{
-                  content: "Create bundle",
+                  content: "Create recommendation",
                   onAction: () => { resetForm(); setShowCreateModal(true); },
                   icon: PlusIcon,
                 }}
               >
-                <p>Increase your average order value by bundling products together with special discounts.</p>
+                <p>Increase your average order value with smart product recommendations and bundles.</p>
               </EmptyState>
             </Card>
           ) : (
             <Card padding="0">
               <DataTable
                 columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "numeric"]}
-                headings={["Bundle", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
+                headings={["Name", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
                 rows={bundleTableRows}
                 hoverable
               />
@@ -748,9 +767,9 @@ export default function BundlesAdmin() {
             resetForm();
           }
         }}
-        title="Create product bundle"
+        title="Create recommendation"
         primaryAction={{
-          content: "Create bundle",
+          content: "Create",
           onAction: handleCreateBundle,
           loading: isSaving,
         }}
@@ -975,15 +994,29 @@ export default function BundlesAdmin() {
                 />
               </FormLayout.Group>
 
-              <TextField 
-                label="Minimum products" 
-                type="number" 
-                value={newBundle.minProducts.toString()} 
-                onChange={(v) => setNewBundle({ ...newBundle, minProducts: parseInt(v) || 2 })} 
-                autoComplete="off" 
-                disabled={isSaving}
-                helpText="Minimum number of products required to apply the bundle discount"
-              />
+              <FormLayout.Group>
+                <TextField 
+                  label="Minimum products (optional)" 
+                  type="number" 
+                  value={newBundle.minProducts?.toString() || ""} 
+                  onChange={(v) => setNewBundle({ ...newBundle, minProducts: v ? parseInt(v) : undefined })} 
+                  autoComplete="off" 
+                  disabled={isSaving}
+                  placeholder="e.g., 2"
+                  helpText="Min number of products required"
+                />
+                <TextField 
+                  label="Minimum bundle price (optional)" 
+                  type="number" 
+                  value={newBundle.minBundlePrice?.toString() || ""} 
+                  onChange={(v) => setNewBundle({ ...newBundle, minBundlePrice: v ? parseFloat(v) : undefined })} 
+                  autoComplete="off" 
+                  disabled={isSaving}
+                  placeholder="e.g., 50.00"
+                  prefix={currencySymbol}
+                  helpText="Min total price required"
+                />
+              </FormLayout.Group>
 
               <BlockStack gap="300">
                 <Checkbox 

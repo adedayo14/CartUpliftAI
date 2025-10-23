@@ -158,7 +158,9 @@ model Bundle {
   status           String    @default("draft") // draft, active, paused
   discountType     String    @default("percentage")
   discountValue    Float     @default(0)
-  minProducts      Int       @default(2)
+  minProducts      Int?      // Optional: Minimum number of products required
+  minBundlePrice   Float?    // Optional: Minimum bundle price (order value) required
+  assignmentType   String    @default("specific") // "specific" or "all" - where bundle appears
   productIds       String    @default("[]") // JSON array of product IDs
   collectionIds    String    @default("[]") // JSON array of collection IDs
   assignedProducts String    @default("[]") // JSON array for assigned products
