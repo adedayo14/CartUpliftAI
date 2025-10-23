@@ -243,7 +243,7 @@ export default function Index() {
                     Why AI beats static rules
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
-                    Built to learn from real customer behaviour and adapt as patterns, trends and seasons change.
+                    Smarter recommendations, better results. Built to learn from real customer behaviour and adapt as patterns change.
                   </Text>
                 </BlockStack>
 
@@ -253,9 +253,9 @@ export default function Index() {
                   padding="500"
                   borderRadius="300"
                 >
-                  <BlockStack gap="400">
-                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="500">
-                      <BlockStack gap="300">
+                  <BlockStack gap="200">
+                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+                      <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
                           Learns continuously
                         </Text>
@@ -264,7 +264,7 @@ export default function Index() {
                         </Text>
                       </BlockStack>
 
-                      <BlockStack gap="300">
+                      <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
                           Personal to each shopper
                         </Text>
@@ -273,7 +273,7 @@ export default function Index() {
                         </Text>
                       </BlockStack>
 
-                      <BlockStack gap="300">
+                      <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
                           Bundles that make sense
                         </Text>
@@ -282,7 +282,7 @@ export default function Index() {
                         </Text>
                       </BlockStack>
 
-                      <BlockStack gap="300">
+                      <BlockStack gap="200">
                         <Text variant="headingMd" as="h3">
                           Optimises itself
                         </Text>
