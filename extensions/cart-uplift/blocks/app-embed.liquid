@@ -1,7 +1,7 @@
 {% comment %} Cart Uplift – Smart Cart App Embed {% endcomment %}
 {% comment %} Version: Testing commit 235b8d3 - Recommendations scroll fix {% endcomment %}
 
-<link rel="stylesheet" href="{{ 'cart-uplift.css' | asset_url }}">
+<link rel="stylesheet" href="{{ 'cart-uplift.css' | asset_url }}?v={{ 'now' | date: '%s' }}">
 
   {%- comment -%}
     Preview and minor editor-only utilities
@@ -393,7 +393,7 @@
   </script>
 
   {%- comment -%} Cache-busted version to ensure fresh schema loads {%- endcomment -%}
-  <script src="{{ 'cart-uplift.js' | asset_url }}?v=1729720000" defer></script>
+  <script src="{{ 'cart-uplift.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
 
   <script>
     // Post-load configuration and resilience
