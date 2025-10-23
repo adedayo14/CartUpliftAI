@@ -892,8 +892,11 @@ body.cartuplift-no-scroll {
 }
 
 .cartuplift-drawer.recommendations-scroll .cartuplift-recommendations {
-  position: relative;
-  /* Flows naturally inside scrollable content - moves down as items are added */
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: var(--cartuplift-recommendations-bg);
+  /* Stays at natural position above footer until cart content pushes it up */
 }
 
 /* When recommendations are inside the scrollable content area,
@@ -1277,7 +1280,7 @@ body.cartuplift-no-scroll {
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .cartuplift-recommendation-card h4 {
