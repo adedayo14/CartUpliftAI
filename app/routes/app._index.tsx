@@ -89,7 +89,7 @@ export default function Index() {
                   <Box padding="400" background="bg-surface-secondary" borderRadius="300">
                     <BlockStack gap="200">
                       <Text variant="headingMd" as="h3">
-                        Personalised recommendations
+                        Bespoke recommendations
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
                         Suggestions tailored to each visitor, based on live browsing and purchase signals.
@@ -296,47 +296,22 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* Support and resources */}
-            <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <Text variant="headingMd" as="h3">
-                      Need help getting started?
-                    </Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      We can help with set-up and best practice for your catalogue.
-                    </Text>
-                  </BlockStack>
-                  <InlineStack gap="300">
-                    <Button>Contact support</Button>
-                    <Button variant="plain">View documentation</Button>
-                  </InlineStack>
-                </BlockStack>
-              </Card>
-
-              <Card>
-                <BlockStack gap="400">
+            {/* Support */}
+            <Card>
+              <BlockStack gap="400">
+                <BlockStack gap="200">
                   <Text variant="headingMd" as="h3">
-                    Resources
+                    Need help getting started?
                   </Text>
-                  <BlockStack gap="200">
-                    <Button variant="plain" textAlign="start" fullWidth>
-                      Setup guide
-                    </Button>
-                    <Button variant="plain" textAlign="start" fullWidth>
-                      Best practices
-                    </Button>
-                    <Button variant="plain" textAlign="start" fullWidth>
-                      Video tutorials
-                    </Button>
-                    <Button variant="plain" textAlign="start" fullWidth>
-                      FAQs
-                    </Button>
-                  </BlockStack>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    We can help with set-up and best practice for your catalogue.
+                  </Text>
                 </BlockStack>
-              </Card>
-            </InlineGrid>
+                <InlineStack gap="300">
+                  <Button>Contact support</Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
           </BlockStack>
         </Layout.Section>
       </Layout>
