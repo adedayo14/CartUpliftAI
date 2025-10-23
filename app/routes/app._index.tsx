@@ -43,31 +43,29 @@ export default function Index() {
             {/* Hero */}
             <Card>
               <BlockStack gap="500">
-                <InlineStack align="space-between" blockAlign="center">
-                  <BlockStack gap="200">
-                    <InlineStack gap="300" blockAlign="center">
-                      <Text variant="heading2xl" as="h1">
-                        Cart Uplift
-                      </Text>
-                      <Badge tone="success">Trial active</Badge>
-                    </InlineStack>
-                    <Text variant="bodyLg" as="p" tone="subdued">
-                      Increase your average order value with AI-enhanced cross-selling that adapts to what customers actually like.
+                <BlockStack gap="200">
+                  <InlineStack gap="300" blockAlign="center">
+                    <Text variant="heading2xl" as="h1">
+                      Cart Uplift
                     </Text>
-                  </BlockStack>
-
-                  <InlineStack gap="300">
-                    <a href={`/app/settings${safeSearch}`} style={{ textDecoration: "none" }}>
-                      <Button size="large" variant="primary">
-                        Open settings
-                      </Button>
-                    </a>
-                    <a href={`/admin/bundles${safeSearch}`} style={{ textDecoration: "none" }}>
-                      <Button size="large" variant="secondary">
-                        Manage bundles
-                      </Button>
-                    </a>
+                    <Badge tone="success">Trial active</Badge>
                   </InlineStack>
+                  <Text variant="bodyLg" as="p" tone="subdued">
+                    Increase your average order value with AI-enhanced cross-selling that adapts to what customers actually like.
+                  </Text>
+                </BlockStack>
+
+                <InlineStack gap="300">
+                  <a href={`/app/settings${safeSearch}`} style={{ textDecoration: "none" }}>
+                    <Button size="large" variant="primary">
+                      Open settings
+                    </Button>
+                  </a>
+                  <a href={`/admin/bundles${safeSearch}`} style={{ textDecoration: "none" }}>
+                    <Button size="large" variant="secondary">
+                      Manage bundles
+                    </Button>
+                  </a>
                 </InlineStack>
               </BlockStack>
             </Card>
@@ -105,7 +103,7 @@ export default function Index() {
                         Understands real behaviour
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        The model analyses browsing and purchase patterns to learn how your products relate.
+                        The model analyses browsing and purchase patterns to learn how your products relate each other.
                       </Text>
                     </BlockStack>
                   </BlockStack>
@@ -128,7 +126,7 @@ export default function Index() {
                         Shows relevant suggestions
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Personalised products and sensible bundles appear in the basket and on product pages.
+                        Personalised products and sensible bundles appear in cart and on product pages.
                       </Text>
                     </BlockStack>
                   </BlockStack>
@@ -151,7 +149,7 @@ export default function Index() {
                         Measures and improves
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        Built-in testing tracks performance and the model keeps optimising automatically.
+                        Built-in testing tracks performance and continually optimises the model. The more you use it the better it gets!
                       </Text>
                     </BlockStack>
                   </BlockStack>
