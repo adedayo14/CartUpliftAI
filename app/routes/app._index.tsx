@@ -70,6 +70,84 @@ export default function Index() {
               </BlockStack>
             </Card>
 
+            {/* Features */}
+            <Card>
+              <BlockStack gap="500">
+                <BlockStack gap="200">
+                  <Text variant="headingLg" as="h2">
+                    Features that grow revenue
+                  </Text>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    Practical tools for higher spend and a smoother shopping experience.
+                  </Text>
+                </BlockStack>
+
+                <Divider />
+
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 5 }} gap="400">
+                  {/* AI Recommendations */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Personalised recommendations
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Suggestions tailored to each visitor, based on live browsing and purchase signals.
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Smart Bundles */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Smart bundles
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Spots items often bought together and builds bundles with flexible discounts.
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Progress incentives */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Progress incentives
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Progress bars for free shipping and rewards that help lift cart value.
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Gift with purchase */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Gift with purchase
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Reward customers at set spend levels. The app handles the rest.
+                      </Text>
+                    </BlockStack>
+                  </Box>
+
+                  {/* Revenue analytics */}
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
+                    <BlockStack gap="200">
+                      <Text variant="headingMd" as="h3">
+                        Revenue analytics
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Track impressions, clicks, conversions and attributed revenue in real time.
+                      </Text>
+                    </BlockStack>
+                  </Box>
+                </InlineGrid>
+              </BlockStack>
+            </Card>
+
             {/* How it works */}
             <Card>
               <BlockStack gap="500">
@@ -153,84 +231,6 @@ export default function Index() {
                       </Text>
                     </BlockStack>
                   </BlockStack>
-                </InlineGrid>
-              </BlockStack>
-            </Card>
-
-            {/* Features */}
-            <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text variant="headingLg" as="h2">
-                    Features that grow revenue
-                  </Text>
-                  <Text variant="bodyMd" as="p" tone="subdued">
-                    Practical tools for higher spend and a smoother shopping experience.
-                  </Text>
-                </BlockStack>
-
-                <Divider />
-
-                <InlineGrid columns={{ xs: 1, sm: 2, md: 3, lg: 5 }} gap="400">
-                  {/* AI Recommendations */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Personalised recommendations
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Suggestions tailored to each visitor, based on live browsing and purchase signals.
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Smart Bundles */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Smart bundles
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Spots items often bought together and builds bundles with flexible discounts.
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Progress incentives */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Progress incentives
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Progress bars for free shipping and rewards that help lift cart value.
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Gift with purchase */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Gift with purchase
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Reward customers at set spend levels. The app handles the rest.
-                      </Text>
-                    </BlockStack>
-                  </Box>
-
-                  {/* Revenue analytics */}
-                  <Box padding="400" background="bg-surface-secondary" borderRadius="300">
-                    <BlockStack gap="200">
-                      <Text variant="headingMd" as="h3">
-                        Revenue analytics
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Track impressions, clicks, conversions and attributed revenue in real time.
-                      </Text>
-                    </BlockStack>
-                  </Box>
                 </InlineGrid>
               </BlockStack>
             </Card>
