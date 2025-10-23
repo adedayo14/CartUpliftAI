@@ -253,10 +253,7 @@ export default function Index() {
 
                 <Box
                   padding="500"
-                  background="bg-surface-success-hover"
                   borderRadius="300"
-                  borderWidth="025"
-                  borderColor="border-success"
                 >
                   <BlockStack gap="400">
                     <InlineGrid columns={{ xs: 1, md: 2 }} gap="500">
