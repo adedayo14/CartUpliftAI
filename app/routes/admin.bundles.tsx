@@ -233,6 +233,7 @@ export default function BundlesAdmin() {
   const [bannerMessage, setBannerMessage] = useState("");
   const [pendingBundleId, setPendingBundleId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
 
   const currencySymbol = useMemo(() => {
     if (!currencyCode) {
@@ -287,6 +288,15 @@ export default function BundlesAdmin() {
       { qty: 5, discount: 20 }
     ]
   });
+
+  // Filtered products based on search
+  const filteredProducts = useMemo(() => {
+    if (!productSearchQuery.trim()) return availableProducts;
+    const query = productSearchQuery.toLowerCase();
+    return availableProducts.filter(product => 
+      product.title.toLowerCase().includes(query)
+    );
+  }, [availableProducts, productSearchQuery]);
 
   const resetForm = useCallback(() => {
     setNewBundle({
@@ -824,47 +834,58 @@ export default function BundlesAdmin() {
 
               {newBundle.bundleType === "manual" && (
                 <Card background="bg-surface-secondary">
-                  <BlockStack gap="300">
-                    <Text as="h3" variant="headingMd">Select products</Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Choose specific products to include in this bundle
-                    </Text>
-                    {availableProducts.length === 0 ? (
-                      <Text as="p" variant="bodySm" tone="critical">
-                        No products available. Add products to your store first.
+                  <BlockStack gap="400">
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={PackageIcon} tone="base" />
+                        <Text as="h3" variant="headingMd">Bundle contents</Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Choose specific products to include in this bundle
                       </Text>
+                    </BlockStack>
+
+                    {availableProducts.length === 0 ? (
+                      <Banner tone="warning">
+                        <p>No products available. Add products to your store first.</p>
+                      </Banner>
                     ) : (
-                      <>
-                        <Button
-                          onClick={() => {
-                            // Open a product picker modal or expand inline selection
-                            // For simplicity, showing first 5 products as checkboxes
-                          }}
-                          disabled={isSaving}
-                        >
-                          Select products ({selectedProducts.length} selected)
-                        </Button>
-                        <BlockStack gap="200">
-                          {availableProducts.slice(0, 5).map((product) => {
-                            const numericId = product.id.replace('gid://shopify/Product/', '');
-                            return (
-                              <Checkbox
-                                key={product.id}
-                                label={product.title}
-                                checked={selectedProducts.includes(numericId)}
-                                onChange={(checked) => {
-                                  setSelectedProducts(
-                                    checked
-                                      ? [...selectedProducts, numericId]
-                                      : selectedProducts.filter((id) => id !== numericId)
-                                  );
-                                }}
-                                disabled={isSaving}
-                              />
-                            );
-                          })}
-                        </BlockStack>
-                      </>
+                      <BlockStack gap="300">
+                        <TextField
+                          label=""
+                          value={productSearchQuery}
+                          onChange={setProductSearchQuery}
+                          placeholder="Search products..."
+                          autoComplete="off"
+                          clearButton
+                          onClearButtonClick={() => setProductSearchQuery("")}
+                        />
+                        {selectedProducts.length > 0 && (
+                          <Badge tone="success">{`${selectedProducts.length} product${selectedProducts.length === 1 ? '' : 's'} selected`}</Badge>
+                        )}
+                        <div style={{maxHeight: '300px', overflowY: 'auto'}}>
+                          <BlockStack gap="200">
+                            {filteredProducts.slice(0, 20).map((product) => {
+                              const numericId = product.id.replace('gid://shopify/Product/', '');
+                              return (
+                                <Checkbox
+                                  key={product.id}
+                                  label={product.title}
+                                  checked={selectedProducts.includes(numericId)}
+                                  onChange={(checked) => {
+                                    setSelectedProducts(
+                                      checked
+                                        ? [...selectedProducts, numericId]
+                                        : selectedProducts.filter((id) => id !== numericId)
+                                    );
+                                  }}
+                                  disabled={isSaving}
+                                />
+                              );
+                            })}
+                          </BlockStack>
+                        </div>
+                      </BlockStack>
                     )}
                   </BlockStack>
                 </Card>
