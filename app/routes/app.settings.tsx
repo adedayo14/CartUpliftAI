@@ -249,46 +249,41 @@ export default function AppSettings() {
                         />
                       </>
                     )}
-                  </>
-                )}
-              </BlockStack>
-            </Card>
-
-            {/* Smart Features */}
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">Smart Features</Text>
-                
-                <Checkbox
-                  label="Threshold-based suggestions"
-                  checked={formSettings.enableThresholdBasedSuggestions}
-                  onChange={(value) => updateSetting("enableThresholdBasedSuggestions", value)}
-                  helpText="Help customers reach free shipping and gift thresholds"
-                />
-
-                {formSettings.enableThresholdBasedSuggestions && (
-                  <>
-                    <Select
-                      label="Threshold strategy"
-                      options={[
-                        { label: 'Smart AI - Best relevance + price match', value: 'smart' },
-                        { label: 'Price Only - Cheapest path to threshold', value: 'price' },
-                        { label: 'Popular + Price - Trending items at right price', value: 'popular_price' }
-                      ]}
-                      value={formSettings.thresholdSuggestionMode || 'smart'}
-                      onChange={(value) => updateSetting("thresholdSuggestionMode", value)}
-                    />
 
                     <Divider />
+                    
+                    <Checkbox
+                      label="Threshold-based suggestions"
+                      checked={formSettings.enableThresholdBasedSuggestions}
+                      onChange={(value) => updateSetting("enableThresholdBasedSuggestions", value)}
+                      helpText="Help customers reach free shipping and gift thresholds"
+                    />
+
+                    {formSettings.enableThresholdBasedSuggestions && (
+                      <>
+                        <Select
+                          label="Threshold strategy"
+                          options={[
+                            { label: 'Smart AI - Best relevance + price match', value: 'smart' },
+                            { label: 'Price Only - Cheapest path to threshold', value: 'price' },
+                            { label: 'Popular + Price - Trending items at right price', value: 'popular_price' }
+                          ]}
+                          value={formSettings.thresholdSuggestionMode || 'smart'}
+                          onChange={(value) => updateSetting("thresholdSuggestionMode", value)}
+                        />
+
+                        <Divider />
+                      </>
+                    )}
+
+                    <Checkbox
+                      label="Hide recommendations when thresholds met"
+                      checked={formSettings.hideRecommendationsAfterThreshold}
+                      onChange={(value) => updateSetting("hideRecommendationsAfterThreshold", value)}
+                      helpText="Collapse section after all rewards unlocked"
+                    />
                   </>
                 )}
-
-                <Checkbox
-                  label="Hide recommendations when thresholds met"
-                  checked={formSettings.hideRecommendationsAfterThreshold}
-                  onChange={(value) => updateSetting("hideRecommendationsAfterThreshold", value)}
-                  helpText="Collapse section after all rewards unlocked"
-                />
               </BlockStack>
             </Card>
 
@@ -298,6 +293,28 @@ export default function AppSettings() {
                 <Text variant="headingMd" as="h2">Text Customization</Text>
                 
                 <BlockStack gap="400">
+                  <Text variant="headingSm" as="h3">Cart Links</Text>
+
+                  <TextField
+                    label="Promo code link"
+                    value={formSettings.discountLinkText || "+ Got a promotion code?"}
+                    onChange={(value) => updateSetting("discountLinkText", value)}
+                    helpText="Text for discount code link"
+                    placeholder="+ Got a promotion code?"
+                    autoComplete="off"
+                  />
+
+                  <TextField
+                    label="Order note link"
+                    value={formSettings.notesLinkText || "+ Add order notes"}
+                    onChange={(value) => updateSetting("notesLinkText", value)}
+                    helpText="Text for order notes link"
+                    placeholder="+ Add order notes"
+                    autoComplete="off"
+                  />
+
+                  <Divider />
+
                   <Text variant="headingSm" as="h3">Gift Settings</Text>
                   
                   <TextField
@@ -420,7 +437,7 @@ export default function AppSettings() {
               </Card>
             )}
 
-            {/* Cart Interaction */}
+            {/* Cart Styling */}
             <Card>
               <BlockStack gap="400">
                 <Text variant="headingMd" as="h2">Cart Styling</Text>
@@ -430,28 +447,6 @@ export default function AppSettings() {
                   checked={formSettings.enableRecommendationTitleCaps || false}
                   onChange={(value) => updateSetting("enableRecommendationTitleCaps", value)}
                   helpText="Display recommendation section title in uppercase"
-                />
-
-                <Divider />
-
-                <Text variant="headingSm" as="h3">Cart Links</Text>
-
-                <TextField
-                  label="Promo code link"
-                  value={formSettings.discountLinkText || "+ Got a promotion code?"}
-                  onChange={(value) => updateSetting("discountLinkText", value)}
-                  helpText="Text for discount code link"
-                  placeholder="+ Got a promotion code?"
-                  autoComplete="off"
-                />
-
-                <TextField
-                  label="Order note link"
-                  value={formSettings.notesLinkText || "+ Add order notes"}
-                  onChange={(value) => updateSetting("notesLinkText", value)}
-                  helpText="Text for order notes link"
-                  placeholder="+ Add order notes"
-                  autoComplete="off"
                 />
               </BlockStack>
             </Card>
