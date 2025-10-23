@@ -175,28 +175,18 @@ export default function AppSettings() {
           <Card>
             <BlockStack gap="200">
               <Text as="p" variant="bodyMd" tone="subdued">Recommendations Status</Text>
-              <InlineStack gap="200" align="start" blockAlign="center">
-                <Text as="h2" variant="headingLg">
-                  {formSettings.enableRecommendations ? "Active" : "Inactive"}
-                </Text>
-                <Badge tone={formSettings.enableRecommendations ? "success" : "info"}>
-                  {formSettings.enableRecommendations ? "On" : "Off"}
-                </Badge>
-              </InlineStack>
+              <Badge tone={formSettings.enableRecommendations ? "success" : "info"}>
+                {formSettings.enableRecommendations ? "On" : "Off"}
+              </Badge>
             </BlockStack>
           </Card>
 
           <Card>
             <BlockStack gap="200">
               <Text as="p" variant="bodyMd" tone="subdued">ML Recommendations</Text>
-              <InlineStack gap="200" align="start" blockAlign="center">
-                <Text as="h2" variant="headingLg">
-                  {formSettings.enableMLRecommendations ? "Active" : "Inactive"}
-                </Text>
-                <Badge tone={formSettings.enableMLRecommendations ? "success" : "info"}>
-                  {formSettings.enableMLRecommendations ? "On" : "Off"}
-                </Badge>
-              </InlineStack>
+              <Badge tone={formSettings.enableMLRecommendations ? "success" : "info"}>
+                {formSettings.enableMLRecommendations ? "On" : "Off"}
+              </Badge>
             </BlockStack>
           </Card>
 
