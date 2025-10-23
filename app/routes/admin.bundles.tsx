@@ -234,7 +234,7 @@ export default function BundlesAdmin() {
   const [pendingBundleId, setPendingBundleId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
-  const [assignmentType, setAssignmentType] = useState<"specific" | "all">("specific");
+  const [assignmentType, setAssignmentType] = useState<"specific" | "all">("all");
 
   const currencySymbol = useMemo(() => {
     if (!currencyCode) {
@@ -288,7 +288,7 @@ export default function BundlesAdmin() {
   }>({
     name: "",
     description: "",
-    bundleType: "manual",
+    bundleType: "ml",
     discountType: "percentage",
     discountValue: 10,
     minProducts: 2,
