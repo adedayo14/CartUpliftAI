@@ -120,7 +120,7 @@ export default function Index() {
                       minHeight="32px"
                     >
                       <Text variant="headingMd" as="span" alignment="center">
-                        2
+                        <span style={{ color: 'white' }}>2</span>
                       </Text>
                     </Box>
                     <BlockStack gap="200">
