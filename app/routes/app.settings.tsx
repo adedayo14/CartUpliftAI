@@ -436,20 +436,6 @@ export default function AppSettings() {
                 </BlockStack>
               </Card>
             )}
-
-            {/* Cart Styling */}
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">Cart Styling</Text>
-                
-                <Checkbox
-                  label="Uppercase recommendation title"
-                  checked={formSettings.enableRecommendationTitleCaps || false}
-                  onChange={(value) => updateSetting("enableRecommendationTitleCaps", value)}
-                  helpText="Display recommendation section title in uppercase"
-                />
-              </BlockStack>
-            </Card>
           </BlockStack>
         </InlineGrid>
       </BlockStack>

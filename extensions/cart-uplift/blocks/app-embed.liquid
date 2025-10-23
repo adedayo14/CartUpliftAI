@@ -89,6 +89,7 @@
           
           // Text styling
           enableProductTitleCaps: {{ block.settings.enable_product_title_caps | json }},
+          enableRecommendationTitleCaps: {{ block.settings.uppercase_recommendation_title | json }},
 
           // Cart styling
           cartBackgroundColor: {{ block.settings.cart_background_color | json }},
@@ -680,6 +681,13 @@
       "id": "recommendations_scroll_with_cart",
       "label": "Let recommendations scroll with cart",
       "info": "When off, recommendations stay pinned above the cart items.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "uppercase_recommendation_title",
+      "label": "Uppercase recommendation title",
+      "info": "Display recommendation section title in uppercase",
       "default": false
     }
   ]
