@@ -16,7 +16,6 @@ import {
   TextField,
   Select,
   FormLayout,
-  ButtonGroup,
   Banner,
   ResourceList,
   ResourceItem,
@@ -609,8 +608,8 @@ export default function BundlesAdmin() {
         {formatMoney(bundle.totalRevenue || 0)}
       </Text>,
       
-      // Actions
-      <ButtonGroup key={`actions-${bundle.id}`}>
+      // Actions - moved to the end
+      <InlineStack gap="200" align="end" key={`actions-${bundle.id}`}>
         <Button
           size="micro"
           variant={bundle.status === "active" ? "secondary" : "primary"}
@@ -624,10 +623,10 @@ export default function BundlesAdmin() {
           tone="critical" 
           onClick={() => handleDelete(bundle.id)} 
           loading={pendingBundleId === bundle.id}
-        >
-          Delete
-        </Button>
-      </ButtonGroup>,
+          icon={DeleteIcon}
+          accessibilityLabel="Delete bundle"
+        />
+      </InlineStack>,
     ];
   });
 
