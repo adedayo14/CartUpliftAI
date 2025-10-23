@@ -890,6 +890,58 @@ export default function BundlesAdmin() {
                 </Card>
               )}
 
+              {/* Product Assignment - Where this bundle appears */}
+              {assignedProducts.length === 0 && (
+                <Card>
+                  <BlockStack gap="400">
+                    <Box background="bg-surface-caution" padding="400" borderRadius="200">
+                      <BlockStack gap="200">
+                        <Text as="h3" variant="headingMd">Product assignment (Required)</Text>
+                        <Text as="p" variant="bodySm">
+                          Choose which product pages should display this bundle
+                        </Text>
+                      </BlockStack>
+                    </Box>
+                    <Button 
+                      onClick={() => setShowProductPicker(true)} 
+                      disabled={availableProducts.length === 0 || isSaving}
+                    >
+                      Select product pages
+                    </Button>
+                  </BlockStack>
+                </Card>
+              )}
+
+              {assignedProducts.length > 0 && (
+                <Card>
+                  <BlockStack gap="400">
+                    <BlockStack gap="200">
+                      <Text as="h3" variant="headingMd">Product assignment</Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Where this bundle appears
+                      </Text>
+                    </BlockStack>
+                    <Box background="bg-surface-success" padding="400" borderRadius="200">
+                      <InlineStack align="space-between" blockAlign="center">
+                        <InlineStack gap="200" blockAlign="center">
+                          <Icon source={CheckIcon} tone="success" />
+                          <Text as="span" variant="bodyMd" fontWeight="semibold">
+                            Assigned to {assignedProducts.length} product page{assignedProducts.length === 1 ? '' : 's'}
+                          </Text>
+                        </InlineStack>
+                        <Button 
+                          size="micro"
+                          onClick={() => setShowProductPicker(true)}
+                          disabled={isSaving}
+                        >
+                          Change
+                        </Button>
+                      </InlineStack>
+                    </Box>
+                  </BlockStack>
+                </Card>
+              )}
+
               <FormLayout.Group>
                 <Select 
                   label="Discount type" 
@@ -935,45 +987,6 @@ export default function BundlesAdmin() {
                   helpText="Only show this bundle when AI can find suitable product recommendations"
                 />
               </BlockStack>
-
-              {assignedProducts.length === 0 && (
-                <Card background="bg-surface-secondary">
-                  <BlockStack gap="200">
-                    <Text as="h3" variant="headingMd">Product assignment</Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Choose which product pages should display this bundle
-                    </Text>
-                    <Button 
-                      onClick={() => setShowProductPicker(true)} 
-                      disabled={availableProducts.length === 0 || isSaving}
-                    >
-                      Select product pages
-                    </Button>
-                  </BlockStack>
-                </Card>
-              )}
-
-              {assignedProducts.length > 0 && (
-                <Card background="bg-surface-success">
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={CheckIcon} tone="success" />
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          Assigned to {assignedProducts.length} product page{assignedProducts.length === 1 ? '' : 's'}
-                        </Text>
-                      </InlineStack>
-                      <Button 
-                        size="micro"
-                        onClick={() => setShowProductPicker(true)}
-                        disabled={isSaving}
-                      >
-                        Change
-                      </Button>
-                    </InlineStack>
-                  </BlockStack>
-                </Card>
-              )}
             </FormLayout>
           </BlockStack>
         </Modal.Section>
