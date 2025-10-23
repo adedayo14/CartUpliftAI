@@ -1123,7 +1123,13 @@ export default function Dashboard() {
                     <Text variant="bodySm" tone="subdued">Last updated</Text>
                     <Text variant="headingLg" as="h3">
                       {analytics.mlStatus.lastUpdated 
-                        ? new Date(analytics.mlStatus.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        ? new Date(analytics.mlStatus.lastUpdated).toLocaleString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })
                         : 'Never'}
                     </Text>
                   </BlockStack>
