@@ -994,29 +994,34 @@ export default function BundlesAdmin() {
                 />
               </FormLayout.Group>
 
-              <FormLayout.Group>
-                <TextField 
-                  label="Minimum products (optional)" 
-                  type="number" 
-                  value={newBundle.minProducts?.toString() || ""} 
-                  onChange={(v) => setNewBundle({ ...newBundle, minProducts: v ? parseInt(v) : undefined })} 
-                  autoComplete="off" 
-                  disabled={isSaving}
-                  placeholder="e.g., 2"
-                  helpText="Min number of products required"
-                />
-                <TextField 
-                  label="Minimum bundle price (optional)" 
-                  type="number" 
-                  value={newBundle.minBundlePrice?.toString() || ""} 
-                  onChange={(v) => setNewBundle({ ...newBundle, minBundlePrice: v ? parseFloat(v) : undefined })} 
-                  autoComplete="off" 
-                  disabled={isSaving}
-                  placeholder="e.g., 50.00"
-                  prefix={currencySymbol}
-                  helpText="Min total price required"
-                />
-              </FormLayout.Group>
+              <BlockStack gap="300">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Bundle requirements - Set minimums to control when the bundle qualifies for discounts
+                </Text>
+                <FormLayout.Group>
+                  <TextField 
+                    label="Minimum products (optional)" 
+                    type="number" 
+                    value={newBundle.minProducts?.toString() || ""} 
+                    onChange={(v) => setNewBundle({ ...newBundle, minProducts: v ? parseInt(v) : undefined })} 
+                    autoComplete="off" 
+                    disabled={isSaving}
+                    placeholder="e.g., 2"
+                    helpText="Number of items required (quantity)"
+                  />
+                  <TextField 
+                    label="Minimum bundle price (optional)" 
+                    type="number" 
+                    value={newBundle.minBundlePrice?.toString() || ""} 
+                    onChange={(v) => setNewBundle({ ...newBundle, minBundlePrice: v ? parseFloat(v) : undefined })} 
+                    autoComplete="off" 
+                    disabled={isSaving}
+                    placeholder="e.g., 50.00"
+                    prefix={currencySymbol}
+                    helpText="Total cart value required (dollars)"
+                  />
+                </FormLayout.Group>
+              </BlockStack>
 
               <BlockStack gap="300">
                 <Checkbox 
