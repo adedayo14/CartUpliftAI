@@ -514,7 +514,7 @@ export default function BundlesAdmin() {
           'Authorization': `Bearer ${sessionToken}`
         },
         body: JSON.stringify({
-          action: "delete",
+          action: "delete-bundle",
           bundleId,
         }),
       });
@@ -674,9 +674,9 @@ export default function BundlesAdmin() {
 
   return (
     <Page
-      title="Frequently Bought Together"
+      title="Frequently Bought Together (FBT)"
       primaryAction={{
-        content: "Create recommendation",
+        content: "Create FBT",
         onAction: () => { resetForm(); setShowCreateModal(true); },
         icon: PlusIcon,
       }}
@@ -713,7 +713,7 @@ export default function BundlesAdmin() {
                 </Box>
                 <Box borderInlineStartWidth="025" borderColor="border" paddingInlineStart="800">
                   <BlockStack gap="200">
-                    <Text as="p" variant="bodySm" tone="subdued">Active bundles</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">Active FBTs</Text>
                     <Text as="p" variant="heading2xl">{activeBundles} / {bundleList.length}</Text>
                   </BlockStack>
                 </Box>
@@ -749,7 +749,7 @@ export default function BundlesAdmin() {
             <Card padding="0">
               <DataTable
                 columnContentTypes={["text", "text", "text", "text", "numeric", "numeric", "numeric"]}
-                headings={["Name", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
+                headings={["FBT Name", "Type", "Status", "Discount", "Purchases", "Revenue", "Actions"]}
                 rows={bundleTableRows}
                 hoverable
               />
@@ -767,7 +767,7 @@ export default function BundlesAdmin() {
             resetForm();
           }
         }}
-        title="Create recommendation"
+        title="Create FBT"
         primaryAction={{
           content: "Create",
           onAction: handleCreateBundle,
@@ -922,9 +922,9 @@ export default function BundlesAdmin() {
                   <BlockStack gap="400">
                     <Box background="bg-surface-caution" padding="400" borderRadius="200">
                       <BlockStack gap="200">
-                        <Text as="h3" variant="headingMd">Bundle contents (Required)</Text>
+                        <Text as="h3" variant="headingMd">FBT contents (Required)</Text>
                         <Text as="p" variant="bodySm">
-                          You must select at least one product for this bundle
+                          You must select at least one product for this FBT
                         </Text>
                       </BlockStack>
                     </Box>
