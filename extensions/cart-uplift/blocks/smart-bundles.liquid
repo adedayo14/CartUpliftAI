@@ -15,6 +15,7 @@
 {%- liquid
   assign bundle_enabled = block.settings.bundle_enabled
   assign display_style = block.settings.display_style
+  assign bundle_subtitle = block.settings.bundle_subtitle
   assign btn_bg = block.settings.button_bg_color | default: '#000000'
   assign btn_text = block.settings.button_text_color | default: '#FFFFFF'
   assign btn_border = block.settings.button_border_color | default: '#000000'
@@ -25,17 +26,17 @@
 {% if bundle_enabled %}
   {%- comment -%} Inject custom button styles {%- endcomment -%}
   <style>
-    .cartuplift-bundle-wrapper .bundle-add-btn,
+    .cartuplift-bundle-wrapper .cartuplift-bundle-add-button,
     .cartuplift-bundle-wrapper .add-bundle-btn,
-    .cartuplift-bundle-wrapper button.primary {
+    .cartuplift-bundle-wrapper .bundle-add-btn {
       background-color: {{ btn_bg }} !important;
       color: {{ btn_text }} !important;
       border: {{ btn_border_width }}px solid {{ btn_border }} !important;
       border-radius: {{ btn_border_radius }}px !important;
     }
-    .cartuplift-bundle-wrapper .bundle-add-btn:hover,
+    .cartuplift-bundle-wrapper .cartuplift-bundle-add-button:hover,
     .cartuplift-bundle-wrapper .add-bundle-btn:hover,
-    .cartuplift-bundle-wrapper button.primary:hover {
+    .cartuplift-bundle-wrapper .bundle-add-btn:hover {
       opacity: 0.9;
     }
   </style>
@@ -45,6 +46,7 @@
     data-bundle-widget="true"
     data-product-id="{% if product %}{{ product.id }}{% endif %}"
     data-bundle-title="{{ block.settings.bundle_title | escape }}"
+    data-bundle-subtitle="{{ bundle_subtitle | escape }}"
     data-bundle-priority="{{ block.settings.priority }}"
     data-display-style="{{ display_style }}"
   >
@@ -75,6 +77,13 @@
       "label": "Section heading",
       "default": "Bundle & Save",
       "info": "Optional heading displayed above bundle recommendations"
+    },
+    {
+      "type": "textarea",
+      "id": "bundle_subtitle",
+      "label": "Section subtitle",
+      "default": "Perfect match bundle - Curated to pair well with this product",
+      "info": "Optional subtitle displayed below the heading"
     },
     {
       "type": "header",

@@ -91,11 +91,20 @@
 
     renderBundlesInWidget(widget, widgetIndex) {
       const title = widget.dataset.bundleTitle;
+      const subtitle = widget.dataset.bundleSubtitle;
+      
       if (title) {
         const heading = document.createElement('h2');
         heading.className = 'cartuplift-bundles-heading';
         heading.textContent = title;
         widget.appendChild(heading);
+      }
+
+      if (subtitle) {
+        const subheading = document.createElement('p');
+        subheading.className = 'cartuplift-bundles-subtitle';
+        subheading.textContent = subtitle;
+        widget.appendChild(subheading);
       }
 
       this.bundles.forEach((bundleData, index) => {
