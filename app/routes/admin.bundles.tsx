@@ -1018,7 +1018,7 @@ export default function BundlesAdmin() {
                     disabled={isSaving}
                     placeholder="e.g., 50.00"
                     prefix={currencySymbol}
-                    helpText="Total cart value required (dollars)"
+                    helpText="Total cart value required"
                   />
                 </FormLayout.Group>
               </BlockStack>
