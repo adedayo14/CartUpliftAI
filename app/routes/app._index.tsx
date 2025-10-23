@@ -287,7 +287,7 @@ export default function Index() {
                           Optimises itself
                         </Text>
                         <Text variant="bodyMd" as="p">
-                          A/B testing measures what works and shifts traffic towards higher performers automatically.
+                          Tracks what converts and quietly removes suggestions that don't perform. Your recommendations get better over time.
                         </Text>
                       </BlockStack>
                     </InlineGrid>
