@@ -835,10 +835,10 @@ export default function BundlesAdmin() {
               {newBundle.bundleType === "manual" && (
                 <Card>
                   <BlockStack gap="400">
-                    <Box background="bg-surface-critical-subdued" padding="400" borderRadius="200">
+                    <Box background="bg-surface-caution" padding="400" borderRadius="200">
                       <BlockStack gap="200">
                         <Text as="h3" variant="headingMd">Bundle contents (Required)</Text>
-                        <Text as="p" variant="bodySm" tone="critical">
+                        <Text as="p" variant="bodySm">
                           You must select at least one product for this bundle
                         </Text>
                       </BlockStack>
