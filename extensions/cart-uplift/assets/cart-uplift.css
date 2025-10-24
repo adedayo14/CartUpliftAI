@@ -261,43 +261,29 @@ body.cartuplift-no-scroll {
 /* Segment States */
 .cartuplift-segment-completed {
   background: transparent !important;
-  border-color: #10b981 !important;
 }
 
 .cartuplift-segment-completed .cartuplift-segment-fill {
-  background: #10b981 !important;
   opacity: 1 !important;
-}
-
-.cartuplift-segment-completed .cartuplift-segment-status-above {
-  color: #10b981 !important;
 }
 
 .cartuplift-segment-current {
   background: transparent !important;
-  border-color: #2563eb !important;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.3) !important;
   animation: cartuplift-pulse 2s ease-in-out infinite !important;
 }
 
 .cartuplift-segment-current .cartuplift-segment-fill {
-  background: #2563eb !important;
   opacity: 1 !important;
-}
-
-.cartuplift-segment-current .cartuplift-segment-status-above {
-  color: #2563eb !important;
 }
 
 .cartuplift-segment-locked {
   opacity: 0.5 !important;
+  border-color: #d1d5db !important;
 }
 
 .cartuplift-segment-locked .cartuplift-segment-fill {
   background: #9ca3af !important;
 }
-
-/* Checkmark */
 .cartuplift-segment-checkmark {
   position: absolute !important;
   right: 4px !important;
@@ -331,19 +317,10 @@ body.cartuplift-no-scroll {
   color: #374151 !important;
 }
 
-/* Label State Colors */
-.cartuplift-segment-label.cartuplift-segment-completed .cartuplift-segment-label-amount {
-  color: #10b981 !important;
-}
-
-.cartuplift-segment-label.cartuplift-segment-current .cartuplift-segment-label-amount {
-  color: #2563eb !important;
-}
-
+/* Label State Colors - colors now applied via inline styles from JS */
 .cartuplift-segment-label.cartuplift-segment-locked {
   opacity: 0.5 !important;
 }
-
 /* Pulse Animation */
 @keyframes cartuplift-pulse {
   0%, 100% {

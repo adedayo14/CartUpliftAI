@@ -1693,21 +1693,21 @@
               statusMessage = `${threshold.label} IN PROGRESS`;
             }
             
-            // Build segment bar with status above
+            // Build segment bar with status above and dynamic border color
             segmentsHTML += `
-              <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%;">
-                ${statusMessage ? `<div class="cartuplift-segment-status-above">${statusMessage}</div>` : ''}
+              <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%; ${!lockedClass ? `border-color: ${segmentColor};` : ''}">
+                ${statusMessage ? `<div class="cartuplift-segment-status-above" style="${!lockedClass ? `color: ${segmentColor};` : ''}">${statusMessage}</div>` : ''}
                 <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
                 ${isCompleted ? '<div class="cartuplift-segment-checkmark">✓</div>' : ''}
               </div>
             `;
             
-            // Build labels - only show price below
+            // Build labels - only show price at the end of the bar (right-aligned)
             const formattedAmount = formatMoney(threshold.amount);
             
             labelsHTML += `
               <div class="cartuplift-segment-label ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%;">
-                <div class="cartuplift-segment-label-amount">${formattedAmount}</div>
+                <div class="cartuplift-segment-label-amount" style="${!lockedClass ? `color: ${segmentColor};` : ''}">${formattedAmount}</div>
               </div>
             `;
             
