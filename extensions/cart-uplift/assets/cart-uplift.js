@@ -1113,15 +1113,28 @@
                 ${this.getCartItemsHTML()}
               </div>
               ${shouldShowRecommendations && this.settings.recommendationsScrollWithCart ? this.getRecommendationsHTML() : ''}
+              ${this.settings.recommendationsScrollWithCart ? (() => {
+                let content = '';
+                // Add addons if enabled
+                if (this.settings.enableAddons) {
+                  content += this.getAddonsHTML();
+                }
+                // Add promo/notes links
+                const inlineLinks = this.getInlineLinkConfig();
+                if (inlineLinks.hasPromoLink || inlineLinks.hasNotesLink) {
+                  content += this.getInlineLinksHTML(inlineLinks);
+                }
+                return content;
+              })() : ''}
             </div>
             
             <div class="cartuplift-scrollable-content">
               ${shouldShowRecommendations && !this.settings.recommendationsScrollWithCart ? this.getRecommendationsHTML() : ''}
-              ${this.settings.enableAddons ? this.getAddonsHTML() : ''}
-              ${(() => {
+              ${!this.settings.recommendationsScrollWithCart && this.settings.enableAddons ? this.getAddonsHTML() : ''}
+              ${!this.settings.recommendationsScrollWithCart ? (() => {
                 if (!(inlineLinkConfig.hasPromoLink || inlineLinkConfig.hasNotesLink)) return '';
                 return this.getInlineLinksHTML(inlineLinkConfig);
-              })()}
+              })() : ''}
             </div>
           </div>
           

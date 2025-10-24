@@ -997,12 +997,12 @@ body.cartuplift-no-scroll {
 }
 
 .cartuplift-drawer.recommendations-scroll .cartuplift-recommendations {
-  /* Stick to bottom until cart content pushes them up */
-  position: sticky;
-  bottom: 0;
+  /* Use flexbox positioning - will be pushed to bottom by margin-top: auto */
+  position: relative;
   z-index: 5;
   background: var(--cartuplift-recommendations-bg);
   margin-top: auto; /* Push to bottom when cart items are short */
+  flex-shrink: 0; /* Don't shrink the recommendations section */
 }
 
 /* When recommendations are inside the scrollable content area,
@@ -2380,6 +2380,13 @@ body.cartuplift-no-scroll {
   align-items: center;
   padding: 6px 16px 8px;
   width: 100%;
+}
+
+/* When inline links are inside cart items (scroll mode), remove horizontal padding */
+.cartuplift-items .cartuplift-inline-links {
+  padding-left: 0;
+  padding-right: 0;
+  flex-shrink: 0; /* Don't shrink */
 }
 
 .cartuplift-inline-sep { display: none; }
