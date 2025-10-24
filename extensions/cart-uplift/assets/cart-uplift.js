@@ -1577,44 +1577,13 @@
                 const lastGift = sortedGifts[sortedGifts.length - 1];
                 if (lastGift) {
                   const gv = getGiftValueAndTitle(lastGift);
-                  // Build normalized template, remove legacy verbose phrasing, ensure single leading check & free shipping mention
-                  // New concise, human message – play on psychology: certainty + reward flair
-                  let tpl = this.settings.combinedSuccessTemplate || this.settings.allRewardsAchievedText || '✓ Free shipping + {{ product_name }} added free';
-                  if (/All rewards unlocked!?/i.test(tpl)) {
-                    tpl = tpl.replace(/All rewards unlocked!?/ig,'').trim();
-                  }
-                  if (!/free shipping/i.test(tpl)) {
-                    tpl = '✓ Free shipping + ' + tpl.replace(/^✓\s*/,'');
-                  }
-                  if (!/^✓/.test(tpl)) tpl = '✓ ' + tpl;
-                  tpl = tpl.replace(/\+\s*\+/g,'+').replace(/\s{2,}/g,' ').replace(/\s*\+\s*/g,' + ');
-                  let out = tpl
-                    .replace(/\{\{\s*title\s*\}\}/g, gv.title)
-                    .replace(/\{title\}/g, gv.title)
-                    .replace(/\{\{\s*product_name\s*\}\}/g, gv.title)
-                    .replace(/\{product_name\}/g, gv.title)
-                    .replace(/\{\{\s*product\s*\}\}/g, gv.title)
-                    .replace(/\{product\}/g, gv.title)
-                    // Remove any leftover value placeholders (we no longer show shipping-inflated savings)
-                    .replace(/\{\{\s*value\s*\}\}/g, gv.value)
-                    .replace(/\{value\}/g, gv.value)
-                    .replace(/\bworth\s+\(/i,'(');
-                  out = out
-                    .replace(/\{\{?\s*(title|value|product_name|product)\s*\}?\}/g,'')
-                    .replace(/\s{2,}/g,' ')
-                    .replace(/\(\s*\)/g,'')
-                    .replace(/\s*!/g,'!')
-                    .trim();
-                  out = out.replace(/(free shipping[^+]+) free shipping/gi,'$1');
-                  return out;
+                  // Psychology-optimized message: "earned" > "saved", product name first, value at end
+                  // Uses celebration emoji, affirmation, and achievement framing
+                  return `🎉 Perfect! You've earned free shipping + ${gv.title} (${gv.value} value)`;
                 }
               }
-              // No lastGift case (rare) – fallback generic
-              let base = this.settings.combinedSuccessTemplate || this.settings.allRewardsAchievedText || '✓ Free shipping + gift added free';
-              if (/All rewards unlocked!?/i.test(base)) base = base.replace(/All rewards unlocked!?/ig,'').trim();
-              if (!/free shipping/i.test(base)) base = '✓ Free shipping + ' + base.replace(/^✓\s*/,'');
-              base = base.replace(/\s{2,}/g,' ').replace(/\+\s*\+/g,'+').replace(/\s*\+\s*/g,' + ');
-              return base;
+              // No lastGift case (rare) – fallback generic with earned framing
+              return `🎉 Perfect! You've earned free shipping + your gift`;
             })();
             // If no next gift remains, everything is achieved; show a single unified success message at the top
             if (!nextGift) {
@@ -1700,11 +1669,12 @@
               statusMessage = `${threshold.label} IN PROGRESS`;
             }
             
-            // Build segment bar with status above and dynamic border color (no checkmark)
+            // Build segment bar with status above, dynamic border color, and circular checkmark at end when completed
             segmentsHTML += `
               <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%; ${!lockedClass ? `border-color: ${segmentColor};` : ''}">
                 ${statusMessage ? `<div class="cartuplift-segment-status-above" style="${!lockedClass ? `color: ${segmentColor};` : ''}">${statusMessage}</div>` : ''}
                 <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
+                ${isCompleted ? `<div class="cartuplift-segment-checkmark" style="background: ${segmentColor};">✓</div>` : ''}
               </div>
             `;
             
