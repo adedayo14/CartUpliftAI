@@ -1505,8 +1505,8 @@
             // We now only show the gift's own value (no shipping inflation)
             const value = giftCents != null ? this.formatMoney(giftCents) : '';
             const baseTitle = String(t.title || 'gift');
-            const vTitle = (t.variantTitle && t.variantTitle !== 'Default Title') ? ` (${t.variantTitle})` : '';
-            const fullTitle = `${baseTitle}${vTitle}`;
+            // Remove variant title to keep message clean
+            const fullTitle = baseTitle;
             const max = 30;
             const title = fullTitle.length > max ? (fullTitle.slice(0, max - 1) + '…') : fullTitle;
             return { value, title };
@@ -1572,18 +1572,17 @@
             // When free shipping is achieved but there's a next gift, combine the message
             const topNote = nextGift ? `Spend ${formatMoney(giftRemaining)} more to unlock ${getGiftValueAndTitle(nextGift).title}!` : '';
             const allText = (() => {
-              // Prefer dynamic combined success template with gift value when possible
+              // User's preferred message: Achievement mindset with urgency
               if (!nextGift) {
                 const lastGift = sortedGifts[sortedGifts.length - 1];
                 if (lastGift) {
                   const gv = getGiftValueAndTitle(lastGift);
-                  // Psychology-optimized message: "earned" > "saved", product name first, value at end
-                  // Uses celebration emoji, affirmation, and achievement framing
-                  return `🎉 Perfect! You've earned free shipping + ${gv.title} (${gv.value} value)`;
+                  // "All rewards unlocked" creates achievement, product name and value emphasize the win
+                  return `🎉 All rewards unlocked! Free Shipping + ${gv.value} ${gv.title} earned`;
                 }
               }
               // No lastGift case (rare) – fallback generic with earned framing
-              return `🎉 Perfect! You've earned free shipping + your gift`;
+              return `🎉 All rewards unlocked! Free Shipping + your gift earned`;
             })();
             // If no next gift remains, everything is achieved; show a single unified success message at the top
             if (!nextGift) {
