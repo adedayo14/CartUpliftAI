@@ -211,37 +211,148 @@ body.cartuplift-no-scroll {
   left: 0 !important;
 }
 
-/* Segmented Progress Bar */
+/* Segmented Progress Bar Styles */
+.cartuplift-segmented-bar-container {
+  margin: 12px 0 !important;
+}
+
 .cartuplift-segmented-bar {
   display: flex !important;
-  gap: 2px !important;
+  gap: 4px !important;
   background: transparent !important;
+  height: 14px !important;
+  margin-bottom: 8px !important;
 }
 
 .cartuplift-progress-segment {
-  height: 6px !important;
-  background: #e5e7eb !important;
-  border-radius: 4px !important;
+  height: 14px !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
   position: relative !important;
-  overflow: hidden !important;
   flex-shrink: 0 !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
 }
 
 .cartuplift-segment-fill {
   height: 100% !important;
-  border-radius: 4px !important;
-  transition: width 0.3s ease !important;
+  border-radius: 5px !important;
+  transition: width 0.5s ease, background 0.3s ease !important;
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
 }
 
+/* Segment States */
+.cartuplift-segment-completed {
+  background: #d1fae5 !important;
+  border-color: #10b981 !important;
+}
+
 .cartuplift-segment-completed .cartuplift-segment-fill {
+  background: #10b981 !important;
   opacity: 1 !important;
 }
 
+.cartuplift-segment-current {
+  background: #dbeafe !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.3) !important;
+  animation: cartuplift-pulse 2s ease-in-out infinite !important;
+}
+
 .cartuplift-segment-current .cartuplift-segment-fill {
+  background: #2563eb !important;
   opacity: 1 !important;
+}
+
+.cartuplift-segment-locked {
+  opacity: 0.5 !important;
+}
+
+.cartuplift-segment-locked .cartuplift-segment-fill {
+  background: #9ca3af !important;
+}
+
+/* Checkmark */
+.cartuplift-segment-checkmark {
+  position: absolute !important;
+  right: 4px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: white !important;
+  font-size: 10px !important;
+  font-weight: bold !important;
+  z-index: 2 !important;
+}
+
+/* Labels Section */
+.cartuplift-segmented-labels {
+  display: flex !important;
+  gap: 4px !important;
+}
+
+.cartuplift-segment-label {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+}
+
+.cartuplift-segment-label-amount {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  margin-bottom: 2px !important;
+}
+
+.cartuplift-segment-label-text {
+  font-size: 10px !important;
+  color: #6b7280 !important;
+  line-height: 1.2 !important;
+  margin-bottom: 2px !important;
+}
+
+.cartuplift-segment-label-status {
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  margin-top: 2px !important;
+}
+
+/* Label State Colors */
+.cartuplift-segment-label.cartuplift-segment-completed .cartuplift-segment-label-amount {
+  color: #10b981 !important;
+}
+
+.cartuplift-segment-label.cartuplift-segment-completed .cartuplift-segment-label-status {
+  color: #10b981 !important;
+}
+
+.cartuplift-segment-label.cartuplift-segment-current .cartuplift-segment-label-amount {
+  color: #2563eb !important;
+}
+
+.cartuplift-segment-label.cartuplift-segment-current .cartuplift-segment-label-status {
+  color: #2563eb !important;
+}
+
+.cartuplift-segment-label.cartuplift-segment-locked {
+  opacity: 0.5 !important;
+}
+
+/* Pulse Animation */
+@keyframes cartuplift-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(37, 99, 235, 0.5);
+  }
 }
 
 /* High specificity rules to ensure progress bar colors always work */
