@@ -55,6 +55,7 @@ export interface SettingsData {
   recommendationsBackgroundColor: string;
   shippingBarBackgroundColor: string;
   shippingBarColor: string;
+  giftBarColor: string;
   
   // Recommendation Settings
   recommendationLayout: string;
@@ -172,6 +173,7 @@ export async function getSettings(shop: string): Promise<SettingsData> {
       recommendationsBackgroundColor: (settings as any).recommendationsBackgroundColor ?? "#ecebe3",
       shippingBarBackgroundColor: (settings as any).shippingBarBackgroundColor ?? "#f0f0f0",
       shippingBarColor: (settings as any).shippingBarColor ?? "#121212",
+      giftBarColor: (settings as any).giftBarColor ?? "#f59e0b",
       recommendationLayout: migrateRecommendationLayout(settings.recommendationLayout),
       maxRecommendations: settings.maxRecommendations,
       complementDetectionMode: (settings as any).complementDetectionMode ?? "automatic",
@@ -278,7 +280,7 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
       'addButtonText', 'checkoutButtonText', 'applyButtonText',
       // Cart Interaction fields (moved from theme editor)
       'enableRecommendationTitleCaps', 'discountLinkText', 'notesLinkText',
-  'backgroundColor', 'textColor', 'buttonColor', 'buttonTextColor', 'recommendationsBackgroundColor', 'shippingBarBackgroundColor', 'shippingBarColor', 'recommendationLayout', 'maxRecommendations',
+  'backgroundColor', 'textColor', 'buttonColor', 'buttonTextColor', 'recommendationsBackgroundColor', 'shippingBarBackgroundColor', 'shippingBarColor', 'giftBarColor', 'recommendationLayout', 'maxRecommendations',
   'complementDetectionMode', 'manualRecommendationProducts', 'hideRecommendationsAfterThreshold', 'enableThresholdBasedSuggestions', 'thresholdSuggestionMode', 'enableManualRecommendations', 'progressBarMode', 'giftProgressStyle', 'giftThresholds',
       'themeEmbedEnabled', 'themeEmbedLastSeen',
       // ML/Privacy Settings
@@ -334,7 +336,7 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
     'enableRecommendations','enableAddons','enableDiscountCode','enableNotes','enableExpressCheckout','enableAnalytics',
     'cartIcon','freeShippingText','freeShippingAchievedText','recommendationsTitle','actionText',
     'addButtonText','checkoutButtonText','applyButtonText','backgroundColor','textColor','buttonColor','buttonTextColor',
-    'recommendationsBackgroundColor','shippingBarBackgroundColor','shippingBarColor','recommendationLayout','maxRecommendations',
+    'recommendationsBackgroundColor','shippingBarBackgroundColor','shippingBarColor','giftBarColor','recommendationLayout','maxRecommendations',
     'complementDetectionMode','manualRecommendationProducts','hideRecommendationsAfterThreshold','enableThresholdBasedSuggestions','thresholdSuggestionMode','enableManualRecommendations','progressBarMode','giftProgressStyle','giftThresholds',
     // Cart interaction fields moved from theme
     'enableRecommendationTitleCaps','discountLinkText','notesLinkText',
@@ -471,6 +473,7 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
       recommendationsBackgroundColor: (settings as any).recommendationsBackgroundColor ?? "#ecebe3",
       shippingBarBackgroundColor: (settings as any).shippingBarBackgroundColor ?? "#f0f0f0",
       shippingBarColor: (settings as any).shippingBarColor ?? "#121212",
+      giftBarColor: (settings as any).giftBarColor ?? "#f59e0b",
       recommendationLayout: migrateRecommendationLayout(settings.recommendationLayout),
       maxRecommendations: settings.maxRecommendations,
       complementDetectionMode: (settings as any).complementDetectionMode ?? "automatic",
@@ -582,6 +585,7 @@ export function getDefaultSettings(): SettingsData {
     recommendationsBackgroundColor: "#ecebe3",
     shippingBarBackgroundColor: "var(--background-secondary, #f0f0f0)", // Theme secondary background with light gray fallback
     shippingBarColor: "var(--accent, #121212)", // Theme accent with green fallback
+    giftBarColor: "#f59e0b", // Orange default for gifts
     
     // Recommendation Settings
     recommendationLayout: "carousel",

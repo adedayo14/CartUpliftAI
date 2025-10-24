@@ -73,6 +73,7 @@ model Settings {
   recommendationsBackgroundColor String @default("#f5f5f5")  // Neutral gray
   shippingBarBackgroundColor String @default("#e5e5e5")      // Neutral gray
   shippingBarColor        String   @default("#000000")       // Black (safe default)
+  giftBarColor            String   @default("#f59e0b")       // Orange (default gift color)
   
   // Recommendation Settings
   recommendationLayout    String   @default("horizontal")
