@@ -194,7 +194,7 @@ body.cartuplift-no-scroll {
 
 .cartuplift-progress-bar {
   width: 100% !important;
-  height: 6px !important; /* Reduced from 8px for slimmer bar */
+  height: 7px !important; /* Reduced from 8px for slimmer bar */
   background: #e5e7eb !important;
   border-radius: 4px !important;
   position: relative !important;
@@ -220,12 +220,12 @@ body.cartuplift-no-scroll {
   display: flex !important;
   gap: 4px !important;
   background: transparent !important;
-  height: 6px !important;
+  height: 7px !important;
   margin-bottom: 8px !important;
 }
 
 .cartuplift-progress-segment {
-  height: 6px !important;
+  height: 7px !important;
   background: transparent !important;
   border: 1px solid #d1d5db !important;
   border-radius: 4px !important;
@@ -312,7 +312,7 @@ body.cartuplift-no-scroll {
 .cartuplift-segmented-labels {
   display: flex !important;
   gap: 4px !important;
-  margin-top: 4px !important;
+  margin-top: 2px !important;
 }
 
 .cartuplift-segment-label {
