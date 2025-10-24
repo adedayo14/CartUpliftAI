@@ -1582,17 +1582,12 @@
             // When free shipping is achieved but there's a next gift, combine the message
             const topNote = nextGift ? `Spend ${formatMoney(giftRemaining)} more to unlock ${getGiftValueAndTitle(nextGift).title}!` : '';
             const allText = (() => {
-              // User's preferred message: Achievement mindset with urgency
+              // Simplified success message
               if (!nextGift) {
-                const lastGift = sortedGifts[sortedGifts.length - 1];
-                if (lastGift) {
-                  const gv = getGiftValueAndTitle(lastGift);
-                  // "All rewards unlocked" creates achievement, product name and value emphasize the win
-                  return `🎉 All rewards unlocked! Free Shipping + ${gv.value} ${gv.title} earned`;
-                }
+                return `🎉 All rewards unlocked!`;
               }
-              // No lastGift case (rare) – fallback generic with earned framing
-              return `🎉 All rewards unlocked! Free Shipping + your gift earned`;
+              // No lastGift case (rare) – fallback generic
+              return `🎉 All rewards unlocked!`;
             })();
             // If no next gift remains, everything is achieved; show a single unified success message at the top
             if (!nextGift) {
@@ -1600,7 +1595,7 @@
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${allText}</span></div>`;
               messageHTML = '';
             } else {
-              // Show combined message at the top: "You've unlocked free shipping! Spend X more to unlock [gift]!"
+              // Show combined message at the top: "Free shipping unlocked! Spend X more to unlock [gift]!"
               const combinedMessage = `${freeSuccess} ${topNote}`;
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${combinedMessage}</span></div>`;
               widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
