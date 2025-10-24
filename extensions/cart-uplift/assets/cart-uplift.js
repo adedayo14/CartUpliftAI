@@ -5090,25 +5090,37 @@
         if (window.Shopify && typeof window.Shopify.formatMoney === 'function') {
           const format = window.CartUpliftMoneyFormat || window.Shopify.money_format;
           if (format) {
-            return window.Shopify.formatMoney(validCents, format);
+            let formatted = window.Shopify.formatMoney(validCents, format);
+            // Remove .00 if whole number
+            if (validCents % 100 === 0) {
+              formatted = formatted.replace(/\.00$/, '').replace(/,00$/, '');
+            }
+            return formatted;
           }
-          return window.Shopify.formatMoney(validCents);
+          let formatted = window.Shopify.formatMoney(validCents);
+          // Remove .00 if whole number
+          if (validCents % 100 === 0) {
+            formatted = formatted.replace(/\.00$/, '').replace(/,00$/, '');
+          }
+          return formatted;
         }
       } catch (shopifyFormatError) {
         console.warn('[CartUplift] formatMoney fallback due to Shopify.formatMoney error', shopifyFormatError);
       }
 
       const amount = (validCents / 100).toFixed(2);
+      // Remove .00 for whole numbers
+      const cleanAmount = validCents % 100 === 0 ? (validCents / 100).toString() : amount;
 
       if (window.CartUpliftMoneyFormat) {
         try {
-          return window.CartUpliftMoneyFormat.replace(/\{\{\s*amount\s*\}\}/g, amount);
+          return window.CartUpliftMoneyFormat.replace(/\{\{\s*amount\s*\}\}/g, cleanAmount);
         } catch {
           // Fallback below
         }
       }
 
-      return '$' + amount;
+      return '$' + cleanAmount;
     }
 
     normalizePriceToCents(value) {
