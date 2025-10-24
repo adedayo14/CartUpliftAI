@@ -2237,7 +2237,7 @@
                     <img src="${product.image || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'">
                   </div>
                   <div class="cartuplift-product-info">
-                    <h4 class="cartuplift-product-title"><a href="${product.url}" class="cartuplift-product-link">${product.title}</a></h4>
+                    <h4 class="cartuplift-product-title"><a href="${product.url}" class="cartuplift-product-link">${this.settings.enableRecommendationTitleCaps ? product.title.toUpperCase() : product.title}</a></h4>
                     ${reviewHtml ? `<div class="cartuplift-product-review">${reviewHtml}</div>` : ''}
                     ${this.generateVariantSelector(product)}
                   </div>
@@ -2263,7 +2263,7 @@
           <div class="cartuplift-recommendation-item">
             <img src="${product.image || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'">
             <div class="cartuplift-recommendation-info">
-              <h4><a href="${product.url}" class="cartuplift-product-link">${product.title}</a></h4>
+              <h4><a href="${product.url}" class="cartuplift-product-link">${this.settings.enableRecommendationTitleCaps ? product.title.toUpperCase() : product.title}</a></h4>
               ${reviewHtml ? `<div class="cartuplift-product-review">${reviewHtml}</div>` : ''}
               <div class="cartuplift-recommendation-price">${this.formatMoney(product.priceCents || 0)}</div>
             </div>
