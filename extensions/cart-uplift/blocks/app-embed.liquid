@@ -68,6 +68,7 @@
           freeShippingThreshold: {{ block.settings.free_shipping_threshold | json }},
                   shippingBarBackgroundColor: {{ block.settings.progress_background_color | json }},
           shippingBarColor: {{ block.settings.progress_bar_color | json }},
+          giftBarColor: {{ block.settings.gift_bar_color | json }},
           // gift gating (only used when incentive type is gifts/combined)
           // giftThresholds will be set below as a JSON string when applicable
 
@@ -599,6 +600,13 @@
     {
       "type": "header",
       "content": "Gift with purchase"
+    },
+    {
+      "type": "color",
+      "id": "gift_bar_color",
+      "label": "Gift progress bar color",
+      "default": "#f59e0b",
+      "info": "Color for gift progress bars and milestones"
     },
     {
       "type": "number",
