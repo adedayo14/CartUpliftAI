@@ -1557,12 +1557,12 @@
             }
           }
         } else {
-          // combined: one bar only
+          // combined: one bar only - using segmented bars, so no need for labelRight
           if (!freeAchieved) {
             // show free shipping until achieved - message at top
             const hasFreeThreshold = typeof freeThresholdCents === 'number' && freeThresholdCents > 0;
             widthPct = hasFreeThreshold ? Math.min(100, (currentCents / freeThresholdCents) * 100) : 0;
-            labelRight = hasFreeThreshold ? formatMoney(freeThresholdCents) : '';
+            labelRight = ''; // Empty - segmented bar shows labels below each segment
             // Move message to top
             const freeMessage = freeMsg();
             successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${freeMessage}</span></div>`;
@@ -1595,7 +1595,7 @@
               const combinedMessage = `${freeSuccess} ${topNote}`;
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${combinedMessage}</span></div>`;
               widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
-              labelRight = formatMoney(nextGiftCents);
+              labelRight = ''; // Empty - segmented bar shows labels below each segment
               // solid fill for tier 2
               fillStyle = `background: ${shippingColor};`;
               // Empty messageHTML since message is at the top now
@@ -1669,12 +1669,11 @@
               statusMessage = `${threshold.label} IN PROGRESS`;
             }
             
-            // Build segment bar with status above, dynamic border color, and circular checkmark at end when completed
+            // Build segment bar with status above and dynamic border color
             segmentsHTML += `
               <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%; ${!lockedClass ? `border-color: ${segmentColor};` : ''}">
                 ${statusMessage ? `<div class="cartuplift-segment-status-above" style="${!lockedClass ? `color: ${segmentColor};` : ''}">${statusMessage}</div>` : ''}
                 <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
-                ${isCompleted ? `<div class="cartuplift-segment-checkmark" style="background: ${segmentColor};">✓</div>` : ''}
               </div>
             `;
             
