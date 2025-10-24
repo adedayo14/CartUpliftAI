@@ -1110,10 +1110,11 @@
           <div class="cartuplift-content-wrapper">
             <div class="cartuplift-items">
               ${this.getCartItemsHTML()}
+              ${shouldShowRecommendations && this.settings.recommendationsScrollWithCart ? this.getRecommendationsHTML() : ''}
             </div>
             
             <div class="cartuplift-scrollable-content">
-              ${shouldShowRecommendations ? this.getRecommendationsHTML() : ''}
+              ${shouldShowRecommendations && !this.settings.recommendationsScrollWithCart ? this.getRecommendationsHTML() : ''}
               ${this.settings.enableAddons ? this.getAddonsHTML() : ''}
               ${(() => {
                 if (!(inlineLinkConfig.hasPromoLink || inlineLinkConfig.hasNotesLink)) return '';
