@@ -5125,16 +5125,27 @@
       const amount = (validCents / 100).toFixed(2);
       // Remove .00 for whole numbers
       const cleanAmount = validCents % 100 === 0 ? (validCents / 100).toString() : amount;
+      
+      // Add thousand separators
+      const addThousandSeparators = (num) => {
+        const parts = num.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+      };
+      
+      const formattedAmount = addThousandSeparators(cleanAmount);
 
       if (window.CartUpliftMoneyFormat) {
         try {
-          return window.CartUpliftMoneyFormat.replace(/\{\{\s*amount\s*\}\}/g, cleanAmount);
+          return window.CartUpliftMoneyFormat.replace(/\{\{\s*amount\s*\}\}/g, formattedAmount);
         } catch {
           // Fallback below
         }
       }
 
-      return '$' + cleanAmount;
+      // Fallback: Try to detect currency symbol from window object or default to $
+      const currencySymbol = window.Shopify?.currency?.active || '$';
+      return currencySymbol + formattedAmount;
     }
 
     normalizePriceToCents(value) {

@@ -584,14 +584,11 @@
     createPriceElement(product, style = 'default') {
       const price = document.createElement('div');
       price.className = 'price';
-
-      const priceValue = product.price / 100;
       
       if (product.comparePrice && product.comparePrice > product.price) {
-        const compareValue = product.comparePrice / 100;
-        price.innerHTML = `<span class="compare-price">${this.currencySymbol}${compareValue.toFixed(2)}</span>${this.currencySymbol}${priceValue.toFixed(2)}`;
+        price.innerHTML = `<span class="compare-price">${this.formatPrice(product.comparePrice)}</span>${this.formatPrice(product.price)}`;
       } else {
-        price.textContent = `${this.currencySymbol}${priceValue.toFixed(2)}`;
+        price.textContent = this.formatPrice(product.price);
       }
 
       return price;
@@ -827,19 +824,19 @@
 
       const discountedPrice = document.createElement('p');
       discountedPrice.className = 'cartuplift-tier-price';
-      discountedPrice.textContent = `${this.currencySymbol}${(tier.discountedPrice / 100).toFixed(2)}`;
+      discountedPrice.textContent = this.formatPrice(tier.discountedPrice);
       right.appendChild(discountedPrice);
 
       if (tier.discount > 0) {
         const originalPrice = document.createElement('p');
         originalPrice.className = 'cartuplift-tier-original-price';
-        originalPrice.textContent = `${this.currencySymbol}${(tier.originalPrice / 100).toFixed(2)}`;
+        originalPrice.textContent = this.formatPrice(tier.originalPrice);
         right.appendChild(originalPrice);
       }
 
       const unitPrice = document.createElement('p');
       unitPrice.className = 'cartuplift-tier-unit-price';
-      unitPrice.textContent = `${this.currencySymbol}${(tier.unitPrice / 100).toFixed(2)} each`;
+      unitPrice.textContent = `${this.formatPrice(tier.unitPrice)} each`;
       right.appendChild(unitPrice);
 
       option.appendChild(right);
@@ -895,7 +892,7 @@
         savingsBadge.className = 'cartuplift-bundle-savings';
         let savingsText = this.config.savingsBadgeText || 'Save {amount}!';
         savingsText = savingsText
-          .replace('{amount}', `${this.currencySymbol}${(savings / 100).toFixed(2)}`)
+          .replace('{amount}', this.formatPrice(savings))
           .replace('{percent}', `${savingsPercent}%`);
         savingsBadge.textContent = savingsText;
         priceInfo.appendChild(savingsBadge);
@@ -911,13 +908,13 @@
 
       const finalPrice = document.createElement('span');
       finalPrice.className = 'final-price';
-      finalPrice.textContent = `${this.currencySymbol}${(discountedPrice / 100).toFixed(2)}`;
+      finalPrice.textContent = this.formatPrice(discountedPrice);
       priceDisplay.appendChild(finalPrice);
 
       if (savings > 0 && originalPrice > 0) {
         const originalPriceEl = document.createElement('span');
         originalPriceEl.className = 'original-price';
-        originalPriceEl.textContent = `${this.currencySymbol}${(originalPrice / 100).toFixed(2)}`;
+        originalPriceEl.textContent = this.formatPrice(originalPrice);
         priceDisplay.appendChild(originalPriceEl);
       }
 
@@ -975,8 +972,14 @@
     }
 
     formatPrice(amount) {
-      const formatted = (amount / 100).toFixed(2);
-      return `${this.currencySymbol}${formatted}`;
+      const value = (amount / 100).toFixed(2);
+      // Add thousand separators
+      const parts = value.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      const formatted = parts.join('.');
+      // Remove .00 for whole numbers
+      const clean = amount % 100 === 0 ? parts[0] : formatted;
+      return `${this.currencySymbol}${clean}`;
     }
 
     calculatePrices() {
