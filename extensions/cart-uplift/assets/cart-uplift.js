@@ -1616,11 +1616,11 @@
               base = base.replace(/\s{2,}/g,' ').replace(/\+\s*\+/g,'+').replace(/\s*\+\s*/g,' + ');
               return base;
             })();
-            // If no next gift remains, everything is achieved; show a single unified success message
+            // If no next gift remains, everything is achieved; show a single unified success message at the top
             if (!nextGift) {
               widthPct = 100; labelRight = '';
-              successTopRowHTML = '';
-              messageHTML = `<span class="cartuplift-success-badge">${allText}</span>`;
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${allText}</span></div>`;
+              messageHTML = '';
             } else {
               // Show combined message at the top: "You've unlocked free shipping! Spend X more to unlock [gift]!"
               const combinedMessage = `${freeSuccess} ${topNote}`;
@@ -1700,12 +1700,11 @@
               statusMessage = `${threshold.label} IN PROGRESS`;
             }
             
-            // Build segment bar with status above and dynamic border color
+            // Build segment bar with status above and dynamic border color (no checkmark)
             segmentsHTML += `
               <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%; ${!lockedClass ? `border-color: ${segmentColor};` : ''}">
                 ${statusMessage ? `<div class="cartuplift-segment-status-above" style="${!lockedClass ? `color: ${segmentColor};` : ''}">${statusMessage}</div>` : ''}
                 <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
-                ${isCompleted ? '<div class="cartuplift-segment-checkmark">✓</div>' : ''}
               </div>
             `;
             
