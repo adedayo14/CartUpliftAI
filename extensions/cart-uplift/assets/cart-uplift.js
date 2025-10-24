@@ -1559,14 +1559,18 @@
         } else {
           // combined: one bar only
           if (!freeAchieved) {
-            // show free shipping until achieved
+            // show free shipping until achieved - message at top
             const hasFreeThreshold = typeof freeThresholdCents === 'number' && freeThresholdCents > 0;
             widthPct = hasFreeThreshold ? Math.min(100, (currentCents / freeThresholdCents) * 100) : 0;
             labelRight = hasFreeThreshold ? formatMoney(freeThresholdCents) : '';
-            messageHTML = renderMessage(freeMsg(), freeRemaining ?? 0, hasFreeThreshold ? freeThresholdCents : 0);
+            // Move message to top
+            const freeMessage = freeMsg();
+            successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${freeMessage}</span></div>`;
+            messageHTML = '';
           } else {
             // show next reward (gift)
-            const topNote = nextGift ? `Next reward at ${formatMoney(nextGiftCents)}` : '';
+            // When free shipping is achieved but there's a next gift, combine the message
+            const topNote = nextGift ? `Spend ${formatMoney(giftRemaining)} more to unlock ${getGiftValueAndTitle(nextGift).title}!` : '';
             const allText = (() => {
               // Prefer dynamic combined success template with gift value when possible
               if (!nextGift) {
@@ -1618,12 +1622,15 @@
               successTopRowHTML = '';
               messageHTML = `<span class="cartuplift-success-badge">${allText}</span>`;
             } else {
-              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${freeSuccess}</span>${topNote ? `<span class="cartuplift-next-note">${topNote}</span>` : ''}</div>`;
+              // Show combined message at the top: "You've unlocked free shipping! Spend X more to unlock [gift]!"
+              const combinedMessage = `${freeSuccess} ${topNote}`;
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${combinedMessage}</span></div>`;
               widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
               labelRight = formatMoney(nextGiftCents);
               // solid fill for tier 2
               fillStyle = `background: ${shippingColor};`;
-              messageHTML = renderMessage(giftMsg(nextGift), giftRemaining, nextGiftCents);
+              // Empty messageHTML since message is at the top now
+              messageHTML = '';
             }
           }
         }
