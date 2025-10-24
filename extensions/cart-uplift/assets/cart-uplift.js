@@ -4198,6 +4198,231 @@
       }, 300);
     }
 
+    // Show gift selection modal when threshold is met
+    async showGiftModal(threshold) {
+      // Prevent multiple rapid opens
+      if (this._modalOpening || document.querySelector('.cartuplift-gift-modal')) {
+        console.log('CartUplift: Gift modal already opening or exists');
+        return;
+      }
+
+      this._modalOpening = true;
+
+      try {
+        // Fetch product data
+        if (!threshold.productHandle || typeof threshold.productHandle !== 'string') {
+          console.error('🎁 Invalid product handle:', threshold.productHandle);
+          this._modalOpening = false;
+          return;
+        }
+
+        const response = await fetch(`/products/${threshold.productHandle}.js`);
+        
+        if (!response.ok) {
+          console.error('🎁 Failed to fetch product:', threshold.productHandle);
+          this._modalOpening = false;
+          return;
+        }
+
+        const productData = await response.json();
+
+        // Check if product has variants
+        const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
+        
+        if (availableVariants.length === 0) {
+          console.error('🎁 No available variants for gift:', threshold.productHandle);
+          this._modalOpening = false;
+          return;
+        }
+
+        // Generate and show modal
+        const modalHTML = this.generateGiftModalHTML(productData, threshold);
+        const modalElement = document.createElement('div');
+        modalElement.className = 'cartuplift-gift-modal';
+        modalElement.innerHTML = modalHTML;
+        document.body.appendChild(modalElement);
+
+        // Sync dimensions with drawer
+        this.syncGiftModalDimensions(modalElement);
+        const resizeObserver = new ResizeObserver(() => {
+          this.syncGiftModalDimensions(modalElement);
+        });
+        const drawer = document.querySelector('.cartuplift-drawer');
+        if (drawer) {
+          resizeObserver.observe(drawer);
+        }
+        modalElement._cleanupResize = () => resizeObserver.disconnect();
+
+        // Attach event handlers
+        this.attachGiftModalHandlers(modalElement, productData, threshold);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+          modalElement.classList.add('show');
+        });
+
+      } catch (error) {
+        console.error('🎁 Error showing gift modal:', error);
+        this._modalOpening = false;
+      }
+    }
+
+    // Generate HTML for gift modal
+    generateGiftModalHTML(productData, threshold) {
+      const availableVariants = productData.variants.filter(v => v.available);
+      const giftTitle = threshold.title || 'Free Gift';
+      
+      return `
+        <div class="cartuplift-modal-backdrop">
+          <div class="cartuplift-modal-content">
+            <button class="cartuplift-modal-close" aria-label="Close">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+            
+            <div class="cartuplift-modal-product">
+              <div class="cartuplift-modal-image">
+                <img src="${productData.featured_image || ''}" alt="${productData.title}" />
+              </div>
+              
+              <div class="cartuplift-modal-details">
+                <div class="cartuplift-gift-badge">🎁 ${giftTitle}</div>
+                <h2 class="cartuplift-modal-title">${productData.title}</h2>
+                <div class="cartuplift-modal-price cartuplift-gift-price">
+                  FREE (${this.formatMoney(0)})
+                </div>
+                
+                ${productData.description ? `
+                  <div class="cartuplift-modal-description">
+                    ${productData.description.substring(0, 200)}${productData.description.length > 200 ? '...' : ''}
+                  </div>
+                ` : ''}
+                
+                <div class="cartuplift-modal-variants">
+                  <label for="cartuplift-gift-variant-select">Select Option:</label>
+                  <select id="cartuplift-gift-variant-select" class="cartuplift-variant-select">
+                    ${availableVariants.map(variant => `
+                      <option value="${variant.id}">
+                        ${variant.title}
+                      </option>
+                    `).join('')}
+                  </select>
+                </div>
+                
+                <button class="cartuplift-modal-add-btn cartuplift-gift-add-btn">
+                  Claim Your Free Gift
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Attach event handlers to gift modal
+    attachGiftModalHandlers(modal, productData, threshold) {
+      const closeBtn = modal.querySelector('.cartuplift-modal-close');
+      const backdrop = modal.querySelector('.cartuplift-modal-backdrop');
+      const addBtn = modal.querySelector('.cartuplift-modal-add-btn');
+      const variantSelect = modal.querySelector('.cartuplift-variant-select');
+      
+      // Close handlers
+      closeBtn.addEventListener('click', () => this.closeGiftModal(modal));
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          this.closeGiftModal(modal);
+        }
+      });
+      
+      // Add gift to cart handler
+      addBtn.addEventListener('click', async () => {
+        const selectedVariantId = variantSelect.value;
+        if (selectedVariantId) {
+          await this.addGiftVariantToCart(selectedVariantId, threshold);
+          this.closeGiftModal(modal);
+        }
+      });
+      
+      // Keyboard handler for ESC key
+      const keyHandler = (e) => {
+        if (e.key === 'Escape') {
+          this.closeGiftModal(modal);
+        }
+      };
+      document.addEventListener('keydown', keyHandler);
+      modal._keyHandler = keyHandler;
+    }
+
+    // Close gift modal
+    closeGiftModal(modal) {
+      modal.classList.remove('show');
+      modal.classList.add('hiding');
+      
+      setTimeout(() => {
+        if (modal._keyHandler) {
+          document.removeEventListener('keydown', modal._keyHandler);
+        }
+        if (modal._cleanupResize) {
+          modal._cleanupResize();
+        }
+        modal.remove();
+        this._modalOpening = false;
+      }, 300);
+    }
+
+    // Sync gift modal dimensions with drawer
+    syncGiftModalDimensions(modal) {
+      const drawer = document.querySelector('.cartuplift-drawer');
+      if (!drawer) return;
+
+      const drawerRect = drawer.getBoundingClientRect();
+      const modalContent = modal.querySelector('.cartuplift-modal-content');
+      
+      if (modalContent) {
+        modalContent.style.width = `${drawerRect.width}px`;
+        modalContent.style.maxWidth = `${drawerRect.width}px`;
+      }
+    }
+
+    // Add gift variant to cart with gift properties
+    async addGiftVariantToCart(variantId, threshold) {
+      try {
+        const addResponse = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            id: variantId,
+            quantity: 1,
+            properties: {
+              '_is_gift': 'true',
+              '_gift_title': (threshold && threshold.title) ? String(threshold.title) : 'Gift',
+              '_gift_label': (threshold && threshold.title) ? String(threshold.title) : 'Gift'
+            },
+            selling_plan: null
+          })
+        });
+
+        const addResponseData = await addResponse.json();
+
+        if (addResponse.ok) {
+          console.log('🎁 Gift added successfully:', addResponseData);
+          await this.fetchCart();
+          this.updateDrawerContent();
+          return true;
+        } else {
+          console.error('🎁 Failed to add gift variant:', addResponseData);
+          return false;
+        }
+      } catch (error) {
+        console.error('🎁 Error adding gift to cart:', error);
+        return false;
+      }
+    }
+
     // Remove invalid recommendations to prevent future 422 errors
     removeInvalidRecommendation(variantId) {
       if (this.recommendations && Array.isArray(this.recommendations)) {
@@ -4505,9 +4730,9 @@
 
           if (hasReachedThreshold) {
             if (totalQuantity === 0) {
-              // Product not in cart - add 1 as gift
-              console.log('🎁 Adding new gift to cart');
-              await this.addGiftToCart(threshold);
+              // Product not in cart - show gift modal for selection
+              console.log('🎁 Showing gift modal for new gift');
+              await this.showGiftModal(threshold);
             } else if (giftQuantity === 0) {
               // Product in cart but no gift version - need to add gift line or convert 1 item
               if (paidQuantity === 1) {
