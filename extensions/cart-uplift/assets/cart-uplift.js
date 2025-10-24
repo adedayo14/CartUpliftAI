@@ -1617,17 +1617,22 @@
         const buildSegmentedBar = () => {
           // Collect all thresholds
           const allThresholds = [];
-          if (freeEnabled && typeof freeThresholdCents === 'number' && freeThresholdCents > 0) {
+          
+          // Only add shipping threshold if NOT in gift-gating mode
+          if (mode !== 'gift-gating' && freeEnabled && typeof freeThresholdCents === 'number' && freeThresholdCents > 0) {
             allThresholds.push({ type: 'shipping', amount: freeThresholdCents, label: 'Free Shipping' });
           }
           
           console.log('📊 Building segmented bar - sortedGifts:', sortedGifts);
           
-          for (const gift of sortedGifts) {
-            if (gift.amount && gift.amount > 0) {
-              const giftCents = Math.round(gift.amount * 100);
-              console.log(`📊 Adding gift segment: ${gift.title} at $${gift.amount} (${giftCents} cents)`);
-              allThresholds.push({ type: 'gift', amount: giftCents, label: gift.title || 'Gift', data: gift });
+          // Only add gift thresholds if NOT in free-shipping-only mode
+          if (mode !== 'free-shipping') {
+            for (const gift of sortedGifts) {
+              if (gift.amount && gift.amount > 0) {
+                const giftCents = Math.round(gift.amount * 100);
+                console.log(`📊 Adding gift segment: ${gift.title} at $${gift.amount} (${giftCents} cents)`);
+                allThresholds.push({ type: 'gift', amount: giftCents, label: gift.title || 'Gift', data: gift });
+              }
             }
           }
           
