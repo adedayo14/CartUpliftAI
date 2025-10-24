@@ -1394,6 +1394,11 @@ body.cartuplift-no-scroll {
   justify-content: flex-start;
 }
 
+/* Carousel-specific: add top padding to align title with price */
+.cartuplift-recommendations-row .cartuplift-product-info {
+  padding-top: 4px;
+}
+
 .cartuplift-recommendation-card h4 {
   font-size: 14px;
   font-weight: 500;
