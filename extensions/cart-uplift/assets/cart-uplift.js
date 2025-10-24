@@ -1595,10 +1595,11 @@
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${allText}</span></div>`;
               messageHTML = '';
             } else {
-              // Show achievement + next goal
+              // Show achievement (left) + next goal (right) split across segments
               const giftTitle = getGiftValueAndTitle(nextGift).title;
-              const combinedMessage = `✓ Free shipping unlocked! ${formatMoney(giftRemaining)} to unlock ${giftTitle}`;
-              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${combinedMessage}</span></div>`;
+              const leftMessage = `✓ Free shipping unlocked!`;
+              const rightMessage = `Spend ${formatMoney(giftRemaining)} more to unlock ${giftTitle}`;
+              successTopRowHTML = `<div class="cartuplift-progress-toprow" style="display: flex; justify-content: space-between; gap: 8px;"><span class="cartuplift-progress-message" style="text-align: left;">${leftMessage}</span><span class="cartuplift-progress-message" style="text-align: right;">${rightMessage}</span></div>`;
               widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
               labelRight = ''; // Empty - segmented bar shows labels below each segment
               // solid fill for tier 2
