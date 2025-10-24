@@ -983,19 +983,17 @@ body.cartuplift-no-scroll {
 
 /* Recommendations positioning modes */
 .cartuplift-drawer.recommendations-fixed .cartuplift-recommendations {
-  position: sticky;
-  top: 0;
+  /* Recommendations flow naturally at the top of scrollable content */
+  position: relative;
   z-index: 5;
   background: var(--cartuplift-recommendations-bg);
-  /* Fixed recommendations sit between cart items and scrollable content */
 }
 
 .cartuplift-drawer.recommendations-scroll .cartuplift-recommendations {
-  position: sticky;
-  bottom: 0;
+  /* Same natural flow for scroll mode */
+  position: relative;
   z-index: 5;
   background: var(--cartuplift-recommendations-bg);
-  /* Stays at natural position above footer until cart content pushes it up */
 }
 
 /* When recommendations are inside the scrollable content area,
