@@ -1656,7 +1656,7 @@
           // Find total span for percentage calculations
           const maxThreshold = allThresholds[allThresholds.length - 1].amount;
           
-          // Build segments
+          // Build segments with status messages above and prices below
           let segmentsHTML = '';
           let labelsHTML = '';
           let prevAmount = 0;
@@ -1683,23 +1683,31 @@
             const currentClass = isCurrent ? 'cartuplift-segment-current' : '';
             const lockedClass = !isCompleted && !isCurrent ? 'cartuplift-segment-locked' : '';
             
-            // Build segment bar
+            // Build status message above bar
+            let statusMessage = '';
+            if (isCompleted) {
+              statusMessage = threshold.type === 'shipping' 
+                ? "You've unlocked free shipping!" 
+                : `${threshold.label} UNLOCKED`;
+            } else if (isCurrent) {
+              statusMessage = `${threshold.label} IN PROGRESS`;
+            }
+            
+            // Build segment bar with status above
             segmentsHTML += `
               <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%;">
+                ${statusMessage ? `<div class="cartuplift-segment-status-above">${statusMessage}</div>` : ''}
                 <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
                 ${isCompleted ? '<div class="cartuplift-segment-checkmark">✓</div>' : ''}
               </div>
             `;
             
-            // Build labels
+            // Build labels - only show price below
             const formattedAmount = formatMoney(threshold.amount);
-            const labelStatus = isCompleted ? 'UNLOCKED' : isCurrent ? 'IN PROGRESS' : '';
             
             labelsHTML += `
               <div class="cartuplift-segment-label ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%;">
                 <div class="cartuplift-segment-label-amount">${formattedAmount}</div>
-                <div class="cartuplift-segment-label-text">${threshold.label}</div>
-                ${labelStatus ? `<div class="cartuplift-segment-label-status">${labelStatus}</div>` : ''}
               </div>
             `;
             
