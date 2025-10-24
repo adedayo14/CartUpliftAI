@@ -1524,10 +1524,11 @@
         if (mode === 'free-shipping' || (mode !== 'gift-gating' && giftThresholds.length === 0)) {
           if (!freeEnabled || typeof freeThresholdCents !== 'number' || freeThresholdCents <= 0) return '';
           widthPct = Math.min(100, (currentCents / freeThresholdCents) * 100);
-          labelRight = formatMoney(freeThresholdCents);
+          labelRight = ''; // Single threshold - no label below bar
           if (freeAchieved) {
-            messageHTML = `<span class="cartuplift-success-badge">${freeSuccess}</span>`;
-            labelRight = '';
+            // Success message at top
+            successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${freeSuccess}</span></div>`;
+            messageHTML = '';
           } else {
             // If user previously unlocked free shipping this session and dropped below, show maintain message
             if (this._freeShippingHadUnlocked && freeRemaining > 0) {
@@ -1535,25 +1536,34 @@
               const maintainMsg = maintainTemplate
                 .replace(/\{\{\s*threshold\s*\}\}/g, formatMoney(freeThresholdCents))
                 .replace(/\{threshold\}/g, formatMoney(freeThresholdCents));
-              messageHTML = renderMessage(maintainMsg, freeRemaining ?? 0, freeThresholdCents);
+              // Move message to top with threshold amount
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${maintainMsg}</span></div>`;
+              messageHTML = '';
             } else {
-              messageHTML = renderMessage(freeMsg(), freeRemaining ?? 0, freeThresholdCents);
+              // Move message to top with threshold amount
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${freeMsg()}</span></div>`;
+              messageHTML = '';
             }
           }
         } else if (mode === 'gift-gating' && giftEnabled) {
           // Single gift bar
           if (!nextGift) {
-            // All gifts unlocked: show last achieved state
-            messageHTML = `<span class="cartuplift-success-badge">${giftSuccess(sortedGifts[sortedGifts.length-1])}</span>`;
-            widthPct = 100; labelRight = '';
+            // All gifts unlocked: show last achieved state at top
+            successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${giftSuccess(sortedGifts[sortedGifts.length-1])}</span></div>`;
+            widthPct = 100; 
+            labelRight = ''; // Single threshold - no label below bar
+            messageHTML = '';
           } else {
             widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
-            labelRight = formatMoney(nextGiftCents);
+            labelRight = ''; // Single threshold - no label below bar
             if (giftAchieved) {
-              messageHTML = `<span class="cartuplift-success-badge">${giftSuccess(nextGift)}</span>`;
-              labelRight = '';
+              // Success message at top
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${giftSuccess(nextGift)}</span></div>`;
+              messageHTML = '';
             } else {
-              messageHTML = renderMessage(giftMsg(nextGift), giftRemaining, nextGiftCents);
+              // Move message to top with threshold amount
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${giftMsg(nextGift)}</span></div>`;
+              messageHTML = '';
             }
           }
         } else {
