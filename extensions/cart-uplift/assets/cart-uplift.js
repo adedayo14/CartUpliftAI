@@ -1595,9 +1595,9 @@
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${allText}</span></div>`;
               messageHTML = '';
             } else {
-              // Show simplified progress to next reward
+              // Show achievement + next goal
               const giftTitle = getGiftValueAndTitle(nextGift).title;
-              const combinedMessage = `${formatMoney(giftRemaining)} to unlock ${giftTitle}`;
+              const combinedMessage = `✓ Free shipping unlocked! ${formatMoney(giftRemaining)} to unlock ${giftTitle}`;
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${combinedMessage}</span></div>`;
               widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
               labelRight = ''; // Empty - segmented bar shows labels below each segment
