@@ -226,7 +226,7 @@ body.cartuplift-no-scroll {
 
 .cartuplift-progress-segment {
   height: 6px !important;
-  background: #f3f4f6 !important;
+  background: transparent !important;
   border: 1px solid #d1d5db !important;
   border-radius: 4px !important;
   position: relative !important;
@@ -260,7 +260,7 @@ body.cartuplift-no-scroll {
 
 /* Segment States */
 .cartuplift-segment-completed {
-  background: #d1fae5 !important;
+  background: transparent !important;
   border-color: #10b981 !important;
 }
 
@@ -274,7 +274,7 @@ body.cartuplift-no-scroll {
 }
 
 .cartuplift-segment-current {
-  background: #dbeafe !important;
+  background: transparent !important;
   border-color: #2563eb !important;
   box-shadow: 0 0 8px rgba(37, 99, 235, 0.3) !important;
   animation: cartuplift-pulse 2s ease-in-out infinite !important;
