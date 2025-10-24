@@ -1638,6 +1638,18 @@
             return `<div class="cartuplift-progress-bar"><div class="cartuplift-progress-fill" style="width:0%;"></div></div>`;
           }
           
+          // For single threshold, use simple bar (no segmented labels below)
+          if (allThresholds.length === 1) {
+            const threshold = allThresholds[0];
+            const progressPct = Math.min(100, (currentCents / threshold.amount) * 100);
+            const segmentColor = threshold.type === 'shipping' ? shippingColor : (this.settings.giftBarColor || '#f59e0b');
+            return `
+              <div class="cartuplift-progress-bar" style="background: ${bgColor}; border-radius: 4px; height: 7px;">
+                <div class="cartuplift-progress-fill" style="width: ${progressPct}%; background: ${segmentColor}; height: 100%; border-radius: 3px; transition: width 0.5s ease;"></div>
+              </div>
+            `;
+          }
+          
           // Find total span for percentage calculations
           const maxThreshold = allThresholds[allThresholds.length - 1].amount;
           
