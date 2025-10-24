@@ -11,6 +11,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     console.log('🔧 Loading settings for shop:', shop);
     
   const settings = await getSettings(shop);
+    
+    // Track app embed activation on first storefront load
+    if (!settings.appEmbedActivated) {
+      console.log('🎉 App embed activated for the first time!');
+      await saveSettings(shop, { 
+        appEmbedActivated: true, 
+        appEmbedActivatedAt: new Date() 
+      });
+      settings.appEmbedActivated = true;
+      settings.appEmbedActivatedAt = new Date();
+    }
+    
     // Normalize layout for theme (row/column expected in CSS/JS)
   const layoutMap: Record<string, string> = { horizontal: 'row', vertical: 'column', grid: 'grid' };
     const normalized = {

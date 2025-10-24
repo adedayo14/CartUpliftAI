@@ -15,6 +15,10 @@ function migrateRecommendationLayout(oldLayout: string): string {
 }
 
 export interface SettingsData {
+  // Activation Tracking
+  appEmbedActivated: boolean;
+  appEmbedActivatedAt?: Date | null;
+  
   // Core Features
   enableApp: boolean;
   showOnlyOnCartPage: boolean;
@@ -140,6 +144,8 @@ export async function getSettings(shop: string): Promise<SettingsData> {
     const enableRecommendationTitleCapsVal = (settings as any).enableRecommendationTitleCaps ?? enableTitleCapsVal;
 
     return {
+      appEmbedActivated: (settings as any).appEmbedActivated ?? false,
+      appEmbedActivatedAt: (settings as any).appEmbedActivatedAt ?? null,
       enableApp: settings.enableApp,
   // Sticky cart removed
       showOnlyOnCartPage: settings.showOnlyOnCartPage,
@@ -440,6 +446,8 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
     console.log('🔧 settings saved successfully:', { shop, id: settings?.id });
 
     return {
+      appEmbedActivated: (settings as any).appEmbedActivated ?? false,
+      appEmbedActivatedAt: (settings as any).appEmbedActivatedAt ?? null,
       enableApp: settings.enableApp,
   // Sticky cart removed
       showOnlyOnCartPage: settings.showOnlyOnCartPage,
@@ -545,6 +553,10 @@ export async function saveSettings(shop: string, settingsData: Partial<SettingsD
 
 export function getDefaultSettings(): SettingsData {
   return {
+    // Activation Tracking
+    appEmbedActivated: false,
+    appEmbedActivatedAt: null,
+    
     // Core Features
     enableApp: true,
     showOnlyOnCartPage: false,

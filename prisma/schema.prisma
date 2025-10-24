@@ -32,6 +32,10 @@ model Settings {
   id                      String   @id @default(cuid())
   shop                    String   @unique
   
+  // Activation Tracking
+  appEmbedActivated       Boolean  @default(false) // Tracks if app embed was enabled in theme editor
+  appEmbedActivatedAt     DateTime? // Timestamp when first activated
+  
   // Core Features
   enableApp               Boolean  @default(true)
   showOnlyOnCartPage      Boolean  @default(false)
