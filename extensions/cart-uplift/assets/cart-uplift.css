@@ -1358,6 +1358,11 @@ body.cartuplift-no-scroll {
   height: 100%;
 }
 
+/* Carousel-specific: align items to top so product name stays at top even without options */
+.cartuplift-recommendations-row .cartuplift-card-content {
+  align-items: flex-start;
+}
+
 /* Column 1: Product Image - 80x80 for recommendations */
 .cartuplift-product-image {
   width: 80px;
