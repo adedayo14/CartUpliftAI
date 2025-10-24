@@ -705,6 +705,8 @@ body.cartuplift-no-scroll {
 
 .cartuplift-items {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   background: var(--cartuplift-cart-background); /* Use dedicated cart background */
   padding: 0 16px;
   overflow-y: auto;
@@ -714,6 +716,11 @@ body.cartuplift-no-scroll {
   /* Hide scrollbar */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
   /* Firefox-only: hide scrollbar; omitted to satisfy compatibility linters */
+}
+
+/* Cart items list wrapper - allows recommendations to use margin-top: auto */
+.cartuplift-items-list {
+  flex: 0 1 auto; /* Don't grow, shrink if needed */
 }
 
 /* Hide scrollbar for WebKit browsers */
@@ -990,10 +997,12 @@ body.cartuplift-no-scroll {
 }
 
 .cartuplift-drawer.recommendations-scroll .cartuplift-recommendations {
-  /* Same natural flow for scroll mode */
-  position: relative;
+  /* Stick to bottom until cart content pushes them up */
+  position: sticky;
+  bottom: 0;
   z-index: 5;
   background: var(--cartuplift-recommendations-bg);
+  margin-top: auto; /* Push to bottom when cart items are short */
 }
 
 /* When recommendations are inside the scrollable content area,

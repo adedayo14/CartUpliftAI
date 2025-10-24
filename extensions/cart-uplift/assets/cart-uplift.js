@@ -1109,7 +1109,9 @@
           
           <div class="cartuplift-content-wrapper">
             <div class="cartuplift-items">
-              ${this.getCartItemsHTML()}
+              <div class="cartuplift-items-list">
+                ${this.getCartItemsHTML()}
+              </div>
               ${shouldShowRecommendations && this.settings.recommendationsScrollWithCart ? this.getRecommendationsHTML() : ''}
             </div>
             
