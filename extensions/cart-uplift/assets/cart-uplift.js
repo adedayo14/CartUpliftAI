@@ -96,6 +96,9 @@
   // Main drawer controller
   class CartUpliftDrawer {
     constructor(settings) {
+      this.version = '1.1.1'; // Version number for debugging
+      console.log(`🛒 Cart Uplift Drawer Initialized v${this.version}`);
+      
       // Merge defaults with provided settings and any globals
       this.settings = Object.assign({}, window.CartUpliftSettings || {}, settings || {});
 
@@ -3939,10 +3942,6 @@
         // Recompute visible recommendations against fixed master list whenever cart changes
         this.rebuildRecommendationsFromMaster();
         
-        // Check gift thresholds after cart data is updated
-        console.log('🎁 Cart Uplift: Checking gift thresholds after cart fetch...');
-        await this.checkAndAddGiftThresholds();
-        
       } catch (error) {
         console.error('🛒 Error fetching cart:', error);
         this.cart = { items: [], item_count: 0, total_price: 0 };
@@ -3967,11 +3966,10 @@
           this.cart = await response.json();
           // Ensure recommendations reflect cart mutations (remove added items, re-add removed ones)
           this.rebuildRecommendationsFromMaster();
+          this.updateDrawerContent();
           
           // Check gift thresholds after quantity change
           await this.checkAndAddGiftThresholds();
-          
-          this.updateDrawerContent();
         }
       } catch (error) {
         console.error('🛒 Error updating quantity:', error);
@@ -6145,9 +6143,10 @@
           console.log('🎁 Drawer opened, showing pending gift modal');
           const pendingThreshold = this._pendingGiftModal;
           this._pendingGiftModal = null;
+          // Add a slight delay to ensure drawer is fully rendered
           setTimeout(() => {
             this.showGiftModal(pendingThreshold);
-          }, 100);
+          }, 50);
         }
       }, 350);
     }
