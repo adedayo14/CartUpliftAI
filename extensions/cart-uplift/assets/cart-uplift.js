@@ -3,14 +3,14 @@
 
   // Version sentinel & live verification (cache-bust expectation)
   (function(){
-    const v = 'modal-debug-v1.1.2-2025-10-25-T1400Z';
+    const v = 'drawer-debug-v1.1.3-2025-10-25-T1430Z';
     const timestamp = new Date().toISOString();
     if (window.CART_UPLIFT_ASSET_VERSION !== v) {
       window.CART_UPLIFT_ASSET_VERSION = v;
       console.log('🚀🚀🚀 [CartUplift] NEW VERSION LOADED: ' + v);
       console.log('⏰ Loaded at: ' + timestamp);
-      console.log('🎁 Modal debugging enabled - v1.1.2');
-      console.log('✨ Complete modal visibility tracking');
+      console.log('🔧 Drawer interception debugging enabled - v1.1.3');
+      console.log('✨ Complete drawer opening visibility tracking');
     }
     // Runtime self-heal: remove legacy overlay nodes if stale HTML rendered by cached markup
     function selfHealGrid(){
@@ -95,7 +95,7 @@
   // Main drawer controller
   class CartUpliftDrawer {
     constructor(settings) {
-      this.version = '1.1.2'; // Version number for debugging
+      this.version = '1.1.3'; // Version number for debugging
       console.log(`🛒 Cart Uplift Drawer Initialized v${this.version}`);
       
       // Merge defaults with provided settings and any globals
@@ -6094,14 +6094,26 @@
     }
 
     async openDrawer() {
-      if (this._isAnimating || this.isOpen) return;
+      console.log('🔧 openDrawer called:', { isAnimating: this._isAnimating, isOpen: this.isOpen, enableApp: this.settings.enableApp });
+      
+      if (this._isAnimating || this.isOpen) {
+        console.log('🔧 Drawer already animating or open, skipping');
+        return;
+      }
+      
+      if (!this.settings.enableApp) {
+        console.log('🔧 CartUplift disabled (enableApp=false), not opening drawer');
+        return;
+      }
       
       // Track cart open event
   CartAnalytics.trackEvent('cart_open');
       
       this._isAnimating = true;
       const container = document.getElementById('cartuplift-app-container');
+      console.log('🔧 Container found:', !!container);
       if (!container) {
+        console.error('🔧 ERROR: cartuplift-app-container not found in DOM!');
         this._isAnimating = false;
         return;
       }
@@ -6194,6 +6206,7 @@
     }
 
     setupCartUpliftInterception() {
+      console.log('🔧 Setting up cart interception...');
       // Intercept cart icon clicks
       document.addEventListener('click', (e) => {
         const cartTriggers = [
@@ -6208,11 +6221,18 @@
         ];
         const target = e.target.closest(cartTriggers.join(','));
         if (target) {
+          console.log('🔧 Cart trigger intercepted:', target, 'enableApp:', this.settings.enableApp);
+          if (!this.settings.enableApp) {
+            console.log('🔧 CartUplift disabled (enableApp=false), allowing default cart');
+            return; // Don't intercept if app is disabled
+          }
           e.preventDefault();
           e.stopPropagation();
+          console.log('🔧 Opening CartUplift drawer...');
           this.openDrawer();
         }
       }, true);
+      console.log('🔧 Cart interception setup complete');
     }
 
     installAddToCartMonitoring() {
