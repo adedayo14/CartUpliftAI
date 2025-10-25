@@ -3929,6 +3929,8 @@
     // Handle grid product add - check variants and show modal if needed
     async handleGridProductAdd(productHandle, variantId, gridIndex, productTitle) {
       try {
+        console.log('🛒 handleGridProductAdd called:', { productHandle, variantId, gridIndex, productTitle });
+        
         // Fetch product data to check variants
         const productResponse = await fetch(`/products/${productHandle}.js`);
         if (!productResponse.ok) {
@@ -3939,16 +3941,25 @@
         }
         
         const productData = await productResponse.json();
+        console.log('🛒 Product data fetched:', productData.title);
+        console.log('🛒 Total variants:', productData.variants?.length);
+        console.log('🛒 All variants:', productData.variants);
         
         // Check if product has multiple variants with meaningful differences
         const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
         const hasMultipleVariants = availableVariants.length > 1;
         
+        console.log('🛒 Available variants:', availableVariants.length);
+        console.log('🛒 Has multiple variants:', hasMultipleVariants);
+        console.log('🛒 Available variants list:', availableVariants);
+        
         if (hasMultipleVariants) {
           // Show product modal for variant selection
+          console.log('🛒 Showing product modal for variant selection');
           this.showProductModal(productData, gridIndex);
         } else {
           // Add directly to cart for simple products
+          console.log('🛒 Single variant product, adding directly to cart');
           this.addToCart(variantId, 1);
           
           // Dynamic grid: swap in next recommendation
