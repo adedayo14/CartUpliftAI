@@ -4297,9 +4297,49 @@
           console.log('🎁 Modal element:', modalElement);
           console.log('🎁 Modal classes:', modalElement.className);
           console.log('🎁 Modal in DOM:', document.body.contains(modalElement));
-          console.log('🎁 Modal computed display:', window.getComputedStyle(modalElement).display);
-          console.log('🎁 Modal computed opacity:', window.getComputedStyle(modalElement).opacity);
-          console.log('🎁 Modal computed zIndex:', window.getComputedStyle(modalElement).zIndex);
+          
+          // Check if element can be found
+          const modalInDom = document.querySelector('.cartuplift-gift-modal');
+          console.log('🎁 querySelector found modal:', modalInDom);
+          console.log('🎁 Modal matches element:', modalInDom === modalElement);
+          
+          // Get comprehensive computed styles
+          const styles = window.getComputedStyle(modalElement);
+          console.log('🎁 COMPUTED STYLES:', {
+            display: styles.display,
+            opacity: styles.opacity,
+            zIndex: styles.zIndex,
+            position: styles.position,
+            top: styles.top,
+            left: styles.left,
+            right: styles.right,
+            bottom: styles.bottom,
+            transform: styles.transform,
+            visibility: styles.visibility,
+            width: styles.width,
+            height: styles.height,
+            backgroundColor: styles.backgroundColor,
+            pointerEvents: styles.pointerEvents
+          });
+          
+          // Check bounding rect
+          const rect = modalElement.getBoundingClientRect();
+          console.log('🎁 BOUNDING RECT:', {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            bottom: rect.bottom,
+            right: rect.right
+          });
+          
+          // Count all modals
+          const allModals = document.querySelectorAll('.cartuplift-gift-modal');
+          console.log('🎁 Total modals in DOM:', allModals.length);
+          
+          // Check parent elements
+          console.log('🎁 Parent element:', modalElement.parentElement);
+          console.log('🎁 Body children count:', document.body.children.length);
         });
 
       } catch (error) {
