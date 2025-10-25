@@ -3941,18 +3941,19 @@
         }
         
         const productData = await productResponse.json();
+        const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
+        const availableVariants = allVariants.filter(v => v.available);
+        const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
+        const hasDistinctVariants = uniqueVariantTitles.size > 1;
+        const hasMultiOption = Array.isArray(productData.options) && productData.options.some(opt => Array.isArray(opt?.values) && opt.values.length > 1);
+        const hasMultipleVariants = availableVariants.length > 1 || (allVariants.length > 1 && (hasDistinctVariants || hasMultiOption));
+
         console.log('🛒 Product data fetched:', productData.title);
-        console.log('🛒 Total variants:', productData.variants?.length);
-        console.log('🛒 All variants:', productData.variants);
-        
-        // Check if product has multiple variants with meaningful differences
-        const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
-        const hasMultipleVariants = availableVariants.length > 1;
-        
+        console.log('🛒 Total variants:', allVariants.length);
         console.log('🛒 Available variants:', availableVariants.length);
-        console.log('🛒 Has multiple variants:', hasMultipleVariants);
-        console.log('🛒 Available variants list:', availableVariants);
-        
+        console.log('🛒 Distinct variant titles:', uniqueVariantTitles);
+        console.log('🛒 Has multiple variant options:', hasMultipleVariants);
+
         if (hasMultipleVariants) {
           // Show product modal for variant selection
           console.log('🛒 Showing product modal for variant selection');
@@ -3989,11 +3990,13 @@
         }
         
         const productData = await productResponse.json();
-        
-        // Check if product has multiple variants with meaningful differences
-        const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
-        const hasMultipleVariants = availableVariants.length > 1;
-        
+        const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
+        const availableVariants = allVariants.filter(v => v.available);
+        const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
+        const hasDistinctVariants = uniqueVariantTitles.size > 1;
+        const hasMultiOption = Array.isArray(productData.options) && productData.options.some(opt => Array.isArray(opt?.values) && opt.values.length > 1);
+        const hasMultipleVariants = availableVariants.length > 1 || (allVariants.length > 1 && (hasDistinctVariants || hasMultiOption));
+
         if (hasMultipleVariants) {
           // Show product modal for variant selection
           this.showProductModal(productData);
@@ -4024,11 +4027,13 @@
         }
         
         const productData = await productResponse.json();
-        
-        // Check if product has multiple variants with meaningful differences
-        const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
-        const hasMultipleVariants = availableVariants.length > 1;
-        
+        const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
+        const availableVariants = allVariants.filter(v => v.available);
+        const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
+        const hasDistinctVariants = uniqueVariantTitles.size > 1;
+        const hasMultiOption = Array.isArray(productData.options) && productData.options.some(opt => Array.isArray(opt?.values) && opt.values.length > 1);
+        const hasMultipleVariants = availableVariants.length > 1 || (allVariants.length > 1 && (hasDistinctVariants || hasMultiOption));
+
         if (hasMultipleVariants) {
           // Show product modal for variant selection
           this.showProductModal(productData);
@@ -4101,11 +4106,15 @@
 
     // Generate HTML for product modal
     generateProductModalHTML(productData, gridIndex) {
-      const availableVariants = productData.variants.filter(v => v.available);
+      const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
+      const availableVariants = allVariants.filter(v => v.available);
+  const variantsToRender = availableVariants.length > 0 ? availableVariants : allVariants;
+  const initialVariant = availableVariants[0] || allVariants[0] || null;
+  const defaultVariantId = initialVariant ? initialVariant.id : null;
 
       const initialPriceSource = (productData.price && productData.price > 0)
         ? productData.price
-        : (availableVariants.length > 0 ? availableVariants[0].price : 0);
+        : (initialVariant ? initialVariant.price : 0);
 
       const initialPriceCents = this.normalizePriceToCents(initialPriceSource);
       
@@ -4138,11 +4147,14 @@
                 <div class="cartuplift-modal-variants">
                   <label for="cartuplift-variant-select">Select Option:</label>
                   <select id="cartuplift-variant-select" class="cartuplift-variant-select">
-                    ${availableVariants.map(variant => {
+                    ${variantsToRender.map(variant => {
                       const variantPriceCents = this.normalizePriceToCents(variant.price);
+                      const disabledAttr = (!variant.available && defaultVariantId !== variant.id) ? ' disabled' : '';
+                      const labelSuffix = variant.available ? '' : ' (Sold Out)';
+                      const selectedAttr = defaultVariantId === variant.id ? ' selected' : '';
                       return `
-                        <option value="${variant.id}" data-price="${variant.price}" data-price-cents="${variantPriceCents}">
-                          ${variant.title} - ${this.formatMoney(variantPriceCents)}
+                        <option value="${variant.id}" data-price="${variant.price}" data-price-cents="${variantPriceCents}"${disabledAttr}${selectedAttr}>
+                          ${variant.title}${labelSuffix} - ${this.formatMoney(variantPriceCents)}
                         </option>
                       `;
                     }).join('')}
