@@ -3467,7 +3467,7 @@ body.cartuplift-no-scroll {
 }
 
 .cartuplift-modal-details {
-  padding: 25px;
+  padding: 25px 35px 25px 25px; /* Extra padding on right to prevent price crowding */
 }
 
 .cartuplift-modal-title {
