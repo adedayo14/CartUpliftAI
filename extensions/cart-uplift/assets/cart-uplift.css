@@ -114,11 +114,11 @@ body.cartuplift-no-scroll {
 
 .cartuplift-cart-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px; /* text-xs */
+  font-weight: 500; /* font-medium */
   color: #121212;
   letter-spacing: 0.5px;
-  text-transform: none !important; /* Preserve entered casing and override theme */
+  text-transform: uppercase !important; /* uppercase */
   flex-shrink: 0;
 }
 
