@@ -288,8 +288,8 @@
       if (!isFiniteNumber || parsed <= 0) {
         return 3;
       }
-      const clamped = Math.max(1, Math.min(6, Math.floor(parsed)));
-      return clamped;
+      const normalized = Math.max(1, Math.floor(parsed));
+      return normalized;
     }
 
     async init() {
