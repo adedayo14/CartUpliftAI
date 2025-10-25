@@ -4354,39 +4354,53 @@
       const skipBtn = modal.querySelector('.cartuplift-modal-skip-btn');
       const variantSelect = modal.querySelector('.cartuplift-variant-select');
       
-      // Close handlers
-      closeBtn.addEventListener('click', () => this.closeGiftModal(modal));
+      // Extract product ID for tracking
+      let numericProductId = threshold.productId;
+      if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+        numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+      }
+      const declinedKey = `gift_declined_${numericProductId}`;
+      
+      // Close handlers - mark as declined
+      const handleDecline = () => {
+        sessionStorage.setItem(declinedKey, 'true');
+        console.log('🎁 Customer declined gift, marking in session');
+        this.closeGiftModal(modal);
+      };
+      
+      closeBtn.addEventListener('click', handleDecline);
       backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) {
-          this.closeGiftModal(modal);
+          handleDecline();
         }
       });
       
-      // Skip button - just close the modal
+      // Skip button - mark as declined
       if (skipBtn) {
-        skipBtn.addEventListener('click', () => {
-          console.log('🎁 Customer declined gift');
-          this.closeGiftModal(modal);
-        });
+        skipBtn.addEventListener('click', handleDecline);
       }
       
-      // Add gift to cart handler
+      // Add gift to cart handler - clear declined flag
       addBtn.addEventListener('click', async () => {
         const selectedVariantId = variantSelect.value;
         if (selectedVariantId) {
+          sessionStorage.removeItem(declinedKey); // Clear declined flag when claimed
           await this.addGiftVariantToCart(selectedVariantId, threshold);
           this.closeGiftModal(modal);
         }
       });
       
-      // Keyboard handler for ESC key
+      // Keyboard handler for ESC key - also mark as declined
       const keyHandler = (e) => {
         if (e.key === 'Escape') {
+          sessionStorage.setItem(declinedKey, 'true');
+          console.log('🎁 Customer declined gift via ESC, marking in session');
           this.closeGiftModal(modal);
         }
       };
       document.addEventListener('keydown', keyHandler);
       modal._keyHandler = keyHandler;
+      modal._declinedKey = declinedKey; // Store for later cleanup
     }
 
     // Close gift modal
@@ -4765,9 +4779,17 @@
 
           if (hasReachedThreshold) {
             if (giftQuantity === 0) {
-              // No gift version exists yet - show modal to let customer choose
-              console.log('🎁 Showing gift modal for customer to choose');
-              await this.showGiftModal(threshold);
+              // Check if user already declined this gift in this session
+              const declinedKey = `gift_declined_${numericProductId}`;
+              const hasDeclined = sessionStorage.getItem(declinedKey);
+              
+              if (!hasDeclined) {
+                // No gift version exists yet - show modal to let customer choose
+                console.log('🎁 Showing gift modal for customer to choose');
+                await this.showGiftModal(threshold);
+              } else {
+                console.log('🎁 Gift previously declined by customer');
+              }
             } else {
               console.log('🎁 Gift already claimed, no action needed');
             }
