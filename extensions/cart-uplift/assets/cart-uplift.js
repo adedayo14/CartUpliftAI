@@ -1774,9 +1774,20 @@
               messageHTML = '';
             } else {
               // Show achievement (left) + next goal (right) split across segments
-              const giftTitle = getGiftValueAndTitle(nextGift).title;
               const leftMessage = `✓ Free shipping unlocked!`;
-              const rightMessage = `Spend ${formatMoney(giftRemaining)} more to unlock ${giftTitle}`;
+              
+              // Check if this gift's threshold is actually reached
+              const giftThresholdReached = currentCents >= nextGiftCents;
+              
+              let rightMessage;
+              if (giftThresholdReached) {
+                // Threshold reached but not claimed - show unlock message
+                rightMessage = giftMsg(nextGift, true); // Use "after unlock" message from schema
+              } else {
+                // Threshold not reached - show progress message from schema
+                rightMessage = giftMsg(nextGift, false); // Use "before unlock" message from schema
+              }
+              
               successTopRowHTML = `<div class="cartuplift-progress-toprow" style="display: flex; justify-content: space-between; gap: 8px;"><span class="cartuplift-progress-message" style="text-align: left;">${leftMessage}</span><span class="cartuplift-progress-message" style="text-align: right;">${rightMessage}</span></div>`;
               widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
               labelRight = ''; // Empty - segmented bar shows labels below each segment
@@ -1805,7 +1816,7 @@
             for (const gift of sortedGifts) {
               if (gift.amount && gift.amount > 0) {
                 const giftCents = Math.round(gift.amount * 100);
-                console.log(`📊 Adding gift segment: ${gift.title} at $${gift.amount} (${giftCents} cents)`);
+                console.log(`📊 Adding gift segment: ${gift.title} at ${this.getCurrencySymbol()}${gift.amount} (${giftCents} cents)`);
                 allThresholds.push({ type: 'gift', amount: giftCents, label: gift.title || 'Gift', data: gift });
               }
             }
@@ -5603,14 +5614,14 @@
         const currentTotal = this.getDisplayedTotalCents();
         console.log('🎁 ========================================');
         console.log('🎁 CART ANALYSIS:');
-        console.log('🎁   Current Total: £' + (currentTotal / 100).toFixed(2));
+        console.log('🎁   Current Total: ' + this.getCurrencySymbol() + (currentTotal / 100).toFixed(2));
         console.log('🎁   Cart Items:', this.cart.items.length);
         console.log('🎁 ========================================');
         
         console.log('🎁 THRESHOLD CHECKS:');
         giftThresholds.forEach((threshold, index) => {
           console.log(`🎁 [${index + 1}] ${threshold.title}:`, {
-            amount: '£' + threshold.amount,
+            amount: this.getCurrencySymbol() + threshold.amount,
             reached: currentTotal >= (threshold.amount * 100),
             productId: threshold.productId,
             productHandle: threshold.productHandle
@@ -5629,8 +5640,8 @@
           
           console.log('🎁 ----------------------------------------');
           console.log(`🎁 Processing: ${threshold.title}`);
-          console.log(`🎁   Threshold: £${threshold.amount}`);
-          console.log(`🎁   Current: £${(currentTotal / 100).toFixed(2)}`);
+          console.log(`🎁   Threshold: ${this.getCurrencySymbol()}${threshold.amount}`);
+          console.log(`🎁   Current: ${this.getCurrencySymbol()}${(currentTotal / 100).toFixed(2)}`);
           console.log(`🎁   Reached: ${hasReachedThreshold ? '✓ YES' : '✗ NO'}`);
           
           // Extract numeric product ID for comparison
@@ -6323,6 +6334,24 @@
       // Fallback: Try to detect currency symbol from window object or default to $
       const currencySymbol = window.Shopify?.currency?.active || '$';
       return currencySymbol + formattedAmount;
+    }
+
+    getCurrencySymbol() {
+      // Extract currency symbol from money format or Shopify settings
+      try {
+        const format = window.CartUpliftMoneyFormat || window.Shopify?.money_format;
+        if (format) {
+          // Extract symbol from format like "${{amount}}", "{{amount}} €", "£{{amount}}", etc.
+          const symbolMatch = format.match(/[^\{\}0-9.,\s]+/);
+          if (symbolMatch) {
+            return symbolMatch[0].trim();
+          }
+        }
+      } catch (e) {
+        console.warn('[CartUplift] getCurrencySymbol error:', e);
+      }
+      // Fallback to Shopify currency or default
+      return window.Shopify?.currency?.active || '$';
     }
 
     normalizePriceToCents(value) {
