@@ -4092,7 +4092,7 @@
               </div>
               
               <div class="cartuplift-modal-details">
-                <h2 class="cartuplift-modal-title">${productData.title}</h2>
+                <h2 class="cartuplift-modal-title">${this.settings.enableRecommendationTitleCaps ? productData.title.toUpperCase() : productData.title}</h2>
                 <div class="cartuplift-modal-price" data-price="${initialPriceCents}">
                   ${this.formatMoney(initialPriceCents)}
                 </div>
@@ -4288,7 +4288,7 @@
               
               <div class="cartuplift-modal-details">
                 <div class="cartuplift-gift-badge">🎁 ${giftTitle}</div>
-                <h2 class="cartuplift-modal-title">${productData.title}</h2>
+                <h2 class="cartuplift-modal-title">${this.settings.enableRecommendationTitleCaps ? productData.title.toUpperCase() : productData.title}</h2>
                 <div class="cartuplift-modal-price cartuplift-gift-price">
                   FREE (${this.formatMoney(0)})
                 </div>
