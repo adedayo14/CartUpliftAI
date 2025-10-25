@@ -96,7 +96,7 @@
   // Main drawer controller
   class CartUpliftDrawer {
     constructor(settings) {
-      this.version = '1.1.1'; // Version number for debugging
+      this.version = '1.1.2'; // Version number for debugging
       console.log(`🛒 Cart Uplift Drawer Initialized v${this.version}`);
       
       // Merge defaults with provided settings and any globals
@@ -4957,6 +4957,7 @@
     // Show gift selection modal when threshold is met
     async showGiftModal(threshold) {
       // Only show modal if drawer is open
+      console.log('🎁 Drawer state check:', { isOpen: this.isOpen, drawerElement: !!document.querySelector('#cartuplift-cart-popup') });
       if (!this.isOpen) {
         console.log('🎁 Drawer not open, deferring gift modal until drawer opens');
         this._pendingGiftModal = threshold;
@@ -4965,6 +4966,7 @@
 
       // Prevent multiple opens
       const existingGiftModal = document.querySelector('.cartuplift-gift-modal');
+      console.log('🎁 Modal duplicate check:', { modalOpening: this._modalOpening, existingModal: !!existingGiftModal });
       if (this._modalOpening || existingGiftModal) {
         console.log('🎁 Gift modal already opening/open');
         return;
@@ -5016,17 +5018,24 @@
         const modal = document.createElement('div');
         modal.className = 'cartuplift-gift-modal';
         modal.style.zIndex = '1000001';
+        console.log('🎁 Modal element created:', { className: modal.className, zIndex: modal.style.zIndex });
 
         modal.innerHTML = this.generateGiftModalHTML(productData, threshold, variantState);
         document.body.appendChild(modal);
+        console.log('🎁 Modal appended to body:', { modalInDOM: !!document.querySelector('.cartuplift-gift-modal'), bodyChildCount: document.body.children.length });
         
         // Sync dimensions with drawer (same as product modal)
         const modalContent = modal.querySelector('.cartuplift-modal-content');
         const drawer = document.querySelector('#cartuplift-cart-popup .cartuplift-drawer');
+        console.log('🎁 Dimension sync elements:', { modalContent: !!modalContent, drawer: !!drawer });
 
         const syncModalDimensions = () => {
-          if (!modalContent || !drawer) return;
+          if (!modalContent || !drawer) {
+            console.log('🎁 Cannot sync dimensions - missing elements');
+            return;
+          }
           const drawerRect = drawer.getBoundingClientRect();
+          console.log('🎁 Syncing dimensions:', { width: drawerRect.width, height: drawerRect.height });
           modalContent.style.width = `${drawerRect.width}px`;
           modalContent.style.maxWidth = `${drawerRect.width}px`;
           modalContent.style.height = `${drawerRect.height}px`;
@@ -5043,6 +5052,13 @@
         // Show modal with animation
         requestAnimationFrame(() => {
           modal.classList.add('show');
+          console.log('🎁 Modal "show" class added:', { 
+            hasShowClass: modal.classList.contains('show'),
+            computedDisplay: window.getComputedStyle(modal).display,
+            computedVisibility: window.getComputedStyle(modal).visibility,
+            computedOpacity: window.getComputedStyle(modal).opacity,
+            boundingRect: modal.getBoundingClientRect()
+          });
           this._modalOpening = false;
           if (this._giftModalRetryTimer) {
             clearTimeout(this._giftModalRetryTimer);
