@@ -282,8 +282,10 @@
         if (response.ok) {
           const dbSettings = await response.json();
           
-          // Merge database settings with theme settings (theme settings take priority for duplicates)
-          window.CartUpliftSettings = Object.assign(window.CartUpliftSettings || {}, {
+          const existingThemeSettings = window.CartUpliftSettings || {};
+
+          // Merge database settings with theme settings (theme values win)
+          const dbSettingsNormalized = {
             // ML & AI Settings
             enableMLRecommendations: dbSettings.enableMLRecommendations,
             mlPersonalizationMode: dbSettings.mlPersonalizationMode,
@@ -313,7 +315,19 @@
             giftPriceText: dbSettings.giftPriceText,
             
             _dbSettingsLoaded: true
-          });
+          };
+
+          const mergedSettings = Object.assign({}, dbSettingsNormalized, existingThemeSettings);
+
+          if (mergedSettings.discountLinkText !== undefined) {
+            mergedSettings.enableDiscountCode = Boolean(mergedSettings.discountLinkText && mergedSettings.discountLinkText.trim().length > 0);
+          }
+
+          if (mergedSettings.notesLinkText !== undefined) {
+            mergedSettings.enableNotes = Boolean(mergedSettings.notesLinkText && mergedSettings.notesLinkText.trim().length > 0);
+          }
+
+          window.CartUpliftSettings = mergedSettings;
           
           // Notify any listeners that settings have been updated with database values
           document.dispatchEvent(new CustomEvent('cartuplift:settings:updated'));
