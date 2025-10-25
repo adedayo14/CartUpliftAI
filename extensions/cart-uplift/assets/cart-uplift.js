@@ -1774,27 +1774,30 @@
               messageHTML = '';
             } else {
               // Show achievement (left) + next goal (right) split across segments
-              const leftMessage = `✓ Free shipping unlocked!`;
               
               // Check if this gift's threshold is actually reached
               const giftThresholdReached = currentCents >= nextGiftCents;
               
-              let rightMessage;
+              // If BOTH free shipping AND gift threshold reached, show "All rewards unlocked"
               if (giftThresholdReached) {
-                // Threshold reached but not claimed - show unlock message
-                rightMessage = giftMsg(nextGift, true); // Use "after unlock" message from schema
+                const allRewardsText = this.settings.allRewardsUnlockedText || '🎉 All rewards unlocked!';
+                successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${allRewardsText}</span></div>`;
+                widthPct = 100;
+                labelRight = '';
+                messageHTML = '';
               } else {
-                // Threshold not reached - show progress message from schema
-                rightMessage = giftMsg(nextGift, false); // Use "before unlock" message from schema
+                // Gift not reached yet - show split message
+                const leftMessage = `✓ Free shipping unlocked!`;
+                const rightMessage = giftMsg(nextGift, false); // Use "before unlock" message from schema
+                
+                successTopRowHTML = `<div class="cartuplift-progress-toprow" style="display: flex; justify-content: space-between; gap: 8px;"><span class="cartuplift-progress-message" style="text-align: left;">${leftMessage}</span><span class="cartuplift-progress-message" style="text-align: right;">${rightMessage}</span></div>`;
+                widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
+                labelRight = ''; // Empty - segmented bar shows labels below each segment
+                // solid fill for tier 2
+                fillStyle = `background: ${shippingColor};`;
+                // Empty messageHTML since message is at the top now
+                messageHTML = '';
               }
-              
-              successTopRowHTML = `<div class="cartuplift-progress-toprow" style="display: flex; justify-content: space-between; gap: 8px;"><span class="cartuplift-progress-message" style="text-align: left;">${leftMessage}</span><span class="cartuplift-progress-message" style="text-align: right;">${rightMessage}</span></div>`;
-              widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
-              labelRight = ''; // Empty - segmented bar shows labels below each segment
-              // solid fill for tier 2
-              fillStyle = `background: ${shippingColor};`;
-              // Empty messageHTML since message is at the top now
-              messageHTML = '';
             }
           }
         }
