@@ -3,14 +3,14 @@
 
   // Version sentinel & live verification (cache-bust expectation)
   (function(){
-    const v = 'drawer-debug-v1.1.3-2025-10-25-T1430Z';
+    const v = 'gift-check-fix-v1.1.4-2025-10-25-T1445Z';
     const timestamp = new Date().toISOString();
     if (window.CART_UPLIFT_ASSET_VERSION !== v) {
       window.CART_UPLIFT_ASSET_VERSION = v;
       console.log('🚀🚀🚀 [CartUplift] NEW VERSION LOADED: ' + v);
       console.log('⏰ Loaded at: ' + timestamp);
-      console.log('🔧 Drawer interception debugging enabled - v1.1.3');
-      console.log('✨ Complete drawer opening visibility tracking');
+      console.log('🎁 CRITICAL FIX: Gift check now called after addToCart');
+      console.log('✨ Modal should now appear when threshold reached');
     }
     // Runtime self-heal: remove legacy overlay nodes if stale HTML rendered by cached markup
     function selfHealGrid(){
@@ -95,7 +95,7 @@
   // Main drawer controller
   class CartUpliftDrawer {
     constructor(settings) {
-      this.version = '1.1.3'; // Version number for debugging
+      this.version = '1.1.4'; // Version number for debugging
       console.log(`🛒 Cart Uplift Drawer Initialized v${this.version}`);
       
       // Merge defaults with provided settings and any globals
@@ -4033,6 +4033,9 @@
           // Fetch will also recompute recommendations
           this.updateDrawerContent();
           
+          // Check gift thresholds after adding item to cart
+          await this.checkAndAddGiftThresholds();
+          
           // Update recommendations display if drawer is open
           if (this.isOpen) {
             const recommendationsContent = document.getElementById('cartuplift-recommendations-content');
@@ -6250,6 +6253,10 @@
             setTimeout(async () => {
               await this.fetchCart();
               this.updateDrawerContent();
+              
+              // Check gift thresholds after cart add
+              await this.checkAndAddGiftThresholds();
+              
               if (this.settings.enableApp) {
                 this.flyToCart();
               }
