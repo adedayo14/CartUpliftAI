@@ -1707,8 +1707,10 @@
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${giftSuccess(lastGift)}</span></div>`;
               widthPct = 100;
             } else {
-              // Threshold met but gift not claimed - show ready message
-              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${giftMsg(lastGift, false)}</span></div>`;
+              // Threshold met but gift not claimed - show "unlocked" message from schema
+              // This handles the "£0 remaining" bug - shows the post-unlock message instead
+              const readyMessage = lastGift ? giftMsg(lastGift, true) : 'Gift ready to claim!';
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${readyMessage}</span></div>`;
               widthPct = 100;
             }
             labelRight = ''; // Single threshold - no label below bar
@@ -1746,21 +1748,29 @@
             successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${freeMessage}</span></div>`;
             messageHTML = '';
           } else {
-            // show next reward (gift)
+            // Free shipping achieved - check gift status
             // When free shipping is achieved but there's a next gift, combine the message
-            const topNote = nextGift ? `Spend ${formatMoney(giftRemaining)} more to unlock ${getGiftValueAndTitle(nextGift).title}!` : '';
-            const allText = (() => {
-              // Simplified success message
-              if (!nextGift) {
-                return `🎉 All rewards unlocked!`;
+            
+            // Check if all gifts are also claimed
+            const allGiftsClaimed = sortedGifts.every(gift => isGiftInCart(gift));
+            
+            if (!nextGift && allGiftsClaimed) {
+              // All rewards unlocked (free shipping + all gifts claimed)
+              widthPct = 100; 
+              labelRight = '';
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">🎉 All rewards unlocked!</span></div>`;
+              messageHTML = '';
+            } else if (!nextGift) {
+              // All thresholds met but some gifts not claimed
+              const unclaimedGift = sortedGifts.find(gift => !isGiftInCart(gift));
+              if (unclaimedGift) {
+                const readyMessage = giftMsg(unclaimedGift, true);
+                successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">✓ Free shipping unlocked! ${readyMessage}</span></div>`;
+              } else {
+                successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">🎉 All rewards unlocked!</span></div>`;
               }
-              // No lastGift case (rare) – fallback generic
-              return `🎉 All rewards unlocked!`;
-            })();
-            // If no next gift remains, everything is achieved; show a single unified success message at the top
-            if (!nextGift) {
-              widthPct = 100; labelRight = '';
-              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${allText}</span></div>`;
+              widthPct = 100;
+              labelRight = '';
               messageHTML = '';
             } else {
               // Show achievement (left) + next goal (right) split across segments
@@ -5537,56 +5547,76 @@
 
     // Check if gift thresholds have been reached and auto-add gift products
     async checkAndAddGiftThresholds() {
-      console.log('🎁 Gift threshold check starting:', {
+      console.log('🎁 ========================================');
+      console.log('🎁 GIFT THRESHOLD CHECK START');
+      console.log('🎁 ========================================');
+      console.log('🎁 Settings Check:', {
         enableGiftGating: this.settings.enableGiftGating,
         hasThresholds: !!this.settings.giftThresholds,
         hasCart: !!this.cart,
         suppressAutoAdd: this.settings.suppressAutoAdd,
-        giftThresholdsValue: this.settings.giftThresholds
+        giftThresholdsRaw: this.settings.giftThresholds
       });
       
       if (!this.settings.enableGiftGating) {
-        console.log('🎁 Gift gating disabled');
+        console.log('🎁 ❌ SKIP: Gift gating disabled');
+        console.log('🎁 ========================================');
         return;
       }
       
       if (!this.settings.giftThresholds) {
-        console.log('🎁 No gift thresholds configured');
+        console.log('🎁 ❌ SKIP: No gift thresholds configured');
+        console.log('🎁 ========================================');
         return;
       }
       
       if (!this.cart) {
-        console.log('🎁 No cart available');
+        console.log('🎁 ❌ SKIP: No cart available');
+        console.log('🎁 ========================================');
         return;
       }
 
       // In design mode, show preview without actually modifying cart
       const isDesignMode = this.settings.suppressAutoAdd;
       if (isDesignMode) {
-        console.log('🎁 Design mode: showing gift preview without cart modification');
+        console.log('🎁 ⚙️ Design mode: showing gift preview without cart modification');
+        console.log('🎁 ========================================');
         return this.checkAndShowGiftPreview();
       }
 
       try {
         const giftThresholds = JSON.parse(this.settings.giftThresholds);
-        console.log('🎁 Parsed gift thresholds:', giftThresholds);
+        console.log('🎁 ✓ Parsed gift thresholds:', giftThresholds);
         
         if (!Array.isArray(giftThresholds)) {
-          console.log('🎁 Gift thresholds is not an array:', typeof giftThresholds);
+          console.log('🎁 ❌ ERROR: Gift thresholds is not an array:', typeof giftThresholds);
+          console.log('🎁 ========================================');
           return;
         }
         
         if (giftThresholds.length === 0) {
-          console.log('🎁 Gift thresholds array is empty');
+          console.log('🎁 ❌ SKIP: Gift thresholds array is empty');
+          console.log('🎁 ========================================');
           return;
         }
 
         const currentTotal = this.getDisplayedTotalCents();
-        console.log('🎁 Gift threshold processing:', {
-          currentTotal: currentTotal / 100,
-          thresholds: giftThresholds,
-          cartItems: this.cart.items.length
+        console.log('🎁 ========================================');
+        console.log('🎁 CART ANALYSIS:');
+        console.log('🎁   Current Total: £' + (currentTotal / 100).toFixed(2));
+        console.log('🎁   Cart Items:', this.cart.items.length);
+        console.log('🎁 ========================================');
+        
+        console.log('🎁 THRESHOLD CHECKS:');
+        giftThresholds.forEach((threshold, index) => {
+          console.log(`🎁 [${index + 1}] ${threshold.title}:`, {
+            amount: '£' + threshold.amount,
+            reached: currentTotal >= (threshold.amount * 100),
+            productId: threshold.productId,
+            productHandle: threshold.productHandle
+          });
         });
+        console.log('🎁 ========================================');
 
         for (const threshold of giftThresholds) {
           // Only process product type gifts that have a product ID
@@ -5597,7 +5627,11 @@
           const thresholdAmount = (threshold.amount || 0) * 100; // Convert to pence
           const hasReachedThreshold = currentTotal >= thresholdAmount;
           
-          console.log(`🎁 Checking threshold: ${threshold.title} ($${threshold.amount}) - Current: $${currentTotal/100} - Reached: ${hasReachedThreshold}`);
+          console.log('🎁 ----------------------------------------');
+          console.log(`🎁 Processing: ${threshold.title}`);
+          console.log(`🎁   Threshold: £${threshold.amount}`);
+          console.log(`🎁   Current: £${(currentTotal / 100).toFixed(2)}`);
+          console.log(`🎁   Reached: ${hasReachedThreshold ? '✓ YES' : '✗ NO'}`);
           
           // Extract numeric product ID for comparison
           let numericProductId = threshold.productId;
@@ -5605,7 +5639,8 @@
             numericProductId = numericProductId.replace('gid://shopify/Product/', '');
           }
           
-          console.log(`🎁 Looking for product ID: ${numericProductId} in cart items:`, this.cart.items.map(i => ({ id: i.product_id, title: i.product_title, properties: i.properties })));
+          console.log(`🎁   Product ID: ${numericProductId}`);
+          console.log(`🎁   Product Handle: ${threshold.productHandle}`);
 
           const declinedKey = `gift_declined_${numericProductId}`;
           
@@ -5614,7 +5649,7 @@
             item.product_id.toString() === numericProductId.toString()
           );
           
-          console.log(`🎁 Found ${existingCartItems.length} matching cart items for product ${numericProductId}`);
+          console.log(`🎁   Cart items matching product: ${existingCartItems.length}`);
           
           let totalQuantity = 0;
           let giftQuantity = 0;
@@ -5629,28 +5664,38 @@
             }
           }
 
-          console.log(`🎁 Item quantities - Total: ${totalQuantity}, Gift: ${giftQuantity}, Paid: ${paidQuantity}`);
+          console.log(`🎁   Quantities:`, {
+            total: totalQuantity,
+            gift: giftQuantity,
+            paid: paidQuantity
+          });
 
           if (hasReachedThreshold) {
             if (giftQuantity === 0) {
               const hasDeclined = sessionStorage.getItem(declinedKey);
               
-              console.log(`🎁 Gift quantity is 0. Has declined: ${hasDeclined}`);
+              console.log(`🎁 DECISION:`, {
+                giftInCart: false,
+                hasDeclined: !!hasDeclined,
+                willShowModal: !hasDeclined
+              });
               
               if (!hasDeclined) {
                 // No gift version exists yet - show modal to let customer choose
-                console.log('🎁 Showing gift modal for customer to choose');
+                console.log('🎁 ✓ ACTION: Showing gift modal for customer to add gift');
                 await this.showGiftModal(threshold);
               } else {
-                console.log('🎁 Gift previously declined by customer');
+                console.log('🎁 ⊘ SKIP: Gift previously declined by customer');
               }
             } else {
-              console.log('🎁 Gift already claimed, no action needed');
+              console.log('🎁 ✓ Gift already claimed, no action needed');
             }
           } else {
             sessionStorage.removeItem(declinedKey);
+            console.log('🎁 ⊘ Threshold not reached yet');
             if (giftQuantity > 0) {
               // Threshold no longer met and gift exists - remove all gift versions
+              console.log('🎁 ⚠️ Removing gift from cart (threshold no longer met)');
               for (const giftItem of existingCartItems) {
                 if (giftItem.properties && giftItem.properties._is_gift === 'true') {
                   await this.removeGiftFromCart(threshold, giftItem);
@@ -5659,9 +5704,14 @@
             }
           }
         }
+        
+        console.log('🎁 ========================================');
+        console.log('🎁 GIFT THRESHOLD CHECK COMPLETE');
+        console.log('🎁 ========================================');
       } catch (error) {
-        console.error('🎁 Error checking gift thresholds:', error);
+        console.error('🎁 ❌ ERROR in gift threshold check:', error);
         console.log('🎁 Raw gift thresholds setting:', this.settings.giftThresholds);
+        console.log('🎁 ========================================');
       }
     }
 
