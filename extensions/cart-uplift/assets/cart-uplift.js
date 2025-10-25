@@ -3,15 +3,14 @@
 
   // Version sentinel & live verification (cache-bust expectation)
   (function(){
-    const v = 'analytics-always-on-2025-10-13-T2000Z';
+    const v = 'modal-debug-v1.1.2-2025-10-25-T1400Z';
     const timestamp = new Date().toISOString();
     if (window.CART_UPLIFT_ASSET_VERSION !== v) {
       window.CART_UPLIFT_ASSET_VERSION = v;
       console.log('🚀🚀🚀 [CartUplift] NEW VERSION LOADED: ' + v);
       console.log('⏰ Loaded at: ' + timestamp);
-      console.log('📊 Analytics now ALWAYS enabled - tracking all interactions');
-      console.log('✨ Complete tracking for ALL button types (carousel/grid/row)');
-      console.log('🎯 Data saves automatically to dashboard!');
+      console.log('🎁 Modal debugging enabled - v1.1.2');
+      console.log('✨ Complete modal visibility tracking');
     }
     // Runtime self-heal: remove legacy overlay nodes if stale HTML rendered by cached markup
     function selfHealGrid(){
