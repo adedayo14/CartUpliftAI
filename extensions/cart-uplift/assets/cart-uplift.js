@@ -4294,6 +4294,12 @@
         requestAnimationFrame(() => {
           modalElement.classList.add('show');
           console.log('🎁 Modal animation triggered');
+          console.log('🎁 Modal element:', modalElement);
+          console.log('🎁 Modal classes:', modalElement.className);
+          console.log('🎁 Modal in DOM:', document.body.contains(modalElement));
+          console.log('🎁 Modal computed display:', window.getComputedStyle(modalElement).display);
+          console.log('🎁 Modal computed opacity:', window.getComputedStyle(modalElement).opacity);
+          console.log('🎁 Modal computed zIndex:', window.getComputedStyle(modalElement).zIndex);
         });
 
       } catch (error) {
