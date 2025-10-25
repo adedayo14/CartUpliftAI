@@ -4958,6 +4958,13 @@
 
     // Show gift selection modal when threshold is met
     async showGiftModal(threshold) {
+      // Only show modal if drawer is open
+      if (!this.isOpen) {
+        console.log('🎁 Drawer not open, deferring gift modal until drawer opens');
+        this._pendingGiftModal = threshold;
+        return;
+      }
+
       // Prevent multiple opens
       const existingGiftModal = document.querySelector('.cartuplift-gift-modal');
       if (this._modalOpening || existingGiftModal) {
@@ -6132,6 +6139,16 @@
       setTimeout(() => {
         this._isAnimating = false;
         this.isOpen = true;
+        
+        // Show pending gift modal if one was deferred
+        if (this._pendingGiftModal) {
+          console.log('🎁 Drawer opened, showing pending gift modal');
+          const pendingThreshold = this._pendingGiftModal;
+          this._pendingGiftModal = null;
+          setTimeout(() => {
+            this.showGiftModal(pendingThreshold);
+          }, 100);
+        }
       }, 350);
     }
 
