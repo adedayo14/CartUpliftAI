@@ -98,6 +98,22 @@
     constructor(settings) {
       // Merge defaults with provided settings and any globals
       this.settings = Object.assign({}, window.CartUpliftSettings || {}, settings || {});
+
+      const normalizeBooleanSetting = (value) => {
+        if (typeof value === 'string') {
+          const normalized = value.trim().toLowerCase();
+          return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on';
+        }
+        return Boolean(value);
+      };
+
+      if (this.settings.enableProductTitleCaps !== undefined) {
+        this.settings.enableProductTitleCaps = normalizeBooleanSetting(this.settings.enableProductTitleCaps);
+      }
+
+      if (this.settings.enableRecommendationTitleCaps !== undefined) {
+        this.settings.enableRecommendationTitleCaps = normalizeBooleanSetting(this.settings.enableRecommendationTitleCaps);
+      }
       
       // Debug: Log layout settings
       console.log('🛒 CartUpliftDrawer initialized with settings:', {
@@ -2310,17 +2326,23 @@
              data-mode="${isCollapsed ? 'collapsed' : 'standard'}"
              data-mobile="${isMobile}"
              data-cartuplift-title-caps="${this.settings.enableTitleCaps ? 'true' : 'false'}">
-          ${productsToShow.map((product, index) => `
+          ${productsToShow.map((product, index) => {
+            const originalTitle = product.title || '';
+            const displayTitle = this.settings.enableRecommendationTitleCaps ? originalTitle.toUpperCase() : originalTitle;
+            const escapedDisplayTitle = displayTitle.replace(/"/g, '&quot;');
+            const escapedOriginalTitle = originalTitle.replace(/"/g, '&quot;');
+            const ariaTitle = originalTitle.replace(/"/g, '');
+            return `
             <div class="cartuplift-grid-item" 
                  data-product-id="${product.id}" 
                  data-product-handle="${product.handle || ''}"
                  data-variant-id="${product.variant_id}" 
-                 data-title="${product.title.replace(/"/g,'&quot;')}" 
+                 data-title="${escapedDisplayTitle}" 
                  data-price="${this.formatMoney(product.priceCents || 0)}"
                  data-grid-index="${index}">
               <div class="cartuplift-grid-image">
                 <img src="${product.image || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'}" 
-                     alt="${product.title}" 
+                     alt="${escapedOriginalTitle}" 
                      loading="lazy" 
                      decoding="async" 
                      onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png'">
@@ -2329,14 +2351,14 @@
                           data-product-id="${product.id}"
                           data-variant-id="${product.variant_id}" 
                           data-grid-index="${index}"
-                          aria-label="Add ${product.title}">
+                          aria-label="Add ${ariaTitle}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#fff" class="size-6">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                   </button>
                 </div>
               </div>
-            </div>`).join('')}
+            </div>`; }).join('')}
         </div>
       `;
       
@@ -2380,21 +2402,27 @@
     updateGridItem(index, product) {
       const gridItem = document.querySelector(`.cartuplift-grid-item[data-grid-index="${index}"]`);
       if (gridItem) {
+        const originalTitle = product.title || '';
+        const displayTitle = this.settings.enableRecommendationTitleCaps ? originalTitle.toUpperCase() : originalTitle;
+        const escapedDisplayTitle = displayTitle.replace(/"/g, '&quot;');
+        const escapedOriginalTitle = originalTitle.replace(/"/g, '&quot;');
+        const ariaTitle = originalTitle.replace(/"/g, '');
+
         gridItem.dataset.productId = product.id;
         gridItem.dataset.variantId = product.variant_id;
-        gridItem.dataset.title = product.title.replace(/"/g,'&quot;');
+        gridItem.dataset.title = escapedDisplayTitle;
         gridItem.dataset.price = this.formatMoney(product.priceCents || 0);
         
         const img = gridItem.querySelector('img');
         if (img) {
           img.src = product.image || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-product-1_large.png';
-          img.alt = product.title;
+          img.alt = escapedOriginalTitle;
         }
         
         const button = gridItem.querySelector('.cartuplift-grid-add-btn');
         if (button) {
           button.dataset.variantId = product.variant_id;
-          button.setAttribute('aria-label', `Add ${product.title}`);
+          button.setAttribute('aria-label', `Add ${ariaTitle}`);
         }
       }
     }
@@ -2556,8 +2584,12 @@
       
       container.querySelectorAll('.cartuplift-grid-item').forEach(item => {
         item.addEventListener('mouseenter', () => {
-          const title = item.getAttribute('data-title');
+          let title = item.getAttribute('data-title');
           const price = item.getAttribute('data-price');
+
+          if (title && this.settings.enableRecommendationTitleCaps) {
+            title = title.toUpperCase();
+          }
           
           // Update title and show price, hide collapse button
           if (title && titleEl) titleEl.textContent = title;

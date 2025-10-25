@@ -312,7 +312,7 @@ body.cartuplift-no-scroll {
 .cartuplift-segmented-labels {
   display: flex !important;
   gap: 4px !important;
-  margin-top: 2px !important;
+  margin-top: -2px !important; /* pull labels slightly closer to the bar */
 }
 
 .cartuplift-segment-label {
