@@ -4228,10 +4228,10 @@
         existingModal.remove();
       }
       
-      // Prevent multiple rapid opens
+      // Clear any stuck flag (safety mechanism)
       if (this._modalOpening) {
-        console.log('🎁 Gift modal already opening, waiting...');
-        return;
+        console.log('🎁 Clearing stuck modal opening flag');
+        this._modalOpening = false;
       }
 
       this._modalOpening = true;
