@@ -4757,10 +4757,14 @@
             numericProductId = numericProductId.replace('gid://shopify/Product/', '');
           }
           
+          console.log(`🎁 Looking for product ID: ${numericProductId} in cart items:`, this.cart.items.map(i => ({ id: i.product_id, title: i.product_title, properties: i.properties })));
+          
           // Check if product is in cart and handle quantity logic
           const existingCartItems = this.cart.items.filter(item => 
             item.product_id.toString() === numericProductId.toString()
           );
+          
+          console.log(`🎁 Found ${existingCartItems.length} matching cart items for product ${numericProductId}`);
           
           let totalQuantity = 0;
           let giftQuantity = 0;
@@ -4782,6 +4786,8 @@
               // Check if user already declined this gift in this session
               const declinedKey = `gift_declined_${numericProductId}`;
               const hasDeclined = sessionStorage.getItem(declinedKey);
+              
+              console.log(`🎁 Gift quantity is 0. Has declined: ${hasDeclined}`);
               
               if (!hasDeclined) {
                 // No gift version exists yet - show modal to let customer choose
