@@ -1301,8 +1301,22 @@
           const safeShippingColor = this.settings.shippingBarColor || '#121212';
           const bgColor = this.settings.shippingBarBackgroundColor || '#E5E5E5';
           const remainingCents = Math.max(0, Math.round(threshold.amount * 100) - Math.round(currentTotal * 100));
-          const achieved = remainingCents === 0 || (currentTotal >= threshold.amount);
+          
+          // Check if gift is actually in cart (claimed)
+          let numericProductId = threshold.productId;
+          if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+            numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+          }
+          const giftInCart = this.cart?.items?.some(item => 
+            item.product_id.toString() === numericProductId.toString() && 
+            item.properties && 
+            item.properties._is_gift === 'true'
+          ) || false;
+          
+          const achieved = giftInCart; // Only show as unlocked if gift is actually claimed
+          const thresholdReached = currentTotal >= threshold.amount;
           const thresholdLabel = this.formatMoney(Math.round(threshold.amount * 100));
+          
           const msg = achieved
             ? (this.settings.giftAchievedText || '🎉 {{ product_name }} unlocked!')
                 .replace(/\{\{\s*title\s*\}\}/g, String(threshold.title || 'Gift'))
@@ -1311,15 +1325,23 @@
                 .replace(/\{product_name\}/g, String(threshold.title || 'Gift'))
                 .replace(/\{\{\s*product\s*\}\}/g, String(threshold.title || 'Gift'))
                 .replace(/\{product\}/g, String(threshold.title || 'Gift'))
-            : (this.settings.giftProgressText || 'Free shipping unlocked! ✓ Spend {{ amount }} more to unlock {{ product_name }}!')
-                .replace(/\{\{\s*amount\s*\}\}/g, this.formatMoney(remainingCents))
-                .replace(/\{amount\}/g, this.formatMoney(remainingCents))
-                .replace(/\{\{\s*title\s*\}\}/g, String(threshold.title || 'Gift'))
-                .replace(/\{title\}/g, String(threshold.title || 'Gift'))
-                .replace(/\{\{\s*product_name\s*\}\}/g, String(threshold.title || 'Gift'))
-                .replace(/\{product_name\}/g, String(threshold.title || 'Gift'))
-                .replace(/\{\{\s*product\s*\}\}/g, String(threshold.title || 'Gift'))
-                .replace(/\{product\}/g, String(threshold.title || 'Gift'));
+            : thresholdReached
+                ? (this.settings.giftReadyText || 'Claim your {{ product_name }}!')
+                    .replace(/\{\{\s*title\s*\}\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{title\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{\{\s*product_name\s*\}\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{product_name\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{\{\s*product\s*\}\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{product\}/g, String(threshold.title || 'Gift'))
+                : (this.settings.giftProgressText || 'Spend {{ amount }} more to unlock {{ product_name }}!')
+                    .replace(/\{\{\s*amount\s*\}\}/g, this.formatMoney(remainingCents))
+                    .replace(/\{amount\}/g, this.formatMoney(remainingCents))
+                    .replace(/\{\{\s*title\s*\}\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{title\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{\{\s*product_name\s*\}\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{product_name\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{\{\s*product\s*\}\}/g, String(threshold.title || 'Gift'))
+                    .replace(/\{product\}/g, String(threshold.title || 'Gift'));
           
           return `
             <div class="cartuplift-section cartuplift-section--gift">
@@ -1346,7 +1368,20 @@
                 <div class="cartuplift-stacked-progress">
                   ${sortedThresholds.map(threshold => {
                   const progress = Math.min((currentTotal / threshold.amount) * 100, 100);
-                  const isUnlocked = currentTotal >= threshold.amount;
+                  
+                  // Check if gift is actually in cart (claimed)
+                  let numericProductId = threshold.productId;
+                  if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+                    numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+                  }
+                  const giftInCart = this.cart?.items?.some(item => 
+                    item.product_id.toString() === numericProductId.toString() && 
+                    item.properties && 
+                    item.properties._is_gift === 'true'
+                  ) || false;
+                  
+                  const isUnlocked = giftInCart;
+                  const thresholdReached = currentTotal >= threshold.amount;
                   const remaining = Math.max(threshold.amount - currentTotal, 0);
                   
                   return `
@@ -1354,7 +1389,7 @@
                       <div class="cartuplift-gift-info">
                         <span class="cartuplift-gift-title">
                           ${threshold.title} 
-                          ${isUnlocked ? ' ✅' : ` ($${remaining.toFixed(0)} to go)`}
+                          ${isUnlocked ? ' ✅' : thresholdReached ? ' 🎁 Ready!' : ` ($${remaining.toFixed(0)} to go)`}
                         </span>
                         <span class="cartuplift-gift-progress-text">${Math.round(progress)}%</span>
                       </div>
@@ -1383,16 +1418,30 @@
                     <div class="cartuplift-milestone-fill" style="width: ${totalProgress}%; background: ${(this.settings.shippingBarColor || '#121212')};"></div>
                     ${sortedThresholds.map(threshold => {
                     const position = (threshold.amount / maxThreshold) * 100;
-                    const isUnlocked = currentTotal >= threshold.amount;
+                    
+                    // Check if gift is actually in cart (claimed)
+                    let numericProductId = threshold.productId;
+                    if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+                      numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+                    }
+                    const giftInCart = this.cart?.items?.some(item => 
+                      item.product_id.toString() === numericProductId.toString() && 
+                      item.properties && 
+                      item.properties._is_gift === 'true'
+                    ) || false;
+                    
+                    const isUnlocked = giftInCart;
+                    const thresholdReached = currentTotal >= threshold.amount;
                     
                     return `
                       <div class="cartuplift-milestone-marker" style="left: ${position}%;">
                         <div class="cartuplift-milestone-dot ${isUnlocked ? 'unlocked' : ''}">
-                          ${isUnlocked ? '✅' : '🎁'}
+                          ${isUnlocked ? '✅' : thresholdReached ? '🎁' : '🎁'}
                         </div>
                         <div class="cartuplift-milestone-label">
                           $${threshold.amount} ${threshold.title}
-                          ${!isUnlocked ? ` ($${(threshold.amount - currentTotal).toFixed(0)} to go)` : ''}
+                          ${!thresholdReached ? ` ($${(threshold.amount - currentTotal).toFixed(0)} to go)` : 
+                            !isUnlocked ? ' (Ready to claim!)' : ''}
                         </div>
                       </div>
                     `;
@@ -1406,9 +1455,36 @@
 
         // Default: single-next style
         const nextThreshold = sortedThresholds.find(t => currentTotal < t.amount);
-        const unlockedThresholds = sortedThresholds.filter(t => currentTotal >= t.amount);
         
-        if (!nextThreshold && unlockedThresholds.length === 0) return '';
+        // Filter for truly unlocked gifts (actually in cart with _is_gift property)
+        const unlockedThresholds = sortedThresholds.filter(threshold => {
+          let numericProductId = threshold.productId;
+          if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+            numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+          }
+          return this.cart?.items?.some(item => 
+            item.product_id.toString() === numericProductId.toString() && 
+            item.properties && 
+            item.properties._is_gift === 'true'
+          );
+        });
+        
+        // Check for thresholds reached but not claimed
+        const readyThresholds = sortedThresholds.filter(threshold => {
+          const thresholdReached = currentTotal >= threshold.amount;
+          let numericProductId = threshold.productId;
+          if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+            numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+          }
+          const giftInCart = this.cart?.items?.some(item => 
+            item.product_id.toString() === numericProductId.toString() && 
+            item.properties && 
+            item.properties._is_gift === 'true'
+          );
+          return thresholdReached && !giftInCart;
+        });
+        
+        if (!nextThreshold && unlockedThresholds.length === 0 && readyThresholds.length === 0) return '';
         
         return `
           <div class="cartuplift-gift-progress-container">
@@ -1418,6 +1494,16 @@
                   ${unlockedThresholds.map(threshold => `
                     <div class="cartuplift-unlocked-item">
                       ✅ ${threshold.title} UNLOCKED!
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+              
+              ${readyThresholds.length > 0 ? `
+                <div class="cartuplift-ready-gifts">
+                  ${readyThresholds.map(threshold => `
+                    <div class="cartuplift-ready-item">
+                      🎁 ${threshold.title} Ready to claim!
                     </div>
                   `).join('')}
                 </div>
