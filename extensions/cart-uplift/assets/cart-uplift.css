@@ -3542,6 +3542,14 @@ body.cartuplift-no-scroll {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+/* Modal action buttons container */
+.cartuplift-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
 .cartuplift-modal-add-btn {
   width: 100%;
   background: var(--cartuplift-primary-color, var(--color-primary, var(--buttons-color, #000)));
@@ -3563,6 +3571,29 @@ body.cartuplift-no-scroll {
 
 .cartuplift-modal-add-btn:active {
   transform: translateY(0);
+}
+
+.cartuplift-modal-skip-btn {
+  width: 100%;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cartuplift-modal-skip-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.cartuplift-modal-skip-btn:active {
+  background: #f3f4f6;
 }
 
 /* Mobile responsive adjustments - match cart behavior */

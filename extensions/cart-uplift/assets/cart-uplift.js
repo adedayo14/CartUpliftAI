@@ -4331,9 +4331,14 @@
                   </select>
                 </div>
                 
-                <button class="cartuplift-modal-add-btn cartuplift-gift-add-btn">
-                  Claim Your Free Gift
-                </button>
+                <div class="cartuplift-modal-actions">
+                  <button class="cartuplift-modal-add-btn cartuplift-gift-add-btn">
+                    Claim Your Free Gift
+                  </button>
+                  <button class="cartuplift-modal-skip-btn">
+                    No Thanks
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4346,6 +4351,7 @@
       const closeBtn = modal.querySelector('.cartuplift-modal-close');
       const backdrop = modal.querySelector('.cartuplift-modal-backdrop');
       const addBtn = modal.querySelector('.cartuplift-modal-add-btn');
+      const skipBtn = modal.querySelector('.cartuplift-modal-skip-btn');
       const variantSelect = modal.querySelector('.cartuplift-variant-select');
       
       // Close handlers
@@ -4355,6 +4361,14 @@
           this.closeGiftModal(modal);
         }
       });
+      
+      // Skip button - just close the modal
+      if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+          console.log('🎁 Customer declined gift');
+          this.closeGiftModal(modal);
+        });
+      }
       
       // Add gift to cart handler
       addBtn.addEventListener('click', async () => {
@@ -4750,25 +4764,13 @@
           console.log(`🎁 Item quantities - Total: ${totalQuantity}, Gift: ${giftQuantity}, Paid: ${paidQuantity}`);
 
           if (hasReachedThreshold) {
-            if (totalQuantity === 0) {
-              // Product not in cart - show gift modal for selection
-              console.log('🎁 Showing gift modal for new gift');
+            if (giftQuantity === 0) {
+              // No gift version exists yet - show modal to let customer choose
+              console.log('🎁 Showing gift modal for customer to choose');
               await this.showGiftModal(threshold);
-            } else if (giftQuantity === 0) {
-              // Product in cart but no gift version - need to add gift line or convert 1 item
-              if (paidQuantity === 1) {
-                // Convert the single paid item to gift
-                console.log('🎁 Converting single paid item to gift');
-                await this.convertItemToGift(existingCartItems[0], threshold);
-              } else if (paidQuantity > 1) {
-                // Split: reduce paid quantity by 1, add 1 gift
-                console.log('🎁 Splitting paid item to add 1 gift');
-                await this.splitItemAddGift(existingCartItems[0], threshold);
-              }
             } else {
-              console.log('🎁 Gift already exists, no action needed');
+              console.log('🎁 Gift already claimed, no action needed');
             }
-            // If giftQuantity > 0, gift already exists, do nothing
           } else if (!hasReachedThreshold && giftQuantity > 0) {
             // Threshold no longer met and gift exists - remove all gift versions
             for (const giftItem of existingCartItems) {
