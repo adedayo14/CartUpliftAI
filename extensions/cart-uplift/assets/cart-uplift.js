@@ -3941,29 +3941,27 @@
         }
         
         const productData = await productResponse.json();
-        const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
-        const availableVariants = allVariants.filter(v => v.available);
-        const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
-        const hasDistinctVariants = uniqueVariantTitles.size > 1;
-        const hasMultiOption = Array.isArray(productData.options) && productData.options.some(opt => Array.isArray(opt?.values) && opt.values.length > 1);
-        const hasMultipleVariants = availableVariants.length > 1 || (allVariants.length > 1 && (hasDistinctVariants || hasMultiOption));
+        const variantState = this.prepareVariantModalState(productData);
 
         console.log('🛒 Product data fetched:', productData.title);
-        console.log('🛒 Total variants:', allVariants.length);
-        console.log('🛒 Available variants:', availableVariants.length);
-        console.log('🛒 Distinct variant titles:', uniqueVariantTitles);
-        console.log('🛒 Has multiple variant options:', hasMultipleVariants);
+        console.log('🛒 Variant summary:', {
+          total: variantState.allVariants.length,
+          available: variantState.availableVariants.length,
+          optionNames: variantState.optionNames,
+          requiresSelection: variantState.requiresSelection
+        });
 
-        if (hasMultipleVariants) {
-          // Show product modal for variant selection
+        if (variantState.requiresSelection) {
           console.log('🛒 Showing product modal for variant selection');
-          this.showProductModal(productData, gridIndex);
+          this.showProductModal(productData, gridIndex, variantState);
         } else {
-          // Add directly to cart for simple products
           console.log('🛒 Single variant product, adding directly to cart');
-          this.addToCart(variantId, 1);
-          
-          // Dynamic grid: swap in next recommendation
+          const fallbackVariant = variantState.initialVariant || productData.variants?.[0];
+          const variantToAdd = fallbackVariant?.id || variantId;
+          if (variantToAdd) {
+            await this.addToCart(variantToAdd, 1);
+          }
+
           if (gridIndex !== undefined) {
             setTimeout(() => {
               this.swapInNextRecommendation(parseInt(gridIndex));
@@ -3990,20 +3988,17 @@
         }
         
         const productData = await productResponse.json();
-        const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
-        const availableVariants = allVariants.filter(v => v.available);
-        const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
-        const hasDistinctVariants = uniqueVariantTitles.size > 1;
-        const hasMultiOption = Array.isArray(productData.options) && productData.options.some(opt => Array.isArray(opt?.values) && opt.values.length > 1);
-        const hasMultipleVariants = availableVariants.length > 1 || (allVariants.length > 1 && (hasDistinctVariants || hasMultiOption));
+        const variantState = this.prepareVariantModalState(productData);
 
-        if (hasMultipleVariants) {
-          // Show product modal for variant selection
-          this.showProductModal(productData);
+        if (variantState.requiresSelection) {
+          this.showProductModal(productData, undefined, variantState);
           button.dataset.processing = 'false';
         } else {
-          // Add directly to cart for simple products
-          await this.addToCart(variantId, 1);
+          const fallbackVariant = variantState.initialVariant || productData.variants?.[0];
+          const variantToAdd = fallbackVariant?.id || variantId;
+          if (variantToAdd) {
+            await this.addToCart(variantToAdd, 1);
+          }
           button.dataset.processing = 'false';
         }
       } catch (error) {
@@ -4027,20 +4022,17 @@
         }
         
         const productData = await productResponse.json();
-        const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
-        const availableVariants = allVariants.filter(v => v.available);
-        const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
-        const hasDistinctVariants = uniqueVariantTitles.size > 1;
-        const hasMultiOption = Array.isArray(productData.options) && productData.options.some(opt => Array.isArray(opt?.values) && opt.values.length > 1);
-        const hasMultipleVariants = availableVariants.length > 1 || (allVariants.length > 1 && (hasDistinctVariants || hasMultiOption));
+        const variantState = this.prepareVariantModalState(productData);
 
-        if (hasMultipleVariants) {
-          // Show product modal for variant selection
-          this.showProductModal(productData);
+        if (variantState.requiresSelection) {
+          this.showProductModal(productData, undefined, variantState);
           button.dataset.processing = 'false';
         } else {
-          // Add directly to cart for simple products
-          await this.addToCart(variantId, 1);
+          const fallbackVariant = variantState.initialVariant || productData.variants?.[0];
+          const variantToAdd = fallbackVariant?.id || variantId;
+          if (variantToAdd) {
+            await this.addToCart(variantToAdd, 1);
+          }
           button.dataset.processing = 'false';
         }
       } catch (error) {
@@ -4051,8 +4043,206 @@
       }
     }
 
+    getProductOptionNames(productData) {
+      if (!productData || !Array.isArray(productData.options)) return [];
+      const rawOptions = productData.options;
+      if (rawOptions.length === 0) return [];
+      if (typeof rawOptions[0] === 'string') {
+        return rawOptions
+          .filter(name => typeof name === 'string')
+          .map(name => name.trim())
+          .filter(name => name.length > 0 && name.toLowerCase() !== 'title');
+      }
+      return rawOptions
+        .map(option => {
+          if (!option) return null;
+          if (typeof option === 'string') return option.trim();
+          if (typeof option.name === 'string') return option.name.trim();
+          return null;
+        })
+        .filter(name => name && name.length > 0 && name.toLowerCase() !== 'title');
+    }
+
+    getVariantOptionLabel(productData, fallback = 'Select Option') {
+      const optionNames = this.getProductOptionNames(productData);
+      if (!optionNames.length) return fallback;
+      if (optionNames.length === 1) {
+        return `Select ${optionNames[0]}`;
+      }
+      return `Select ${optionNames.join(' / ')}`;
+    }
+
+    formatVariantDisplayName(productData, variant) {
+      if (!variant) return 'Default';
+      const optionNames = this.getProductOptionNames(productData);
+      const optionValues = [variant.option1, variant.option2, variant.option3]
+        .map(value => (value === 'Default Title' ? '' : (value || '')))
+        .filter(Boolean);
+
+      if (!optionNames.length) {
+        if (optionValues.length) {
+          return optionValues.join(' · ');
+        }
+        if (variant.title && variant.title !== 'Default Title') {
+          return variant.title;
+        }
+        return 'Default';
+      }
+
+      const parts = [];
+      optionNames.forEach((name, index) => {
+        const value = optionValues[index];
+        if (!value) return;
+        if (optionNames.length === 1) {
+          parts.push(value);
+        } else {
+          parts.push(`${name}: ${value}`);
+        }
+      });
+
+      if (!parts.length) {
+        if (variant.title && variant.title !== 'Default Title') {
+          return variant.title;
+        }
+        if (optionValues.length) {
+          return optionValues.join(' · ');
+        }
+        return 'Default';
+      }
+
+      return parts.join(' · ');
+    }
+
+    prepareVariantModalState(productData) {
+      const allVariants = Array.isArray(productData?.variants) ? productData.variants : [];
+      const availableVariants = allVariants.filter(v => v && v.available);
+      const variantsToRender = availableVariants.length ? availableVariants : allVariants;
+      const initialVariant = availableVariants[0] || allVariants[0] || null;
+      const defaultVariantId = initialVariant ? String(initialVariant.id) : null;
+      const optionValuesByIndex = [new Set(), new Set(), new Set()];
+
+      allVariants.forEach(variant => {
+        if (!variant) return;
+        ['option1', 'option2', 'option3'].forEach((key, idx) => {
+          const value = variant[key];
+          if (value && value !== 'Default Title') {
+            optionValuesByIndex[idx].add(value);
+          }
+        });
+      });
+
+      const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
+      const hasMultiOption = optionValuesByIndex.some(set => set.size > 1);
+      const requiresSelection = availableVariants.length > 1 || (allVariants.length > 1 && (uniqueVariantTitles.size > 1 || hasMultiOption));
+      const variantLookup = new Map();
+      allVariants.forEach(variant => {
+        if (!variant || variant.id === undefined || variant.id === null) return;
+        variantLookup.set(String(variant.id), variant);
+      });
+
+      return {
+        allVariants,
+        availableVariants,
+        variantsToRender,
+        initialVariant,
+        defaultVariantId,
+        optionValuesByIndex,
+        uniqueVariantTitles,
+        hasMultiOption,
+        requiresSelection,
+        optionLabel: this.getVariantOptionLabel(productData),
+        optionNames: this.getProductOptionNames(productData),
+        variantLookup
+      };
+    }
+
+    setupVariantInteractions(modal, productData, variantState, options = {}) {
+      const {
+        addButton = modal.querySelector('.cartuplift-modal-add-btn'),
+        priceDisplay = modal.querySelector('.cartuplift-modal-price'),
+        updatePrice = true,
+        disableAddForSoldOut = true,
+        soldOutLabel = 'Sold Out',
+        onVariantSelected = null
+      } = options;
+
+      const variantSelect = modal.querySelector('.cartuplift-variant-select');
+      const variantButtons = Array.from(modal.querySelectorAll('.cartuplift-variant-pill'));
+      const variantLookup = variantState?.variantLookup || new Map();
+      const addButtonLabel = addButton ? addButton.textContent.trim() : '';
+
+      const applyVariant = (incomingVariantId) => {
+        if (!incomingVariantId) return;
+        const variantId = String(incomingVariantId);
+
+        if (variantSelect && variantSelect.value !== variantId) {
+          variantSelect.value = variantId;
+        }
+
+        variantButtons.forEach(btn => {
+          const isMatch = btn.dataset.variantId === variantId;
+          btn.classList.toggle('is-selected', isMatch);
+          btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+        });
+
+        const variant = variantLookup.get(variantId) || productData?.variants?.find(v => String(v?.id) === variantId);
+        if (!variant) {
+          return;
+        }
+
+        if (addButton) {
+          addButton.dataset.variantId = variant.id;
+          const isAvailable = variant.available !== false;
+          if (disableAddForSoldOut) {
+            addButton.disabled = !isAvailable;
+            addButton.classList.toggle('is-disabled', !isAvailable);
+            addButton.textContent = isAvailable ? addButtonLabel : soldOutLabel;
+          } else {
+            addButton.disabled = false;
+            addButton.classList.remove('is-disabled');
+            addButton.textContent = addButtonLabel;
+          }
+        }
+
+        if (updatePrice && priceDisplay && !priceDisplay.classList.contains('cartuplift-gift-price')) {
+          const priceCents = this.normalizePriceToCents(variant.price);
+          if (Number.isFinite(priceCents)) {
+            priceDisplay.textContent = this.formatMoney(priceCents);
+            priceDisplay.dataset.price = priceCents;
+          }
+        }
+
+        if (typeof onVariantSelected === 'function') {
+          onVariantSelected(variant);
+        }
+      };
+
+      if (variantSelect) {
+        variantSelect.addEventListener('change', (event) => {
+          applyVariant(event.target.value);
+        });
+      }
+
+      variantButtons.forEach(btn => {
+        if (btn.dataset.available !== 'true') return;
+        btn.addEventListener('click', () => {
+          applyVariant(btn.dataset.variantId);
+        });
+      });
+
+      const initialVariantId = variantState?.defaultVariantId || (variantSelect ? variantSelect.value : null) || (variantState?.variantsToRender?.[0]?.id);
+      if (initialVariantId) {
+        applyVariant(initialVariantId);
+      } else if (addButton) {
+        addButton.disabled = true;
+        addButton.classList.add('is-disabled');
+      }
+
+      return { applyVariant };
+    }
+
     // Show product modal for variant selection
-    showProductModal(productData, gridIndex) {
+    showProductModal(productData, gridIndex, variantState) {
       // Prevent multiple rapid opens
       if (this._modalOpening || document.querySelector('.cartuplift-product-modal')) {
         console.log('🛒 Modal already opening/open, ignoring duplicate call');
@@ -4061,13 +4251,15 @@
       
       this._modalOpening = true;
       console.log('🛒 Creating product modal for:', productData.title);
+
+      const computedVariantState = variantState || this.prepareVariantModalState(productData);
       
       const modal = document.createElement('div');
       modal.className = 'cartuplift-product-modal';
       modal.style.zIndex = '1000001';
       
       try {
-        modal.innerHTML = this.generateProductModalHTML(productData, gridIndex);
+        modal.innerHTML = this.generateProductModalHTML(productData, gridIndex, computedVariantState);
       } catch (error) {
         console.error('🛒 Error generating modal HTML:', error);
         this._modalOpening = false;
@@ -4094,7 +4286,7 @@
       modal._cleanupResize = () => window.removeEventListener('resize', syncModalDimensions);
 
       // Add modal event listeners
-      this.attachProductModalHandlers(modal, productData, gridIndex);
+  this.attachProductModalHandlers(modal, productData, gridIndex, computedVariantState);
       
       // Show modal with single animation frame
       requestAnimationFrame(() => {
@@ -4105,19 +4297,75 @@
     }
 
     // Generate HTML for product modal
-    generateProductModalHTML(productData, gridIndex) {
-      const allVariants = Array.isArray(productData.variants) ? productData.variants : [];
-      const availableVariants = allVariants.filter(v => v.available);
-  const variantsToRender = availableVariants.length > 0 ? availableVariants : allVariants;
-  const initialVariant = availableVariants[0] || allVariants[0] || null;
-  const defaultVariantId = initialVariant ? initialVariant.id : null;
-
+    generateProductModalHTML(productData, gridIndex, variantState) {
+      const state = variantState || this.prepareVariantModalState(productData);
+      const initialVariant = state.initialVariant;
+      const defaultVariantId = state.defaultVariantId;
+      const variantsToRender = state.variantsToRender || [];
       const initialPriceSource = (productData.price && productData.price > 0)
         ? productData.price
         : (initialVariant ? initialVariant.price : 0);
-
       const initialPriceCents = this.normalizePriceToCents(initialPriceSource);
-      
+      const hasVariantChoices = state.requiresSelection && variantsToRender.length > 1;
+      const selectClasses = ['cartuplift-variant-select'];
+      if (!hasVariantChoices) {
+        selectClasses.push('cartuplift-variant-select--single');
+      }
+      const selectAttributes = hasVariantChoices ? '' : ' aria-hidden="true" tabindex="-1"';
+      const labelText = this.escapeHtml(state.optionLabel || 'Select Option');
+      const summaryText = initialVariant ? this.escapeHtml(this.formatVariantDisplayName(productData, initialVariant)) : '';
+      const showVariantPills = variantsToRender.length > 1;
+
+      const optionMarkup = variantsToRender.length ? variantsToRender.map(variant => {
+        const variantId = String(variant.id);
+        const variantPriceCents = this.normalizePriceToCents(variant.price);
+        const priceLabel = Number.isFinite(variantPriceCents) ? this.formatMoney(variantPriceCents) : this.formatMoney(0);
+        const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
+        const isAvailable = variant.available !== false;
+        const disableOption = !isAvailable && state.availableVariants.length > 0;
+        const disabledAttr = disableOption ? ' disabled' : '';
+        const soldOutSuffix = isAvailable ? '' : ' (Sold Out)';
+        const selectedAttr = defaultVariantId && defaultVariantId === variantId ? ' selected' : '';
+        return `
+          <option value="${variantId}" data-price="${variant.price}" data-price-cents="${variantPriceCents}" data-available="${isAvailable ? 'true' : 'false'}"${disabledAttr}${selectedAttr}>
+            ${displayName}${soldOutSuffix} - ${priceLabel}
+          </option>
+        `;
+      }).join('') : `
+          <option value="" disabled selected>Currently unavailable</option>
+        `;
+
+      const pillMarkup = showVariantPills ? `
+        <div class="cartuplift-variant-pill-group" role="group" aria-label="${labelText}">
+          ${variantsToRender.map(variant => {
+            const variantId = String(variant.id);
+            const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
+            const variantPriceCents = this.normalizePriceToCents(variant.price);
+            const priceLabel = Number.isFinite(variantPriceCents) ? this.formatMoney(variantPriceCents) : '';
+            const isAvailable = variant.available !== false;
+            const isSelected = defaultVariantId && defaultVariantId === variantId;
+            const classes = ['cartuplift-variant-pill'];
+            if (isSelected) classes.push('is-selected');
+            if (!isAvailable) classes.push('is-disabled');
+            const disabledAttr = isAvailable ? '' : ' disabled';
+            const availabilityAttr = isAvailable ? 'true' : 'false';
+            const statusHtml = isAvailable
+              ? `<span class="cartuplift-variant-pill-price">${priceLabel}</span>`
+              : '<span class="cartuplift-variant-pill-status">Sold Out</span>';
+            return `
+              <button type="button" class="${classes.join(' ')}" data-variant-id="${variantId}" data-price-cents="${variantPriceCents}" data-available="${availabilityAttr}" aria-pressed="${isSelected ? 'true' : 'false'}" aria-disabled="${isAvailable ? 'false' : 'true'}"${disabledAttr}>
+                <span class="cartuplift-variant-pill-label">${displayName}</span>
+                ${statusHtml}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      ` : '';
+
+      const singleVariantSummary = (!hasVariantChoices && summaryText)
+        ? `<div class="cartuplift-variant-summary">${summaryText}</div>`
+        : '';
+
       return `
         <div class="cartuplift-modal-backdrop">
           <div class="cartuplift-modal-content">
@@ -4145,23 +4393,15 @@
                 ` : ''}
                 
                 <div class="cartuplift-modal-variants">
-                  <label for="cartuplift-variant-select">Select Option:</label>
-                  <select id="cartuplift-variant-select" class="cartuplift-variant-select">
-                    ${variantsToRender.map(variant => {
-                      const variantPriceCents = this.normalizePriceToCents(variant.price);
-                      const disabledAttr = (!variant.available && defaultVariantId !== variant.id) ? ' disabled' : '';
-                      const labelSuffix = variant.available ? '' : ' (Sold Out)';
-                      const selectedAttr = defaultVariantId === variant.id ? ' selected' : '';
-                      return `
-                        <option value="${variant.id}" data-price="${variant.price}" data-price-cents="${variantPriceCents}"${disabledAttr}${selectedAttr}>
-                          ${variant.title}${labelSuffix} - ${this.formatMoney(variantPriceCents)}
-                        </option>
-                      `;
-                    }).join('')}
+                  ${hasVariantChoices ? `<label for="cartuplift-variant-select">${labelText}</label>` : `<span class="cartuplift-variant-summary-label">${labelText}</span>`}
+                  <select id="cartuplift-variant-select" class="${selectClasses.join(' ')}"${selectAttributes}>
+                    ${optionMarkup}
                   </select>
+                  ${singleVariantSummary}
+                  ${pillMarkup}
                 </div>
                 
-                <button class="cartuplift-modal-add-btn" data-grid-index="${gridIndex}">
+                <button class="cartuplift-modal-add-btn" data-grid-index="${gridIndex ?? ''}">
                   Add to Cart
                 </button>
               </div>
@@ -4172,35 +4412,32 @@
     }
 
     // Attach event handlers to product modal
-    attachProductModalHandlers(modal, productData, gridIndex) {
-  const closeBtn = modal.querySelector('.cartuplift-modal-close');
+    attachProductModalHandlers(modal, productData, gridIndex, variantState) {
+      const closeBtn = modal.querySelector('.cartuplift-modal-close');
       const backdrop = modal.querySelector('.cartuplift-modal-backdrop');
       const addBtn = modal.querySelector('.cartuplift-modal-add-btn');
-      const variantSelect = modal.querySelector('.cartuplift-variant-select');
       const priceDisplay = modal.querySelector('.cartuplift-modal-price');
+      const variantSelect = modal.querySelector('.cartuplift-variant-select');
+      const computedVariantState = variantState || this.prepareVariantModalState(productData);
       
       // Close handlers
-  closeBtn.addEventListener('click', () => this.closeProductModal(modal));
+      closeBtn.addEventListener('click', () => this.closeProductModal(modal));
       backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) {
           this.closeProductModal(modal);
         }
       });
-      
-      // Variant selection updates price
-      variantSelect.addEventListener('change', (e) => {
-        const selectedOption = e.target.options[e.target.selectedIndex];
-        const priceCentsAttr = selectedOption.dataset.priceCents;
-        const rawPrice = priceCentsAttr || selectedOption.dataset.price;
-        const priceInCents = this.normalizePriceToCents(rawPrice);
-        console.log('CartUplift: Variant price change - raw:', rawPrice, 'cents:', priceInCents); // Debug log
-        priceDisplay.textContent = this.formatMoney(priceInCents);
-        priceDisplay.dataset.price = priceInCents;
+
+      this.setupVariantInteractions(modal, productData, computedVariantState, {
+        addButton: addBtn,
+        priceDisplay,
+        disableAddForSoldOut: true,
+        soldOutLabel: 'Sold Out'
       });
       
       // Add to cart handler
       addBtn.addEventListener('click', async () => {
-        const selectedVariantId = variantSelect.value;
+        const selectedVariantId = addBtn.dataset.variantId || (variantSelect ? variantSelect.value : null);
         if (selectedVariantId) {
           await this.addToCart(selectedVariantId, 1);
           this.closeProductModal(modal);
@@ -4272,11 +4509,9 @@
         const productData = await response.json();
         console.log('🎁 Product data received:', productData.title);
 
-        // Check if product has variants
-        const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
-        
-        if (availableVariants.length === 0) {
-          console.error('🎁 No available variants for gift');
+        const variantState = this.prepareVariantModalState(productData);
+        if (!variantState.variantsToRender.length) {
+          console.error('🎁 No variants available for gift modal');
           this._modalOpening = false;
           return;
         }
@@ -4285,8 +4520,8 @@
         const modal = document.createElement('div');
         modal.className = 'cartuplift-gift-modal';
         modal.style.zIndex = '1000001';
-        
-        modal.innerHTML = this.generateGiftModalHTML(productData, threshold);
+
+        modal.innerHTML = this.generateGiftModalHTML(productData, threshold, variantState);
         document.body.appendChild(modal);
         
         // Sync dimensions with drawer (same as product modal)
@@ -4307,7 +4542,7 @@
         modal._cleanupResize = () => window.removeEventListener('resize', syncModalDimensions);
 
         // Attach event handlers
-        this.attachGiftModalHandlers(modal, productData, threshold);
+  this.attachGiftModalHandlers(modal, productData, threshold, variantState);
 
         // Show modal with animation
         requestAnimationFrame(() => {
@@ -4323,10 +4558,68 @@
     }
 
     // Generate HTML for gift modal
-    generateGiftModalHTML(productData, threshold) {
-      const availableVariants = productData.variants.filter(v => v.available);
+    generateGiftModalHTML(productData, threshold, variantState) {
+      const state = variantState || this.prepareVariantModalState(productData);
+      const variantsToRender = state.variantsToRender || [];
+      const defaultVariantId = state.defaultVariantId;
+      const initialVariant = state.initialVariant;
       const giftTitle = threshold.title || 'Free Gift';
-      
+      const hasVariantChoices = state.requiresSelection && variantsToRender.length > 1;
+      const selectClasses = ['cartuplift-variant-select'];
+      if (!hasVariantChoices) {
+        selectClasses.push('cartuplift-variant-select--single');
+      }
+      const selectAttributes = hasVariantChoices ? '' : ' aria-hidden="true" tabindex="-1"';
+      const labelText = this.escapeHtml(state.optionLabel || 'Select Option');
+      const summaryText = initialVariant ? this.escapeHtml(this.formatVariantDisplayName(productData, initialVariant)) : '';
+      const showVariantPills = variantsToRender.length > 1;
+
+      const optionMarkup = variantsToRender.length ? variantsToRender.map(variant => {
+        const variantId = String(variant.id);
+        const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
+        const isAvailable = variant.available !== false;
+        const disableOption = !isAvailable && state.availableVariants.length > 0;
+        const disabledAttr = disableOption ? ' disabled' : '';
+        const soldOutSuffix = isAvailable ? '' : ' (Sold Out)';
+        const selectedAttr = defaultVariantId && defaultVariantId === variantId ? ' selected' : '';
+        return `
+          <option value="${variantId}" data-available="${isAvailable ? 'true' : 'false'}"${disabledAttr}${selectedAttr}>
+            ${displayName}${soldOutSuffix}
+          </option>
+        `;
+      }).join('') : `
+          <option value="" disabled selected>Currently unavailable</option>
+        `;
+
+      const pillMarkup = showVariantPills ? `
+        <div class="cartuplift-variant-pill-group" role="group" aria-label="${labelText}">
+          ${variantsToRender.map(variant => {
+            const variantId = String(variant.id);
+            const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
+            const isAvailable = variant.available !== false;
+            const isSelected = defaultVariantId && defaultVariantId === variantId;
+            const classes = ['cartuplift-variant-pill'];
+            if (isSelected) classes.push('is-selected');
+            if (!isAvailable) classes.push('is-disabled');
+            const disabledAttr = isAvailable ? '' : ' disabled';
+            const availabilityAttr = isAvailable ? 'true' : 'false';
+            const statusHtml = isAvailable
+              ? '<span class="cartuplift-variant-pill-status cartuplift-variant-pill-status--available">Available</span>'
+              : '<span class="cartuplift-variant-pill-status">Sold Out</span>';
+            return `
+              <button type="button" class="${classes.join(' ')}" data-variant-id="${variantId}" data-available="${availabilityAttr}" aria-pressed="${isSelected ? 'true' : 'false'}" aria-disabled="${isAvailable ? 'false' : 'true'}"${disabledAttr}>
+                <span class="cartuplift-variant-pill-label">${displayName}</span>
+                ${statusHtml}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      ` : '';
+
+      const singleVariantSummary = (!hasVariantChoices && summaryText)
+        ? `<div class="cartuplift-variant-summary">${summaryText}</div>`
+        : '';
+
       return `
         <div class="cartuplift-modal-backdrop">
           <div class="cartuplift-modal-content">
@@ -4355,14 +4648,12 @@
                 ` : ''}
                 
                 <div class="cartuplift-modal-variants">
-                  <label for="cartuplift-gift-variant-select">Select Option:</label>
-                  <select id="cartuplift-gift-variant-select" class="cartuplift-variant-select">
-                    ${availableVariants.map(variant => `
-                      <option value="${variant.id}">
-                        ${variant.title}
-                      </option>
-                    `).join('')}
+                  ${hasVariantChoices ? `<label for="cartuplift-gift-variant-select">${labelText}</label>` : `<span class="cartuplift-variant-summary-label">${labelText}</span>`}
+                  <select id="cartuplift-gift-variant-select" class="${selectClasses.join(' ')}"${selectAttributes}>
+                    ${optionMarkup}
                   </select>
+                  ${singleVariantSummary}
+                  ${pillMarkup}
                 </div>
                 
                 <div class="cartuplift-modal-actions">
@@ -4381,12 +4672,13 @@
     }
 
     // Attach event handlers to gift modal
-    attachGiftModalHandlers(modal, productData, threshold) {
+    attachGiftModalHandlers(modal, productData, threshold, variantState) {
       const closeBtn = modal.querySelector('.cartuplift-modal-close');
       const backdrop = modal.querySelector('.cartuplift-modal-backdrop');
       const addBtn = modal.querySelector('.cartuplift-modal-add-btn');
       const skipBtn = modal.querySelector('.cartuplift-modal-skip-btn');
       const variantSelect = modal.querySelector('.cartuplift-variant-select');
+      const computedVariantState = variantState || this.prepareVariantModalState(productData);
       
       // Extract product ID for tracking
       let numericProductId = threshold.productId;
@@ -4413,10 +4705,18 @@
       if (skipBtn) {
         skipBtn.addEventListener('click', handleDecline);
       }
+
+      this.setupVariantInteractions(modal, productData, computedVariantState, {
+        addButton: addBtn,
+        priceDisplay: modal.querySelector('.cartuplift-modal-price'),
+        updatePrice: false,
+        disableAddForSoldOut: true,
+        soldOutLabel: 'Sold Out'
+      });
       
       // Add gift to cart handler - clear declined flag
       addBtn.addEventListener('click', async () => {
-        const selectedVariantId = variantSelect.value;
+        const selectedVariantId = addBtn.dataset.variantId || (variantSelect ? variantSelect.value : null);
         if (selectedVariantId) {
           sessionStorage.removeItem(declinedKey); // Clear declined flag when claimed
           await this.addGiftVariantToCart(selectedVariantId, threshold);
