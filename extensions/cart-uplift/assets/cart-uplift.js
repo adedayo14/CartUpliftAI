@@ -1564,11 +1564,35 @@
           parsedGiftThresholds: giftThresholds,
           sortedGifts: sortedGifts
         });
-        // Next gift threshold above current total
-        const nextGift = sortedGifts.find(t => currentCents < Math.round(t.amount * 100));
+        
+        // Helper to check if a gift is actually in the cart (claimed)
+        const isGiftInCart = (threshold) => {
+          if (!threshold || !threshold.productId) return false;
+          let numericProductId = threshold.productId;
+          if (typeof numericProductId === 'string' && numericProductId.includes('gid://shopify/Product/')) {
+            numericProductId = numericProductId.replace('gid://shopify/Product/', '');
+          }
+          return this.cart?.items?.some(item => 
+            item.product_id.toString() === numericProductId.toString() && 
+            item.properties && 
+            item.properties._is_gift === 'true'
+          ) || false;
+        };
+        
+        // Find next unclaimed gift
+        // Priority: First find gifts where threshold is NOT met yet, then find met but unclaimed
+        const nextUnreachedGift = sortedGifts.find(t => currentCents < Math.round(t.amount * 100));
+        const nextUnclaimedGift = sortedGifts.find(t => {
+          const thresholdCents = Math.round(t.amount * 100);
+          return currentCents >= thresholdCents && !isGiftInCart(t);
+        });
+        
+        // Next gift is: first unreached gift, or first unclaimed gift if all thresholds met
+        const nextGift = nextUnreachedGift || nextUnclaimedGift || null;
         const nextGiftCents = nextGift ? Math.round(nextGift.amount * 100) : null;
         const giftRemaining = nextGiftCents != null ? Math.max(0, nextGiftCents - currentCents) : null;
-        const giftAchieved = nextGiftCents != null ? (currentCents >= nextGiftCents) : false;
+        // Gift is only "achieved" if threshold is met AND gift is in cart
+        const giftAchieved = nextGift ? (currentCents >= nextGiftCents && isGiftInCart(nextGift)) : false;
 
         // Decide what to show as primary progress
         let labelRight = '';
@@ -1595,10 +1619,20 @@
             .trim();
         } catch {}
 
-        const giftMsg = (t) => {
+        const giftMsg = (t, isUnlocked = false) => {
           if (!t) return '';
           const remaining = Math.max(0, Math.round(t.amount*100) - currentCents);
-          return (this.settings.giftProgressText || 'Free shipping unlocked! ✓ Spend {{ amount }} more to unlock {{ product_name }}!')
+          
+          // Parse conditional format: "before text | after text"
+          let rawText = this.settings.giftProgressText || 'Spend {{ amount }} more to unlock {{ product }}!';
+          
+          // Check if text contains pipe separator for conditional format
+          if (rawText.includes('|')) {
+            const parts = rawText.split('|').map(p => p.trim());
+            rawText = isUnlocked ? (parts[1] || parts[0]) : (parts[0] || '');
+          }
+          
+          return rawText
               .replace(/\{\{\s*amount\s*\}\}/g, formatMoney(remaining))
               .replace(/\{amount\}/g, formatMoney(remaining))
               .replace(/\{\{\s*title\s*\}\}/g, String(t.title || 'reward'))
@@ -1664,23 +1698,39 @@
             }
           }
         } else if (mode === 'gift-gating' && giftEnabled) {
-          // Single gift bar
+          // Single gift bar - gift-only mode
           if (!nextGift) {
-            // All gifts unlocked: show last achieved state at top
-            successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${giftSuccess(sortedGifts[sortedGifts.length-1])}</span></div>`;
-            widthPct = 100; 
+            // All thresholds met - check if last gift is actually claimed
+            const lastGift = sortedGifts[sortedGifts.length - 1];
+            if (lastGift && isGiftInCart(lastGift)) {
+              // Gift is claimed - show success
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${giftSuccess(lastGift)}</span></div>`;
+              widthPct = 100;
+            } else {
+              // Threshold met but gift not claimed - show ready message
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${giftMsg(lastGift, false)}</span></div>`;
+              widthPct = 100;
+            }
             labelRight = ''; // Single threshold - no label below bar
             messageHTML = '';
           } else {
             widthPct = Math.min(100, (currentCents / nextGiftCents) * 100);
             labelRight = ''; // Single threshold - no label below bar
+            
+            // Check if threshold is met (not just achieved/claimed)
+            const thresholdMet = currentCents >= nextGiftCents;
+            
             if (giftAchieved) {
-              // Success message at top
+              // Gift is in cart - show success message
               successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-success-badge">${giftSuccess(nextGift)}</span></div>`;
               messageHTML = '';
+            } else if (thresholdMet) {
+              // Threshold met but not claimed yet - show "unlocked" part of message
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${giftMsg(nextGift, true)}</span></div>`;
+              messageHTML = '';
             } else {
-              // Move message to top with threshold amount
-              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${giftMsg(nextGift)}</span></div>`;
+              // Not yet reached threshold - show progress message
+              successTopRowHTML = `<div class="cartuplift-progress-toprow"><span class="cartuplift-progress-message">${giftMsg(nextGift, false)}</span></div>`;
               messageHTML = '';
             }
           }
@@ -3893,6 +3943,10 @@
           this.cart = await response.json();
           // Ensure recommendations reflect cart mutations (remove added items, re-add removed ones)
           this.rebuildRecommendationsFromMaster();
+          
+          // Check gift thresholds after quantity change
+          await this.checkAndAddGiftThresholds();
+          
           this.updateDrawerContent();
         }
       } catch (error) {
