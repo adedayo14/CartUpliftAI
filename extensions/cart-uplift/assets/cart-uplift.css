@@ -223,6 +223,7 @@ body.cartuplift-no-scroll {
 /* Segmented Progress Bar Styles */
 .cartuplift-segmented-bar-container {
   margin: 12px 0 !important;
+  overflow: visible !important; /* Ensure container doesn't clip segments */
 }
 
 .cartuplift-segmented-bar {
@@ -231,6 +232,7 @@ body.cartuplift-no-scroll {
   background: transparent !important;
   height: 7px !important;
   margin-bottom: 8px !important;
+  overflow: visible !important; /* Allow segments to show full rounded borders */
 }
 
 .cartuplift-progress-segment {
@@ -242,6 +244,7 @@ body.cartuplift-no-scroll {
   flex-shrink: 0 !important;
   overflow: visible !important;
   transition: all 0.3s ease !important;
+  min-width: 0 !important; /* Allow flexbox to size properly */
 }
 
 /* Status message above the bar */
