@@ -189,15 +189,17 @@
           }
         } catch (_) {}
 
-        // Parse combined gift messages (progress | success)
+        // Parse gift messages and replace placeholders
         try {
           const amountToken = `{% raw %}{{ amount }}{% endraw %}`;
           const productToken = `{% raw %}{{ title }}{% endraw %}`;
-          const combinedMessage = {{ block.settings.gift_progress_message | json }} || "Spend {amount} more to unlock {product}! | 🎉 {product} unlocked!";
-          const [progressMsg, successMsg] = combinedMessage.split('|').map(s => s.trim());
           
-          window.CartUpliftSettings.giftProgressText = progressMsg || "Spend {amount} more to unlock {product}!";
-          window.CartUpliftSettings.giftAchievedText = successMsg || "🎉 {product} unlocked!";
+          // Gift messages are now separate settings (no longer combined with |)
+          const progressMsg = {{ block.settings.gift_progress_message | json }} || "Spend {amount} more to unlock {product}!";
+          const successMsg = {{ block.settings.gift_success_message | json }} || "🎉 {product} unlocked!";
+          
+          window.CartUpliftSettings.giftProgressText = progressMsg;
+          window.CartUpliftSettings.giftAchievedText = successMsg;
           
           // Replace placeholders
           if (typeof window.CartUpliftSettings.giftProgressText === 'string') {
@@ -624,8 +626,16 @@
     {
       "type": "text",
       "id": "gift_progress_message", 
-      "label": "Message templates (progress | success)",
-      "default": "{amount} to unlock {product} | 🎉 {product} unlocked!"
+      "label": "Progress message",
+      "default": "{amount} to unlock {product}",
+      "info": "Use {amount} and {product} placeholders"
+    },
+    {
+      "type": "text",
+      "id": "gift_success_message",
+      "label": "Success message",
+      "default": "🎉 {product} unlocked!",
+      "info": "Use {product} placeholder"
     },
     {
       "type": "text",
