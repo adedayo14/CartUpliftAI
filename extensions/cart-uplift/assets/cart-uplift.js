@@ -1712,20 +1712,9 @@
             const currentClass = isCurrent ? 'cartuplift-segment-current' : '';
             const lockedClass = !isCompleted && !isCurrent ? 'cartuplift-segment-locked' : '';
             
-            // Build status message above bar
-            let statusMessage = '';
-            if (isCompleted) {
-              statusMessage = threshold.type === 'shipping' 
-                ? "You've unlocked free shipping!" 
-                : `${threshold.label} UNLOCKED`;
-            } else if (isCurrent) {
-              statusMessage = `${threshold.label} IN PROGRESS`;
-            }
-            
-            // Build segment bar with status above and dynamic border color
+            // Build segment bar without status messages (messages shown in successTopRowHTML instead)
             segmentsHTML += `
               <div class="cartuplift-progress-segment ${completedClass} ${currentClass} ${lockedClass}" style="width: ${segmentWidth}%; ${!lockedClass ? `border-color: ${segmentColor};` : ''}">
-                ${statusMessage ? `<div class="cartuplift-segment-status-above" style="${!lockedClass ? `color: ${segmentColor};` : ''}">${statusMessage}</div>` : ''}
                 <div class="cartuplift-segment-fill" style="width: ${fillWidth}%; background: ${segmentColor};"></div>
               </div>
             `;
