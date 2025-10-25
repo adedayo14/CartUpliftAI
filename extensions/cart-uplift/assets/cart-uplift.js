@@ -4221,21 +4221,14 @@
 
     // Show gift selection modal when threshold is met
     async showGiftModal(threshold) {
-      // Check for existing modal first
-      const existingModal = document.querySelector('.cartuplift-gift-modal');
-      if (existingModal) {
-        console.log('🎁 Gift modal already exists in DOM, removing stale modal');
-        existingModal.remove();
+      // Prevent multiple opens
+      if (this._modalOpening || document.querySelector('.cartuplift-gift-modal')) {
+        console.log('🎁 Gift modal already opening/open');
+        return;
       }
       
-      // Clear any stuck flag (safety mechanism)
-      if (this._modalOpening) {
-        console.log('🎁 Clearing stuck modal opening flag');
-        this._modalOpening = false;
-      }
-
       this._modalOpening = true;
-      console.log('🎁 Starting gift modal creation for:', threshold.productHandle);
+      console.log('🎁 Creating gift modal for:', threshold.productHandle);
 
       try {
         // Fetch product data
@@ -4245,101 +4238,59 @@
           return;
         }
 
-        console.log('🎁 Fetching product data from:', `/products/${threshold.productHandle}.js`);
         const response = await fetch(`/products/${threshold.productHandle}.js`);
         
         if (!response.ok) {
-          console.error('🎁 Failed to fetch product:', threshold.productHandle, 'Status:', response.status);
+          console.error('🎁 Failed to fetch product:', threshold.productHandle);
           this._modalOpening = false;
           return;
         }
 
         const productData = await response.json();
-        console.log('🎁 Product data received:', productData.title, 'Variants:', productData.variants?.length);
+        console.log('🎁 Product data received:', productData.title);
 
         // Check if product has variants
         const availableVariants = productData.variants ? productData.variants.filter(v => v.available) : [];
         
         if (availableVariants.length === 0) {
-          console.error('🎁 No available variants for gift:', threshold.productHandle);
+          console.error('🎁 No available variants for gift');
           this._modalOpening = false;
           return;
         }
 
-        console.log('🎁 Creating modal HTML...');
-        // Generate and show modal
-        const modalHTML = this.generateGiftModalHTML(productData, threshold);
-        const modalElement = document.createElement('div');
-        modalElement.className = 'cartuplift-gift-modal';
-        modalElement.innerHTML = modalHTML;
-        document.body.appendChild(modalElement);
-        console.log('🎁 Modal appended to body');
+        // Create modal using same structure as product modal
+        const modal = document.createElement('div');
+        modal.className = 'cartuplift-gift-modal';
+        modal.style.zIndex = '1000001';
+        
+        modal.innerHTML = this.generateGiftModalHTML(productData, threshold);
+        document.body.appendChild(modal);
+        
+        // Sync dimensions with drawer (same as product modal)
+        const modalContent = modal.querySelector('.cartuplift-modal-content');
+        const drawer = document.querySelector('#cartuplift-cart-popup .cartuplift-drawer');
 
-        // Sync dimensions with drawer
-        this.syncGiftModalDimensions(modalElement);
-        const resizeObserver = new ResizeObserver(() => {
-          this.syncGiftModalDimensions(modalElement);
-        });
-        const drawer = document.querySelector('.cartuplift-drawer');
-        if (drawer) {
-          resizeObserver.observe(drawer);
-        }
-        modalElement._cleanupResize = () => resizeObserver.disconnect();
+        const syncModalDimensions = () => {
+          if (!modalContent || !drawer) return;
+          const drawerRect = drawer.getBoundingClientRect();
+          modalContent.style.width = `${drawerRect.width}px`;
+          modalContent.style.maxWidth = `${drawerRect.width}px`;
+          modalContent.style.height = `${drawerRect.height}px`;
+          modalContent.style.maxHeight = `${drawerRect.height}px`;
+        };
+
+        syncModalDimensions();
+        window.addEventListener('resize', syncModalDimensions);
+        modal._cleanupResize = () => window.removeEventListener('resize', syncModalDimensions);
 
         // Attach event handlers
-        this.attachGiftModalHandlers(modalElement, productData, threshold);
-        console.log('🎁 Event handlers attached');
+        this.attachGiftModalHandlers(modal, productData, threshold);
 
-        // Trigger animation
+        // Show modal with animation
         requestAnimationFrame(() => {
-          modalElement.classList.add('show');
-          console.log('🎁 Modal animation triggered');
-          console.log('🎁 Modal element:', modalElement);
-          console.log('🎁 Modal classes:', modalElement.className);
-          console.log('🎁 Modal in DOM:', document.body.contains(modalElement));
-          
-          // Check if element can be found
-          const modalInDom = document.querySelector('.cartuplift-gift-modal');
-          console.log('🎁 querySelector found modal:', modalInDom);
-          console.log('🎁 Modal matches element:', modalInDom === modalElement);
-          
-          // Get comprehensive computed styles
-          const styles = window.getComputedStyle(modalElement);
-          console.log('🎁 COMPUTED STYLES:', {
-            display: styles.display,
-            opacity: styles.opacity,
-            zIndex: styles.zIndex,
-            position: styles.position,
-            top: styles.top,
-            left: styles.left,
-            right: styles.right,
-            bottom: styles.bottom,
-            transform: styles.transform,
-            visibility: styles.visibility,
-            width: styles.width,
-            height: styles.height,
-            backgroundColor: styles.backgroundColor,
-            pointerEvents: styles.pointerEvents
-          });
-          
-          // Check bounding rect
-          const rect = modalElement.getBoundingClientRect();
-          console.log('🎁 BOUNDING RECT:', {
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
-            bottom: rect.bottom,
-            right: rect.right
-          });
-          
-          // Count all modals
-          const allModals = document.querySelectorAll('.cartuplift-gift-modal');
-          console.log('🎁 Total modals in DOM:', allModals.length);
-          
-          // Check parent elements
-          console.log('🎁 Parent element:', modalElement.parentElement);
-          console.log('🎁 Body children count:', document.body.children.length);
+          modal.classList.add('show');
+          this._modalOpening = false;
+          console.log('🎁 Gift modal shown');
         });
 
       } catch (error) {
