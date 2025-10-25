@@ -192,7 +192,7 @@ body.cartuplift-no-scroll {
 /* New unified progress section */
 .cartuplift-progress-section {
   padding: 6px 16px; /* Reduced top/bottom padding to bring bar closer to header */
-  margin: 2px 0 12px; /* Reduced top margin to move closer to header */
+  margin: 2px 0 6px; /* Tighter bottom margin to reduce space before cart items */
 }
 
 /* Desktop: tighten even further so bar sits closer to header */
@@ -727,6 +727,7 @@ body.cartuplift-no-scroll {
   padding: 0 16px;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-top: 0; /* Remove top padding to bring items closer to progress bar */
   padding-bottom: 10px; /* small gap before reccomendation */
   
   /* Hide scrollbar */
@@ -758,8 +759,8 @@ body.cartuplift-no-scroll {
 }
 
 .cartuplift-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0; /* remove extra space before recommendations header */
+  border-bottom: 1px solid #f0f0f0; /* Keep divider line on last item */
+  padding-bottom: 8px;
 }
 
 .cartuplift-item.loading {
