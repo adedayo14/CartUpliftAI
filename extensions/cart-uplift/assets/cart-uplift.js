@@ -212,6 +212,8 @@
       this._allRecommendations = []; // Master list to allow re-show after removal from cart
   // Track if free shipping was ever achieved in this session (for soft fallback message)
   this._freeShippingHadUnlocked = false;
+    this._modalOpening = false;
+    this._giftModalRetryTimer = null;
   
       // Immediately intercept cart notifications if app is enabled
       if (this.settings.enableApp) {
@@ -4072,6 +4074,61 @@
       return `Select ${optionNames.join(' / ')}`;
     }
 
+    getVariantOptionValue(variant, optionIndex) {
+      if (!variant || typeof optionIndex !== 'number') return '';
+      const key = `option${optionIndex + 1}`;
+      const directValue = variant[key];
+      let resolved = typeof directValue === 'string' ? directValue : null;
+      if ((!resolved || resolved === 'Default Title') && Array.isArray(variant.options)) {
+        resolved = variant.options[optionIndex];
+      }
+      if (!resolved || resolved === 'Default Title') return '';
+      return resolved;
+    }
+
+    getOptionValuePriceRange(variantState, optionIndex, optionValue) {
+      if (!variantState || !Number.isInteger(optionIndex) || !optionValue) {
+        return null;
+      }
+
+      const variants = Array.isArray(variantState.allVariants) ? variantState.allVariants : [];
+      if (!variants.length) return null;
+
+      let min = null;
+      let max = null;
+
+      variants.forEach(variant => {
+        if (!variant) return;
+        const value = this.getVariantOptionValue(variant, optionIndex);
+        if (value !== optionValue) return;
+        const priceCents = this.normalizePriceToCents(variant.price);
+        if (!Number.isFinite(priceCents)) return;
+        if (min === null || priceCents < min) {
+          min = priceCents;
+        }
+        if (max === null || priceCents > max) {
+          max = priceCents;
+        }
+      });
+
+      if (min === null) {
+        return null;
+      }
+
+      return { min, max };
+    }
+
+    renderOptionValuePriceSnippet(variantState, optionIndex, optionValue) {
+      const range = this.getOptionValuePriceRange(variantState, optionIndex, optionValue);
+      if (!range) return '';
+      const { min, max } = range;
+      if (!Number.isFinite(min)) return '';
+      if (max !== null && Number.isFinite(max) && max > min) {
+        return `<span class="cartuplift-variant-pill-price">From ${this.formatMoney(min)}</span>`;
+      }
+      return `<span class="cartuplift-variant-pill-price">${this.formatMoney(min)}</span>`;
+    }
+
     formatVariantDisplayName(productData, variant) {
       if (!variant) return 'Default';
       const optionNames = this.getProductOptionNames(productData);
@@ -4119,26 +4176,70 @@
       const variantsToRender = availableVariants.length ? availableVariants : allVariants;
       const initialVariant = availableVariants[0] || allVariants[0] || null;
       const defaultVariantId = initialVariant ? String(initialVariant.id) : null;
-      const optionValuesByIndex = [new Set(), new Set(), new Set()];
+      const optionNames = this.getProductOptionNames(productData);
+      const optionValueSets = new Map();
+      const optionValueOrder = new Map();
 
-      allVariants.forEach(variant => {
-        if (!variant) return;
-        ['option1', 'option2', 'option3'].forEach((key, idx) => {
-          const value = variant[key];
-          if (value && value !== 'Default Title') {
-            optionValuesByIndex[idx].add(value);
+      if (Array.isArray(productData?.options)) {
+        productData.options.forEach(option => {
+          const name = typeof option === 'string' ? option : option?.name;
+          if (!name || typeof name !== 'string') return;
+          const trimmed = name.trim();
+          if (trimmed.length === 0 || trimmed.toLowerCase() === 'title' || !optionNames.includes(trimmed)) return;
+          if (!optionValueOrder.has(trimmed) && Array.isArray(option?.values)) {
+            optionValueOrder.set(trimmed, option.values.filter(value => typeof value === 'string' && value && value !== 'Default Title'));
           }
         });
+      }
+
+      optionNames.forEach(name => {
+        if (!optionValueSets.has(name)) {
+          optionValueSets.set(name, new Set());
+        }
+      });
+
+      const variantLookup = new Map();
+
+      allVariants.forEach(variant => {
+        if (!variant || variant.id === undefined || variant.id === null) {
+          return;
+        }
+
+        const variantId = String(variant.id);
+        variantLookup.set(variantId, variant);
+
+        optionNames.forEach((name, idx) => {
+          const value = this.getVariantOptionValue(variant, idx);
+          if (value) {
+            optionValueSets.get(name)?.add(value);
+          }
+        });
+      });
+
+      const optionValuesByIndex = optionNames.map((_, idx) => {
+        const set = new Set();
+        allVariants.forEach(variant => {
+          const value = this.getVariantOptionValue(variant, idx);
+          if (value) {
+            set.add(value);
+          }
+        });
+        return set;
       });
 
       const uniqueVariantTitles = new Set(allVariants.map(v => v?.title).filter(Boolean));
       const hasMultiOption = optionValuesByIndex.some(set => set.size > 1);
       const requiresSelection = availableVariants.length > 1 || (allVariants.length > 1 && (uniqueVariantTitles.size > 1 || hasMultiOption));
-      const variantLookup = new Map();
-      allVariants.forEach(variant => {
-        if (!variant || variant.id === undefined || variant.id === null) return;
-        variantLookup.set(String(variant.id), variant);
-      });
+
+      const initialSelection = {};
+      if (initialVariant) {
+        optionNames.forEach((name, idx) => {
+          const value = this.getVariantOptionValue(initialVariant, idx);
+          if (value) {
+            initialSelection[name] = value;
+          }
+        });
+      }
 
       return {
         allVariants,
@@ -4151,7 +4252,10 @@
         hasMultiOption,
         requiresSelection,
         optionLabel: this.getVariantOptionLabel(productData),
-        optionNames: this.getProductOptionNames(productData),
+        optionNames,
+        optionValueSets,
+        optionValueOrder,
+        initialSelection,
         variantLookup
       };
     }
@@ -4167,54 +4271,199 @@
       } = options;
 
       const variantSelect = modal.querySelector('.cartuplift-variant-select');
-      const variantButtons = Array.from(modal.querySelectorAll('.cartuplift-variant-pill'));
-      const variantLookup = variantState?.variantLookup || new Map();
-      const addButtonLabel = addButton ? addButton.textContent.trim() : '';
-
-      const applyVariant = (incomingVariantId) => {
-        if (!incomingVariantId) return;
-        const variantId = String(incomingVariantId);
-
-        if (variantSelect && variantSelect.value !== variantId) {
-          variantSelect.value = variantId;
+      const optionButtons = Array.from(modal.querySelectorAll('.cartuplift-variant-pill'));
+      const selectionLabels = {};
+      modal.querySelectorAll('.cartuplift-variant-group').forEach(group => {
+        const name = group.dataset.optionName;
+        const labelEl = group.querySelector('.cartuplift-variant-group-selection');
+        if (name && labelEl) {
+          selectionLabels[name] = labelEl;
         }
+      });
 
-        variantButtons.forEach(btn => {
-          const isMatch = btn.dataset.variantId === variantId;
-          btn.classList.toggle('is-selected', isMatch);
-          btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+      const helperEl = modal.querySelector('[data-variant-helper]');
+      const summaryEl = modal.querySelector('[data-variant-summary]');
+      const variantLookup = variantState?.variantLookup || new Map();
+      const optionNames = Array.isArray(variantState?.optionNames) ? variantState.optionNames : [];
+      const allVariants = Array.isArray(variantState?.allVariants) ? variantState.allVariants : [];
+      const addButtonLabel = addButton ? addButton.textContent.trim() : '';
+      const currentSelection = Object.assign({}, variantState?.initialSelection || {});
+      let lastVariantId = null;
+
+      const findMatchingVariants = (selection) => {
+        const entries = Object.entries(selection || {}).filter(([, value]) => typeof value === 'string' && value);
+        if (!entries.length) {
+          return allVariants.filter(Boolean);
+        }
+        return allVariants.filter(variant => {
+          if (!variant) return false;
+          return entries.every(([name, value]) => {
+            const optionIndex = optionNames.indexOf(name);
+            if (optionIndex === -1) return true;
+            return this.getVariantOptionValue(variant, optionIndex) === value;
+          });
         });
+      };
 
-        const variant = variantLookup.get(variantId) || productData?.variants?.find(v => String(v?.id) === variantId);
-        if (!variant) {
+      const resolveSelectedVariant = () => {
+        if (!optionNames.length) {
+          return variantState?.initialVariant || allVariants[0] || null;
+        }
+        const allChosen = optionNames.every(name => currentSelection[name]);
+        if (!allChosen) {
+          return null;
+        }
+        const matches = findMatchingVariants(currentSelection);
+        if (!matches.length) {
+          return null;
+        }
+        const availableMatch = matches.find(variant => variant && variant.available !== false);
+        return availableMatch || matches[0];
+      };
+
+      const updateHelper = () => {
+        if (!helperEl) return;
+        const missing = optionNames.filter(name => !currentSelection[name]);
+        if (!missing.length) {
+          helperEl.textContent = '';
+          helperEl.dataset.state = 'complete';
           return;
         }
+        helperEl.dataset.state = 'pending';
+        const nextName = missing[0];
+        helperEl.textContent = `Select ${nextName}`;
+      };
 
-        if (addButton) {
-          addButton.dataset.variantId = variant.id;
-          const isAvailable = variant.available !== false;
-          if (disableAddForSoldOut) {
-            addButton.disabled = !isAvailable;
-            addButton.classList.toggle('is-disabled', !isAvailable);
-            addButton.textContent = isAvailable ? addButtonLabel : soldOutLabel;
-          } else {
-            addButton.disabled = false;
-            addButton.classList.remove('is-disabled');
-            addButton.textContent = addButtonLabel;
-          }
+      const updateSelectionLabels = () => {
+        Object.entries(selectionLabels).forEach(([name, element]) => {
+          element.textContent = currentSelection[name] || '';
+        });
+      };
+
+      const updateSummary = (variant) => {
+        if (!summaryEl) return;
+        if (variant) {
+          summaryEl.textContent = this.formatVariantDisplayName(productData, variant);
+          return;
         }
+        const partial = optionNames.map(name => currentSelection[name]).filter(Boolean).join(' · ');
+        if (partial) {
+          summaryEl.textContent = partial;
+        } else if (variantState?.initialVariant) {
+          summaryEl.textContent = this.formatVariantDisplayName(productData, variantState.initialVariant);
+        }
+      };
 
-        if (updatePrice && priceDisplay && !priceDisplay.classList.contains('cartuplift-gift-price')) {
+      const updatePriceDisplay = (variant) => {
+        if (!updatePrice || !priceDisplay || priceDisplay.classList.contains('cartuplift-gift-price')) {
+          return;
+        }
+        if (variant) {
           const priceCents = this.normalizePriceToCents(variant.price);
           if (Number.isFinite(priceCents)) {
             priceDisplay.textContent = this.formatMoney(priceCents);
             priceDisplay.dataset.price = priceCents;
           }
+          return;
         }
 
-        if (typeof onVariantSelected === 'function') {
-          onVariantSelected(variant);
+        const fallback = priceDisplay.dataset.basePrice || priceDisplay.dataset.price;
+        const priceValue = parseInt(fallback, 10);
+        if (Number.isFinite(priceValue)) {
+          priceDisplay.textContent = this.formatMoney(priceValue);
+          priceDisplay.dataset.price = priceValue;
         }
+      };
+
+      const updateAddButton = (variant) => {
+        if (!addButton) return;
+        const originalLabel = addButton.dataset.originalLabel || addButtonLabel;
+        if (!addButton.dataset.originalLabel && originalLabel) {
+          addButton.dataset.originalLabel = originalLabel;
+        }
+
+        if (!variant) {
+          addButton.dataset.variantId = '';
+          addButton.disabled = true;
+          addButton.classList.add('is-disabled');
+          addButton.textContent = originalLabel;
+          return;
+        }
+
+        addButton.dataset.variantId = String(variant.id);
+        if (variant.available === false && disableAddForSoldOut) {
+          addButton.disabled = true;
+          addButton.classList.add('is-disabled');
+          addButton.textContent = soldOutLabel;
+        } else {
+          addButton.disabled = false;
+          addButton.classList.remove('is-disabled');
+          addButton.textContent = originalLabel;
+        }
+      };
+
+      const refreshOptionButtons = () => {
+        optionButtons.forEach(btn => {
+          const optionName = btn.dataset.optionName;
+          const optionValue = btn.dataset.optionValue;
+          if (!optionName || !optionValue) return;
+
+          const baseSelection = Object.assign({}, currentSelection);
+          delete baseSelection[optionName];
+          const potentialSelection = Object.assign({}, baseSelection, { [optionName]: optionValue });
+          const matches = findMatchingVariants(potentialSelection);
+          const hasAnyMatch = matches.length > 0;
+          const hasAvailableMatch = matches.some(variant => variant && variant.available !== false);
+          const isSelected = currentSelection[optionName] === optionValue;
+
+          btn.classList.toggle('is-selected', isSelected);
+          btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+          btn.classList.toggle('is-disabled', !hasAvailableMatch);
+          btn.classList.toggle('is-unavailable', !hasAnyMatch);
+          btn.classList.toggle('is-soldout', hasAnyMatch && !hasAvailableMatch);
+          btn.dataset.available = hasAvailableMatch ? 'true' : 'false';
+          btn.setAttribute('aria-disabled', hasAvailableMatch ? 'false' : 'true');
+          btn.disabled = !hasAvailableMatch;
+        });
+      };
+
+      const refreshState = () => {
+        refreshOptionButtons();
+        updateSelectionLabels();
+        const selectedVariant = resolveSelectedVariant();
+
+        if (variantSelect) {
+          variantSelect.value = selectedVariant ? String(selectedVariant.id) : '';
+        }
+
+        updateAddButton(selectedVariant);
+        updatePriceDisplay(selectedVariant);
+        updateSummary(selectedVariant);
+        updateHelper();
+
+        const selectedVariantId = selectedVariant ? String(selectedVariant.id) : null;
+        if (selectedVariant && selectedVariantId !== lastVariantId && typeof onVariantSelected === 'function') {
+          onVariantSelected(selectedVariant);
+        }
+        lastVariantId = selectedVariantId;
+      };
+
+      const applyVariant = (incomingVariantId) => {
+        if (!incomingVariantId) return;
+        const variantId = String(incomingVariantId);
+        const variant = variantLookup.get(variantId) || allVariants.find(v => v && String(v.id) === variantId);
+        if (!variant) return;
+
+        optionNames.forEach((name, index) => {
+          const value = this.getVariantOptionValue(variant, index);
+          if (value) {
+            currentSelection[name] = value;
+          } else {
+            delete currentSelection[name];
+          }
+        });
+
+        refreshState();
       };
 
       if (variantSelect) {
@@ -4223,19 +4472,50 @@
         });
       }
 
-      variantButtons.forEach(btn => {
-        if (btn.dataset.available !== 'true') return;
+      optionButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-          applyVariant(btn.dataset.variantId);
+          if (btn.classList.contains('is-disabled') || btn.classList.contains('is-unavailable')) {
+            return;
+          }
+          const optionName = btn.dataset.optionName;
+          const optionValue = btn.dataset.optionValue;
+          if (!optionName || !optionValue) return;
+
+          currentSelection[optionName] = optionValue;
+
+          optionNames.forEach(name => {
+            if (name === optionName) return;
+            if (!currentSelection[name]) return;
+            const matches = findMatchingVariants(currentSelection);
+            const isStillValid = matches.some(variant => {
+              const idx = optionNames.indexOf(name);
+              return this.getVariantOptionValue(variant, idx) === currentSelection[name];
+            });
+            if (!isStillValid) {
+              delete currentSelection[name];
+            }
+          });
+
+          refreshState();
         });
       });
 
-      const initialVariantId = variantState?.defaultVariantId || (variantSelect ? variantSelect.value : null) || (variantState?.variantsToRender?.[0]?.id);
+      if (!optionButtons.length || !optionNames.length) {
+        const fallbackVariant = variantState?.initialVariant || allVariants[0];
+        if (fallbackVariant) {
+          applyVariant(fallbackVariant.id);
+        } else if (addButton) {
+          addButton.disabled = true;
+          addButton.classList.add('is-disabled');
+        }
+        return { applyVariant };
+      }
+
+      const initialVariantId = variantState?.defaultVariantId || (variantState?.initialVariant ? variantState.initialVariant.id : null);
       if (initialVariantId) {
         applyVariant(initialVariantId);
-      } else if (addButton) {
-        addButton.disabled = true;
-        addButton.classList.add('is-disabled');
+      } else {
+        refreshState();
       }
 
       return { applyVariant };
@@ -4301,70 +4581,110 @@
       const state = variantState || this.prepareVariantModalState(productData);
       const initialVariant = state.initialVariant;
       const defaultVariantId = state.defaultVariantId;
-      const variantsToRender = state.variantsToRender || [];
+      const optionNames = Array.isArray(state.optionNames) ? state.optionNames : [];
+      const allVariants = Array.isArray(state.allVariants) ? state.allVariants : [];
       const initialPriceSource = (productData.price && productData.price > 0)
         ? productData.price
         : (initialVariant ? initialVariant.price : 0);
       const initialPriceCents = this.normalizePriceToCents(initialPriceSource);
-      const hasVariantChoices = state.requiresSelection && variantsToRender.length > 1;
-      const selectClasses = ['cartuplift-variant-select'];
-      if (!hasVariantChoices) {
-        selectClasses.push('cartuplift-variant-select--single');
-      }
-      const selectAttributes = hasVariantChoices ? '' : ' aria-hidden="true" tabindex="-1"';
-      const labelText = this.escapeHtml(state.optionLabel || 'Select Option');
-      const summaryText = initialVariant ? this.escapeHtml(this.formatVariantDisplayName(productData, initialVariant)) : '';
-      const showVariantPills = variantsToRender.length > 1;
+      const summaryText = initialVariant
+        ? this.escapeHtml(this.formatVariantDisplayName(productData, initialVariant))
+        : this.escapeHtml(state.optionLabel || 'Select an option');
 
-      const optionMarkup = variantsToRender.length ? variantsToRender.map(variant => {
+      const selectOptions = allVariants.length ? allVariants.map(variant => {
+        if (!variant || variant.id === undefined || variant.id === null) return '';
         const variantId = String(variant.id);
-        const variantPriceCents = this.normalizePriceToCents(variant.price);
-        const priceLabel = Number.isFinite(variantPriceCents) ? this.formatMoney(variantPriceCents) : this.formatMoney(0);
         const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
         const isAvailable = variant.available !== false;
-        const disableOption = !isAvailable && state.availableVariants.length > 0;
-        const disabledAttr = disableOption ? ' disabled' : '';
-        const soldOutSuffix = isAvailable ? '' : ' (Sold Out)';
         const selectedAttr = defaultVariantId && defaultVariantId === variantId ? ' selected' : '';
         return `
-          <option value="${variantId}" data-price="${variant.price}" data-price-cents="${variantPriceCents}" data-available="${isAvailable ? 'true' : 'false'}"${disabledAttr}${selectedAttr}>
-            ${displayName}${soldOutSuffix} - ${priceLabel}
+          <option value="${variantId}" data-available="${isAvailable ? 'true' : 'false'}"${selectedAttr}>
+            ${displayName}
           </option>
         `;
       }).join('') : `
           <option value="" disabled selected>Currently unavailable</option>
         `;
 
-      const pillMarkup = showVariantPills ? `
-        <div class="cartuplift-variant-pill-group" role="group" aria-label="${labelText}">
-          ${variantsToRender.map(variant => {
-            const variantId = String(variant.id);
-            const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
-            const variantPriceCents = this.normalizePriceToCents(variant.price);
-            const priceLabel = Number.isFinite(variantPriceCents) ? this.formatMoney(variantPriceCents) : '';
-            const isAvailable = variant.available !== false;
-            const isSelected = defaultVariantId && defaultVariantId === variantId;
-            const classes = ['cartuplift-variant-pill'];
-            if (isSelected) classes.push('is-selected');
-            if (!isAvailable) classes.push('is-disabled');
-            const disabledAttr = isAvailable ? '' : ' disabled';
-            const availabilityAttr = isAvailable ? 'true' : 'false';
-            const statusHtml = isAvailable
-              ? `<span class="cartuplift-variant-pill-price">${priceLabel}</span>`
-              : '<span class="cartuplift-variant-pill-status">Sold Out</span>';
-            return `
-              <button type="button" class="${classes.join(' ')}" data-variant-id="${variantId}" data-price-cents="${variantPriceCents}" data-available="${availabilityAttr}" aria-pressed="${isSelected ? 'true' : 'false'}" aria-disabled="${isAvailable ? 'false' : 'true'}"${disabledAttr}>
-                <span class="cartuplift-variant-pill-label">${displayName}</span>
-                ${statusHtml}
-              </button>
-            `;
-          }).join('')}
-        </div>
-      ` : '';
+      const hiddenSelectMarkup = `
+        <select id="cartuplift-variant-select" class="cartuplift-variant-select cartuplift-variant-select--hidden" aria-hidden="true" tabindex="-1">
+          ${selectOptions}
+        </select>
+      `;
 
-      const singleVariantSummary = (!hasVariantChoices && summaryText)
-        ? `<div class="cartuplift-variant-summary">${summaryText}</div>`
-        : '';
+      const groupsMarkup = optionNames.map((name, optionIndex) => {
+        const valueSet = state.optionValueSets?.get(name);
+        if (!valueSet || valueSet.size === 0) {
+          return '';
+        }
+
+        const preferredOrder = Array.isArray(state.optionValueOrder?.get(name))
+          ? state.optionValueOrder.get(name)
+          : [];
+        const seen = new Set();
+        const values = [];
+
+        if (preferredOrder.length) {
+          preferredOrder.forEach(value => {
+            if (typeof value !== 'string') return;
+            if (!valueSet.has(value)) return;
+            if (seen.has(value)) return;
+            values.push(value);
+            seen.add(value);
+          });
+        }
+
+        valueSet.forEach(value => {
+          if (typeof value !== 'string') return;
+          if (seen.has(value)) return;
+          values.push(value);
+          seen.add(value);
+        });
+
+        if (!values.length) {
+          return '';
+        }
+
+        const buttons = values.map(value => {
+          const label = this.escapeHtml(value);
+          const priceSnippet = this.renderOptionValuePriceSnippet(state, optionIndex, value) || '';
+          return `
+            <button type="button" class="cartuplift-variant-pill" data-option-name="${this.escapeHtml(name)}" data-option-index="${optionIndex}" data-option-value="${label}" data-available="true" aria-pressed="false">
+              <span class="cartuplift-variant-pill-label">${label}</span>
+              ${priceSnippet}
+            </button>
+          `;
+        }).join('');
+
+        return `
+          <div class="cartuplift-variant-group" data-option-name="${this.escapeHtml(name)}">
+            <div class="cartuplift-variant-group-header">
+              <span class="cartuplift-variant-group-label">${this.escapeHtml(name)}</span>
+              <span class="cartuplift-variant-group-selection" data-option-selected="${this.escapeHtml(name)}"></span>
+            </div>
+            <div class="cartuplift-variant-group-values">
+              ${buttons}
+            </div>
+          </div>
+        `;
+      }).filter(Boolean).join('');
+
+      const hasVariantGroups = Boolean(groupsMarkup && groupsMarkup.trim().length);
+      const variantSummaryLabel = hasVariantGroups
+        ? 'Selected'
+        : (state.optionLabel || 'Selected Option');
+
+      const variantsMarkup = `
+        <div class="cartuplift-modal-variants${hasVariantGroups ? ' cartuplift-modal-variants--multi' : ' cartuplift-modal-variants--simple'}">
+          ${hiddenSelectMarkup}
+          ${hasVariantGroups ? `<div class="cartuplift-variant-groups">${groupsMarkup}</div>` : ''}
+          <div class="cartuplift-variant-summary-block">
+            <span class="cartuplift-variant-summary-label">${this.escapeHtml(variantSummaryLabel)}</span>
+            <div class="cartuplift-variant-summary" data-variant-summary>${summaryText}</div>
+          </div>
+          ${hasVariantGroups ? '<div class="cartuplift-variant-helper" data-variant-helper role="status" aria-live="polite"></div>' : ''}
+        </div>
+      `;
 
       return `
         <div class="cartuplift-modal-backdrop">
@@ -4382,7 +4702,7 @@
               
               <div class="cartuplift-modal-details">
                 <h2 class="cartuplift-modal-title">${this.settings.enableRecommendationTitleCaps ? productData.title.toUpperCase() : productData.title}</h2>
-                <div class="cartuplift-modal-price" data-price="${initialPriceCents}">
+                <div class="cartuplift-modal-price" data-price="${initialPriceCents}" data-base-price="${initialPriceCents}">
                   ${this.formatMoney(initialPriceCents)}
                 </div>
                 
@@ -4392,14 +4712,7 @@
                   </div>
                 ` : ''}
                 
-                <div class="cartuplift-modal-variants">
-                  ${hasVariantChoices ? `<label for="cartuplift-variant-select">${labelText}</label>` : `<span class="cartuplift-variant-summary-label">${labelText}</span>`}
-                  <select id="cartuplift-variant-select" class="${selectClasses.join(' ')}"${selectAttributes}>
-                    ${optionMarkup}
-                  </select>
-                  ${singleVariantSummary}
-                  ${pillMarkup}
-                </div>
+                ${variantsMarkup}
                 
                 <button class="cartuplift-modal-add-btn" data-grid-index="${gridIndex ?? ''}">
                   Add to Cart
@@ -4482,8 +4795,22 @@
     // Show gift selection modal when threshold is met
     async showGiftModal(threshold) {
       // Prevent multiple opens
-      if (this._modalOpening || document.querySelector('.cartuplift-gift-modal')) {
+      const existingGiftModal = document.querySelector('.cartuplift-gift-modal');
+      if (this._modalOpening || existingGiftModal) {
         console.log('🎁 Gift modal already opening/open');
+        return;
+      }
+
+      const activeProductModal = document.querySelector('.cartuplift-product-modal');
+      if (activeProductModal) {
+        console.log('🎁 Product modal active, deferring gift modal');
+        if (this._giftModalRetryTimer) {
+          clearTimeout(this._giftModalRetryTimer);
+        }
+        this._giftModalRetryTimer = setTimeout(() => {
+          this._giftModalRetryTimer = null;
+          this.showGiftModal(threshold);
+        }, 450);
         return;
       }
       
@@ -4548,77 +4875,127 @@
         requestAnimationFrame(() => {
           modal.classList.add('show');
           this._modalOpening = false;
+          if (this._giftModalRetryTimer) {
+            clearTimeout(this._giftModalRetryTimer);
+            this._giftModalRetryTimer = null;
+          }
           console.log('🎁 Gift modal shown');
         });
 
       } catch (error) {
         console.error('🎁 Error showing gift modal:', error);
         this._modalOpening = false;
+        if (this._giftModalRetryTimer) {
+          clearTimeout(this._giftModalRetryTimer);
+          this._giftModalRetryTimer = null;
+        }
       }
     }
 
     // Generate HTML for gift modal
     generateGiftModalHTML(productData, threshold, variantState) {
       const state = variantState || this.prepareVariantModalState(productData);
-      const variantsToRender = state.variantsToRender || [];
-      const defaultVariantId = state.defaultVariantId;
+      const allVariants = Array.isArray(state.allVariants) ? state.allVariants : [];
+      const optionNames = Array.isArray(state.optionNames) ? state.optionNames : [];
       const initialVariant = state.initialVariant;
+      const defaultVariantId = state.defaultVariantId;
       const giftTitle = threshold.title || 'Free Gift';
-      const hasVariantChoices = state.requiresSelection && variantsToRender.length > 1;
-      const selectClasses = ['cartuplift-variant-select'];
-      if (!hasVariantChoices) {
-        selectClasses.push('cartuplift-variant-select--single');
-      }
-      const selectAttributes = hasVariantChoices ? '' : ' aria-hidden="true" tabindex="-1"';
-      const labelText = this.escapeHtml(state.optionLabel || 'Select Option');
-      const summaryText = initialVariant ? this.escapeHtml(this.formatVariantDisplayName(productData, initialVariant)) : '';
-      const showVariantPills = variantsToRender.length > 1;
+      const summaryText = initialVariant
+        ? this.escapeHtml(this.formatVariantDisplayName(productData, initialVariant))
+        : this.escapeHtml(state.optionLabel || 'Select an option');
 
-      const optionMarkup = variantsToRender.length ? variantsToRender.map(variant => {
+      const selectOptions = allVariants.length ? allVariants.map(variant => {
+        if (!variant || variant.id === undefined || variant.id === null) return '';
         const variantId = String(variant.id);
         const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
         const isAvailable = variant.available !== false;
-        const disableOption = !isAvailable && state.availableVariants.length > 0;
-        const disabledAttr = disableOption ? ' disabled' : '';
-        const soldOutSuffix = isAvailable ? '' : ' (Sold Out)';
         const selectedAttr = defaultVariantId && defaultVariantId === variantId ? ' selected' : '';
         return `
-          <option value="${variantId}" data-available="${isAvailable ? 'true' : 'false'}"${disabledAttr}${selectedAttr}>
-            ${displayName}${soldOutSuffix}
+          <option value="${variantId}" data-available="${isAvailable ? 'true' : 'false'}"${selectedAttr}>
+            ${displayName}
           </option>
         `;
       }).join('') : `
           <option value="" disabled selected>Currently unavailable</option>
         `;
 
-      const pillMarkup = showVariantPills ? `
-        <div class="cartuplift-variant-pill-group" role="group" aria-label="${labelText}">
-          ${variantsToRender.map(variant => {
-            const variantId = String(variant.id);
-            const displayName = this.escapeHtml(this.formatVariantDisplayName(productData, variant));
-            const isAvailable = variant.available !== false;
-            const isSelected = defaultVariantId && defaultVariantId === variantId;
-            const classes = ['cartuplift-variant-pill'];
-            if (isSelected) classes.push('is-selected');
-            if (!isAvailable) classes.push('is-disabled');
-            const disabledAttr = isAvailable ? '' : ' disabled';
-            const availabilityAttr = isAvailable ? 'true' : 'false';
-            const statusHtml = isAvailable
-              ? '<span class="cartuplift-variant-pill-status cartuplift-variant-pill-status--available">Available</span>'
-              : '<span class="cartuplift-variant-pill-status">Sold Out</span>';
-            return `
-              <button type="button" class="${classes.join(' ')}" data-variant-id="${variantId}" data-available="${availabilityAttr}" aria-pressed="${isSelected ? 'true' : 'false'}" aria-disabled="${isAvailable ? 'false' : 'true'}"${disabledAttr}>
-                <span class="cartuplift-variant-pill-label">${displayName}</span>
-                ${statusHtml}
-              </button>
-            `;
-          }).join('')}
-        </div>
-      ` : '';
+      const hiddenSelectMarkup = `
+        <select id="cartuplift-gift-variant-select" class="cartuplift-variant-select cartuplift-variant-select--hidden" aria-hidden="true" tabindex="-1">
+          ${selectOptions}
+        </select>
+      `;
 
-      const singleVariantSummary = (!hasVariantChoices && summaryText)
-        ? `<div class="cartuplift-variant-summary">${summaryText}</div>`
-        : '';
+      const groupsMarkup = optionNames.map((name, optionIndex) => {
+        const valueSet = state.optionValueSets?.get(name);
+        if (!valueSet || valueSet.size === 0) {
+          return '';
+        }
+
+        const preferredOrder = Array.isArray(state.optionValueOrder?.get(name))
+          ? state.optionValueOrder.get(name)
+          : [];
+        const seen = new Set();
+        const values = [];
+
+        if (preferredOrder.length) {
+          preferredOrder.forEach(value => {
+            if (typeof value !== 'string') return;
+            if (!valueSet.has(value)) return;
+            if (seen.has(value)) return;
+            values.push(value);
+            seen.add(value);
+          });
+        }
+
+        valueSet.forEach(value => {
+          if (typeof value !== 'string') return;
+          if (seen.has(value)) return;
+          values.push(value);
+          seen.add(value);
+        });
+
+        if (!values.length) {
+          return '';
+        }
+
+        const buttons = values.map(value => {
+          const label = this.escapeHtml(value);
+          return `
+            <button type="button" class="cartuplift-variant-pill" data-option-name="${this.escapeHtml(name)}" data-option-index="${optionIndex}" data-option-value="${label}" data-available="true" aria-pressed="false">
+              <span class="cartuplift-variant-pill-label">${label}</span>
+            </button>
+          `;
+        }).join('');
+
+        return `
+          <div class="cartuplift-variant-group" data-option-name="${this.escapeHtml(name)}">
+            <div class="cartuplift-variant-group-header">
+              <span class="cartuplift-variant-group-label">${this.escapeHtml(name)}</span>
+              <span class="cartuplift-variant-group-selection" data-option-selected="${this.escapeHtml(name)}"></span>
+            </div>
+            <div class="cartuplift-variant-group-values">
+              ${buttons}
+            </div>
+          </div>
+        `;
+      }).filter(Boolean).join('');
+
+      const hasVariantGroups = Boolean(groupsMarkup && groupsMarkup.trim().length);
+      const variantSummaryLabel = hasVariantGroups
+        ? 'Selected'
+        : (state.optionLabel || 'Selected Option');
+
+      const variantsMarkup = `
+        <div class="cartuplift-modal-variants${hasVariantGroups ? ' cartuplift-modal-variants--multi' : ' cartuplift-modal-variants--simple'}">
+          ${hiddenSelectMarkup}
+          ${hasVariantGroups ? `<div class="cartuplift-variant-groups">${groupsMarkup}</div>` : ''}
+          <div class="cartuplift-variant-summary-block">
+            <span class="cartuplift-variant-summary-label">${this.escapeHtml(variantSummaryLabel)}</span>
+            <div class="cartuplift-variant-summary" data-variant-summary>${summaryText}</div>
+          </div>
+          ${hasVariantGroups ? '<div class="cartuplift-variant-helper" data-variant-helper role="status" aria-live="polite"></div>' : ''}
+        </div>
+      `;
 
       return `
         <div class="cartuplift-modal-backdrop">
@@ -4637,7 +5014,7 @@
               <div class="cartuplift-modal-details">
                 <div class="cartuplift-gift-badge">🎁 ${giftTitle}</div>
                 <h2 class="cartuplift-modal-title">${this.settings.enableRecommendationTitleCaps ? productData.title.toUpperCase() : productData.title}</h2>
-                <div class="cartuplift-modal-price cartuplift-gift-price">
+                <div class="cartuplift-modal-price cartuplift-gift-price" data-price="0" data-base-price="0">
                   FREE (${this.formatMoney(0)})
                 </div>
                 
@@ -4647,14 +5024,7 @@
                   </div>
                 ` : ''}
                 
-                <div class="cartuplift-modal-variants">
-                  ${hasVariantChoices ? `<label for="cartuplift-gift-variant-select">${labelText}</label>` : `<span class="cartuplift-variant-summary-label">${labelText}</span>`}
-                  <select id="cartuplift-gift-variant-select" class="${selectClasses.join(' ')}"${selectAttributes}>
-                    ${optionMarkup}
-                  </select>
-                  ${singleVariantSummary}
-                  ${pillMarkup}
-                </div>
+                ${variantsMarkup}
                 
                 <div class="cartuplift-modal-actions">
                   <button class="cartuplift-modal-add-btn cartuplift-gift-add-btn">
@@ -4750,6 +5120,10 @@
           modal._cleanupResize();
         }
         modal.remove();
+        if (this._giftModalRetryTimer) {
+          clearTimeout(this._giftModalRetryTimer);
+          this._giftModalRetryTimer = null;
+        }
         this._modalOpening = false;
       }, 300);
     }
@@ -5092,6 +5466,8 @@
           }
           
           console.log(`🎁 Looking for product ID: ${numericProductId} in cart items:`, this.cart.items.map(i => ({ id: i.product_id, title: i.product_title, properties: i.properties })));
+
+          const declinedKey = `gift_declined_${numericProductId}`;
           
           // Check if product is in cart and handle quantity logic
           const existingCartItems = this.cart.items.filter(item => 
@@ -5117,8 +5493,6 @@
 
           if (hasReachedThreshold) {
             if (giftQuantity === 0) {
-              // Check if user already declined this gift in this session
-              const declinedKey = `gift_declined_${numericProductId}`;
               const hasDeclined = sessionStorage.getItem(declinedKey);
               
               console.log(`🎁 Gift quantity is 0. Has declined: ${hasDeclined}`);
@@ -5133,11 +5507,14 @@
             } else {
               console.log('🎁 Gift already claimed, no action needed');
             }
-          } else if (!hasReachedThreshold && giftQuantity > 0) {
-            // Threshold no longer met and gift exists - remove all gift versions
-            for (const giftItem of existingCartItems) {
-              if (giftItem.properties && giftItem.properties._is_gift === 'true') {
-                await this.removeGiftFromCart(threshold, giftItem);
+          } else {
+            sessionStorage.removeItem(declinedKey);
+            if (giftQuantity > 0) {
+              // Threshold no longer met and gift exists - remove all gift versions
+              for (const giftItem of existingCartItems) {
+                if (giftItem.properties && giftItem.properties._is_gift === 'true') {
+                  await this.removeGiftFromCart(threshold, giftItem);
+                }
               }
             }
           }
