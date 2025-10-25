@@ -191,8 +191,8 @@ body.cartuplift-no-scroll {
    ======================================== */
 /* New unified progress section */
 .cartuplift-progress-section {
-  padding: 6px 16px; /* Reduced top/bottom padding to bring bar closer to header */
-  margin: 2px 0 6px; /* Tighter bottom margin to reduce space before cart items */
+  padding: 6px 16px 2px 16px; /* Minimal bottom padding */
+  margin: 2px 0 0; /* Remove bottom margin entirely */
 }
 
 /* Desktop: tighten even further so bar sits closer to header */
@@ -752,7 +752,7 @@ body.cartuplift-no-scroll {
   display: flex;
   align-items: stretch;
   gap: 16px;
-  padding: 8px 0;
+  padding: 4px 0 8px 0; /* Reduce top padding to move first item closer to progress bar */
   border-bottom: 1px solid #f0f0f0;
   position: relative;
   min-height: 96px;
